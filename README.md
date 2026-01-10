@@ -8,6 +8,9 @@ Open:
 
 Edit the `projects` array (title, category, thumbnail, video URL).
 
+
+
+
 ### Add your own images/videos
 Put files in:
 - `public/` (e.g. `public/videos/my-loop.mp4`, `public/thumbs/my-thumb.jpg`)
