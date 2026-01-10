@@ -33,7 +33,9 @@ jobs:
           cache: pnpm
 
       - name: Install
-        run: pnpm install --frozen-lockfile
+        # Some v0 exports ship with a lockfile that doesn't match package.json.
+        # Using --no-frozen-lockfile makes GitHub Pages deploy "just work".
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build (static export)
         run: pnpm build
