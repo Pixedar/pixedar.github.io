@@ -1,0 +1,1 @@
+export default function Page(){return (<main className="min-h-screen bg-black text-white p-10"><h1 className="text-4xl font-semibold">Tract-Constrained 3D Flow Fields (MDN)</h1><p className="mt-4 text-white/70">Placeholder. You can also embed the Academic Project Page Template here, or serve it from /public/pubs/tract-flow-mdn/.</p></main>)}

@@ -1,0 +1,1 @@
+export default function Page(){return (<main className="min-h-screen bg-black text-white p-10"><h1 className="text-4xl font-semibold">Emotion Attractor Diary</h1><p className="mt-4 text-white/70">Replace this with your project write-up. Add video, GIFs, and an APK download link.</p></main>)}
