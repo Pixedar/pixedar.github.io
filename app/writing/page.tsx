@@ -1,1 +1,0 @@
-export default function Page(){return (<main className="min-h-screen bg-black text-white p-10"><h1 className="text-4xl font-semibold">Writing & Essays</h1><p className="mt-4 text-white/70">Link to Medium posts or host your own articles here.</p></main>)}
