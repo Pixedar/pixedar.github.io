@@ -1,5 +1,5 @@
 import type React from "react"
-import { ExternalLink, FileText, Github, PlayCircle } from "lucide-react"
+import { Database, FileDown, FileText, Github, Package, Youtube } from "lucide-react"
 
 function PillLink({
   href,
@@ -35,44 +35,54 @@ function PillLink({
 
 export function ProjectDetailBrainInformationFlow() {
   const youtubeId = "3UFpiJIKwHs"
+  const zenodoRecordId = "18200415"
+  const doi = "10.5281/zenodo.18200415"
+
+  const zenodoRecordUrl = `https://zenodo.org/records/${zenodoRecordId}`
+  const doiUrl = `https://doi.org/${doi}`
+  const zenodoModelUrl = `${zenodoRecordUrl}/files/brainflow_mdn_k6_hq_model.pt?download=1`
+  const zenodoDatasetUrl = `${zenodoRecordUrl}/files/derived_dataset.zip?download=1`
+  const zenodoMovieUrl = `${zenodoRecordUrl}/files/supplementary_movie.mp4?download=1`
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="space-y-8">
         <div className="space-y-3">
           <h2 className="text-2xl md:text-3xl font-semibold" style={{ color: "#1a1a1a" }}>
-            Preprint + explainer video — making brain information flow readable
+            Research paper — making brain information flow readable
           </h2>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            A research preprint + explainer video focused on how information propagates through brain networks, and how we
-            can visualize and communicate those dynamics clearly.
+            Effective connectivity is often reported as a dense directed matrix: parcel‑to‑parcel weights that are powerful,
+            but hard to interpret geometrically. In this project, I fuse whole‑cortex rDCM connectivity (Schaefer‑400) with a
+            dense tractography atlas (HCP‑1065) and learn a continuous, tract‑constrained directional vector field—so “where
+            influence flows” becomes something you can inspect in 3D anatomy.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <PillLink href="https://doi.org/10.5281/zenodo.18200414">
-            <ExternalLink className="w-4 h-4" />
+          <PillLink href={doiUrl}>
+            <Database className="w-4 h-4" />
             DOI / Zenodo
           </PillLink>
-          <PillLink href="https://lnkd.in/dWefyu94">
-            <ExternalLink className="w-4 h-4" />
-            Preprint
+          <PillLink href="#paper">
+            <FileText className="w-4 h-4" />
+            Research paper
           </PillLink>
           <PillLink href="/papers/brain-information-flow.pdf">
-            <FileText className="w-4 h-4" />
+            <FileDown className="w-4 h-4" />
             PDF
           </PillLink>
           <PillLink href={`https://youtu.be/${youtubeId}`}>
-            <PlayCircle className="w-4 h-4" />
+            <Youtube className="w-4 h-4" />
             YouTube
           </PillLink>
           <PillLink href="#" disabled>
             <Github className="w-4 h-4" />
-            Code (soon)
+            Code
           </PillLink>
-          <PillLink href="#" disabled>
-            <ExternalLink className="w-4 h-4" />
-            Supplementary (soon)
+          <PillLink href="#supplementary">
+            <Package className="w-4 h-4" />
+            Supplementary
           </PillLink>
         </div>
 
@@ -92,23 +102,27 @@ export function ProjectDetailBrainInformationFlow() {
             </div>
           </div>
           <p className="text-sm" style={{ color: "#6a6a6a" }}>
-            YouTube does not allow fully removing all overlays in every context, but this embed uses a minimal,
-            frameless-style player.
+            Minimal embed (youtube-nocookie, no controls) for a clean, presentation‑style look.
           </p>
         </div>
 
         <div className="space-y-4">
           <h3 className="text-xl font-semibold" style={{ color: "#1a1a1a" }}>
-            Abstract (short)
+            Abstract
           </h3>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            This work presents a compact way to talk about brain dynamics through the lens of directed information flow:
-            how signals move, transform, and interact across regions over time. The goal is to make the analysis
-            interpretable — not only as a set of numbers, but as a story you can see.
+            This work turns directed effective connectivity into a continuous field you can trace through anatomy. Starting
+            from parcel‑level rDCM estimates, I constrain candidate paths to a tractography atlas and train Mixture Density
+            Networks (MDNs) to represent directionality along white‑matter geometry.
+          </p>
+          <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
+            The result is a tract‑constrained vector field that supports intuitive questions: where does influence converge,
+            where does it diverge, and what routes dominate under different connectivity regimes? The goal is interpretability
+            with a geometric “story you can see”—not just another matrix.
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div id="paper" className="space-y-4">
           <h3 className="text-xl font-semibold" style={{ color: "#1a1a1a" }}>
             Read the paper
           </h3>
@@ -127,12 +141,76 @@ export function ProjectDetailBrainInformationFlow() {
           </p>
         </div>
 
+        <div id="supplementary" className="space-y-4">
+          <h3 className="text-xl font-semibold" style={{ color: "#1a1a1a" }}>
+            Supplementary materials
+          </h3>
+          <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
+            The trained MDN model and the derived dataset are hosted on Zenodo (recommended—keeps GitHub Pages lightweight).
+            If you want, you can also mirror smaller files directly in this repo under
+            <span className="font-mono"> public/projects/brain-information-flow/supplementary/</span>.
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            <a
+              href={zenodoModelUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="border-2 border-black p-5 bg-[#F7F3E9] hover:bg-white transition-colors"
+            >
+              <div className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
+                Model
+              </div>
+              <div className="text-lg" style={{ color: "#1a1a1a" }}>
+                brainflow_mdn_k6_hq_model.pt
+              </div>
+              <div className="text-sm mt-2" style={{ color: "#6a6a6a" }}>
+                1.1 MB (Zenodo)
+              </div>
+            </a>
+
+            <a
+              href={zenodoDatasetUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="border-2 border-black p-5 bg-[#F7F3E9] hover:bg-white transition-colors"
+            >
+              <div className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
+                Dataset
+              </div>
+              <div className="text-lg" style={{ color: "#1a1a1a" }}>
+                derived_dataset.zip
+              </div>
+              <div className="text-sm mt-2" style={{ color: "#6a6a6a" }}>
+                205.8 MB (Zenodo)
+              </div>
+            </a>
+
+            <a
+              href={zenodoMovieUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="border-2 border-black p-5 bg-[#F7F3E9] hover:bg-white transition-colors"
+            >
+              <div className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
+                Movie
+              </div>
+              <div className="text-lg" style={{ color: "#1a1a1a" }}>
+                supplementary_movie.mp4
+              </div>
+              <div className="text-sm mt-2" style={{ color: "#6a6a6a" }}>
+                269.9 MB (Zenodo)
+              </div>
+            </a>
+          </div>
+        </div>
+
         <div className="border-2 border-black p-5 bg-[#F7F3E9]">
           <h4 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
             Citation
           </h4>
           <p className="text-lg" style={{ color: "#1a1a1a" }}>
-            DOI: <span className="font-mono">10.5281/zenodo.18200414</span>
+            DOI: <span className="font-mono">{doi}</span>
           </p>
         </div>
       </div>

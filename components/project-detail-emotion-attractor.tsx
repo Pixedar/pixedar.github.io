@@ -1,6 +1,52 @@
+"use client"
+
 import type React from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
-import { Download, Music2, Sparkles } from "lucide-react"
+import { Download, Maximize2, Music2, Sparkles, X } from "lucide-react"
+
+type Sculpture = {
+  src: string
+  alt: string
+}
+
+const MEDIA_CARD_STYLE: React.CSSProperties = {
+  borderRadius: 10,
+  border: "2px solid rgba(0,0,0,0.9)",
+  boxShadow: [
+    "0 6px 12px rgba(0, 0, 0, 0.22)",
+    "0 16px 32px rgba(0, 0, 0, 0.28)",
+    "0 32px 64px rgba(0, 0, 0, 0.34)",
+    "0 64px 128px rgba(0, 0, 0, 0.38)",
+  ].join(", "),
+  willChange: "transform",
+}
+
+function useTiltHandlers() {
+  const raf = useRef<number | null>(null)
+
+  const onMouseMove: React.MouseEventHandler<HTMLElement> = (e) => {
+    const el = e.currentTarget
+    const rect = el.getBoundingClientRect()
+    const px = (e.clientX - rect.left) / rect.width
+    const py = (e.clientY - rect.top) / rect.height
+    const rx = (py - 0.5) * -7
+    const ry = (px - 0.5) * 7
+
+    if (raf.current) cancelAnimationFrame(raf.current)
+    raf.current = requestAnimationFrame(() => {
+      el.style.transform = `perspective(900px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) scale(1.02)`
+    })
+  }
+
+  const onMouseLeave: React.MouseEventHandler<HTMLElement> = (e) => {
+    const el = e.currentTarget
+    if (raf.current) cancelAnimationFrame(raf.current)
+    el.style.transform = "perspective(900px) rotateX(0deg) rotateY(0deg) scale(1)"
+  }
+
+  return { onMouseMove, onMouseLeave }
+}
 
 function PillLink({
   href,
@@ -35,6 +81,82 @@ function PillLink({
 }
 
 export function ProjectDetailEmotionAttractor() {
+  const sculptures = useMemo<Sculpture[]>(
+    () => [
+      {
+        src: "/projects/emotion-attractor/renders/mind-led-upward-spiral.png",
+        alt: "Mind-Led Upward Spiral",
+      },
+      {
+        src: "/projects/emotion-attractor/renders/reactive-flux-exhaustion-to-ascent.png",
+        alt: "Reactive Flux: Exhaustion to Ascent",
+      },
+      {
+        src: "/projects/emotion-attractor/renders/social-breathing-oasis.png",
+        alt: "Social Breathing Oasis",
+      },
+    ],
+    [],
+  )
+
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const { onMouseMove, onMouseLeave } = useTiltHandlers()
+
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const videoWrapRef = useRef<HTMLDivElement | null>(null)
+
+  // Autoplay *only* when the video is actually on screen.
+  useEffect(() => {
+    const wrap = videoWrapRef.current
+    const video = videoRef.current
+    if (!wrap || !video) return
+
+    // Ensure autoplay is allowed.
+    video.muted = true
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        if (!entry) return
+
+        if (entry.isIntersecting) {
+          // Best-effort play (may still be blocked by browser policies in some cases).
+          void video.play().catch(() => {})
+        } else {
+          video.pause()
+        }
+      },
+      { threshold: 0.55 },
+    )
+
+    obs.observe(wrap)
+
+    return () => {
+      obs.disconnect()
+    }
+  }, [])
+
+  // Lightbox keyboard controls.
+  useEffect(() => {
+    if (lightboxIndex === null) return
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setLightboxIndex(null)
+        return
+      }
+      if (e.key === "ArrowLeft") {
+        setLightboxIndex((i) => (i === null ? 0 : (i - 1 + sculptures.length) % sculptures.length))
+      }
+      if (e.key === "ArrowRight") {
+        setLightboxIndex((i) => (i === null ? 0 : (i + 1) % sculptures.length))
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [lightboxIndex, sculptures.length])
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="space-y-6">
@@ -105,7 +227,7 @@ export function ProjectDetailEmotionAttractor() {
                 <span className="font-medium">Discover:</span> symbolic regression yields equations describing the curve.
               </li>
               <li>
-                <span className="font-medium">Render:</span> generate high‑quality attractor sculptures + captions.
+                <span className="font-medium">Render:</span> generate high‑quality attractor sculptures.
               </li>
             </ol>
           </div>
@@ -144,13 +266,24 @@ export function ProjectDetailEmotionAttractor() {
             This animation shows the sculpture evolving across ~120 days. The soundtrack shifts with chapters of my life,
             guided by listening history.
           </p>
-          <div className="border-2 border-black bg-black/5 overflow-hidden">
+          <div
+            ref={videoWrapRef}
+            className="relative overflow-hidden bg-white"
+            style={MEDIA_CARD_STYLE}
+          >
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{ boxShadow: "inset 0 1px 2px rgba(255, 255, 255, 0.12)" }}
+            />
             <video
+              ref={videoRef}
               src="/videos/emotion-attractor/output_audio.mp4"
               poster="/emotion-attractor-composite.png"
+              muted
+              preload="metadata"
               controls
               playsInline
-              className="w-full h-auto"
+              className="w-full h-auto block"
             />
           </div>
           <p className="text-sm" style={{ color: "#6a6a6a" }}>
@@ -163,67 +296,99 @@ export function ProjectDetailEmotionAttractor() {
             Sculpture renders
           </h3>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            Each render is a chapter — a different attractor‑like geometry extracted from the same diary trajectory.
+            Click any render to open it full‑screen. The cards respond to your cursor like a physical object.
           </p>
 
           <div className="grid md:grid-cols-3 gap-4">
-            <figure className="border-2 border-black bg-white overflow-hidden">
-              <div className="relative aspect-[2/5]">
-                <Image
-                  src="/projects/emotion-attractor/renders/mind-led-upward-spiral.png"
-                  alt="Mind-Led Upward Spiral"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <figcaption className="p-3">
-                <div className="font-semibold" style={{ color: "#1a1a1a" }}>
-                  Mind‑Led Upward Spiral
+            {sculptures.map((s, idx) => (
+              <button
+                key={s.src}
+                type="button"
+                onClick={() => setLightboxIndex(idx)}
+                className="group text-left"
+                aria-label={`Open render: ${s.alt}`}
+              >
+                <div
+                  className="relative overflow-hidden bg-white transition-transform duration-200 ease-out"
+                  style={MEDIA_CARD_STYLE}
+                  onMouseMove={onMouseMove}
+                  onMouseLeave={onMouseLeave}
+                >
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ boxShadow: "inset 0 1px 2px rgba(255, 255, 255, 0.12)" }}
+                  />
+                  <div className="relative aspect-[2/5]">
+                    <Image
+                      src={s.src}
+                      alt={s.alt}
+                      fill
+                      sizes="(min-width: 768px) 33vw, 100vw"
+                      className="object-cover transition-transform duration-200 ease-out group-hover:scale-[1.02]"
+                      priority={idx === 0}
+                    />
+                  </div>
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div
+                      className="w-9 h-9 flex items-center justify-center"
+                      style={{
+                        borderRadius: 10,
+                        backgroundColor: "rgba(26, 26, 26, 0.85)",
+                        border: "1px solid rgba(255, 255, 255, 0.18)",
+                      }}
+                    >
+                      <Maximize2 className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
                 </div>
-                <div className="text-sm" style={{ color: "#6a6a6a" }}>
-                  A chapter of climbing out — structure emerging from noise.
-                </div>
-              </figcaption>
-            </figure>
-
-            <figure className="border-2 border-black bg-white overflow-hidden">
-              <div className="relative aspect-[2/5]">
-                <Image
-                  src="/projects/emotion-attractor/renders/reactive-flux-exhaustion-to-ascent.png"
-                  alt="Reactive Flux: Exhaustion to Ascent"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <figcaption className="p-3">
-                <div className="font-semibold" style={{ color: "#1a1a1a" }}>
-                  Reactive Flux: Exhaustion to Ascent
-                </div>
-                <div className="text-sm" style={{ color: "#6a6a6a" }}>
-                  Rapid oscillations — tiredness, adaptation, then lift.
-                </div>
-              </figcaption>
-            </figure>
-
-            <figure className="border-2 border-black bg-white overflow-hidden">
-              <div className="relative aspect-[2/5]">
-                <Image
-                  src="/projects/emotion-attractor/renders/social-breathing-oasis.png"
-                  alt="Social Breathing Oasis"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <figcaption className="p-3">
-                <div className="font-semibold" style={{ color: "#1a1a1a" }}>
-                  Social Breathing Oasis
-                </div>
-                <div className="text-sm" style={{ color: "#6a6a6a" }}>
-                  A stable pocket — connection, relief, and room to breathe.
-                </div>
-              </figcaption>
-            </figure>
+              </button>
+            ))}
           </div>
+
+          {lightboxIndex !== null ? (
+            <div
+              className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8"
+              style={{ backgroundColor: "rgba(0,0,0,0.82)" }}
+              onClick={() => setLightboxIndex(null)}
+              role="dialog"
+              aria-modal="true"
+            >
+              <button
+                type="button"
+                onClick={() => setLightboxIndex(null)}
+                className="absolute top-6 right-6 md:top-8 md:right-8 w-12 h-12 rounded-full flex items-center justify-center"
+                style={{
+                  backgroundColor: "rgba(26, 26, 26, 0.9)",
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                }}
+                aria-label="Close image"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+
+              <div
+                className="relative w-full max-w-5xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div
+                  className="relative w-full h-[82vh] overflow-hidden bg-black"
+                  style={MEDIA_CARD_STYLE}
+                >
+                  <Image
+                    src={sculptures[lightboxIndex].src}
+                    alt={sculptures[lightboxIndex].alt}
+                    fill
+                    sizes="100vw"
+                    className="object-contain"
+                    priority
+                  />
+                </div>
+                <p className="mt-3 text-sm" style={{ color: "rgba(255,255,255,0.72)" }}>
+                  Tip: use ←/→ to navigate, Esc to close.
+                </p>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="space-y-4">
