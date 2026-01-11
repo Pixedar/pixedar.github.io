@@ -3,12 +3,10 @@
 import type React from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
-import { Download, Maximize2, Music2, Sparkles, X } from "lucide-react"
+import { Download, Maximize2, Music2, Sparkles, X, ChevronLeft, ChevronRight } from "lucide-react"
 
-type Sculpture = {
-  src: string
-  alt: string
-}
+type Sculpture = { src: string; alt: string }
+type Chapter = { title: string; body: string }
 
 const MEDIA_CARD_STYLE: React.CSSProperties = {
   borderRadius: 10,
@@ -20,6 +18,26 @@ const MEDIA_CARD_STYLE: React.CSSProperties = {
     "0 64px 128px rgba(0, 0, 0, 0.38)",
   ].join(", "),
   willChange: "transform",
+}
+
+const INNER_GLOW_STYLE: React.CSSProperties = {
+  boxShadow: "inset 0 1px 2px rgba(255, 255, 255, 0.12)",
+}
+
+/**
+ * The project modal scrolls inside its own container.
+ * This finds the nearest parent that scrolls so IntersectionObserver works correctly.
+ */
+function getScrollParent(el: HTMLElement | null): HTMLElement | null {
+  if (!el) return null
+  let cur: HTMLElement | null = el.parentElement
+  while (cur) {
+    const style = window.getComputedStyle(cur)
+    const oy = style.overflowY
+    if (oy === "auto" || oy === "scroll") return cur
+    cur = cur.parentElement
+  }
+  return null
 }
 
 function useTiltHandlers() {
@@ -83,17 +101,26 @@ function PillLink({
 export function ProjectDetailEmotionAttractor() {
   const sculptures = useMemo<Sculpture[]>(
     () => [
+      { src: "/projects/emotion-attractor/renders/mind-led-upward-spiral.png", alt: "Mind-Led Upward Spiral" },
+      { src: "/projects/emotion-attractor/renders/reactive-flux-exhaustion-to-ascent.png", alt: "Reactive Flux: Exhaustion to Ascent" },
+      { src: "/projects/emotion-attractor/renders/social-breathing-oasis.png", alt: "Social Breathing Oasis" },
+    ],
+    [],
+  )
+
+  const chapters = useMemo<Chapter[]>(
+    () => [
       {
-        src: "/projects/emotion-attractor/renders/mind-led-upward-spiral.png",
-        alt: "Mind-Led Upward Spiral",
+        title: "Mind-Led Upward Spiral",
+        body: "Deliberate rebuilding. Structure emerging from noise — small routines compounding into a clean upward arc.",
       },
       {
-        src: "/projects/emotion-attractor/renders/reactive-flux-exhaustion-to-ascent.png",
-        alt: "Reactive Flux: Exhaustion to Ascent",
+        title: "Reactive Flux: Exhaustion to Ascent",
+        body: "A feedback loop between pushing and recovering. The curve tightens, stalls, then finds lift — like breath returning.",
       },
       {
-        src: "/projects/emotion-attractor/renders/social-breathing-oasis.png",
-        alt: "Social Breathing Oasis",
+        title: "Social Breathing Oasis",
+        body: "Connection as a stabilizer. The space opens up, the trajectory smooths, and the system remembers calm.",
       },
     ],
     [],
@@ -104,34 +131,59 @@ export function ProjectDetailEmotionAttractor() {
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const videoWrapRef = useRef<HTMLDivElement | null>(null)
+  const shouldPlayRef = useRef(false)
 
-  // Autoplay *only* when the video is actually on screen.
+  // ✅ Autoplay only when visible (works inside modal scroll container)
   useEffect(() => {
     const wrap = videoWrapRef.current
     const video = videoRef.current
     if (!wrap || !video) return
 
-    // Ensure autoplay is allowed.
     video.muted = true
+    video.playsInline = true
 
+    const attemptPlay = () => {
+      const v = videoRef.current
+      if (!v) return
+      if (!shouldPlayRef.current) return
+      v.muted = true
+      const p = v.play()
+      if (p && typeof p.catch === "function") p.catch(() => {})
+    }
+
+    const onCanPlay = () => attemptPlay()
+    video.addEventListener("canplay", onCanPlay)
+
+    const root = getScrollParent(wrap)
     const obs = new IntersectionObserver(
       (entries) => {
         const entry = entries[0]
         if (!entry) return
+        const visible = entry.isIntersecting && entry.intersectionRatio >= 0.15
+        shouldPlayRef.current = visible
 
-        if (entry.isIntersecting) {
-          // Best-effort play (may still be blocked by browser policies in some cases).
-          void video.play().catch(() => {})
-        } else {
-          video.pause()
-        }
+        if (visible) attemptPlay()
+        else video.pause()
       },
-      { threshold: 0.55 },
+      {
+        root,
+        threshold: [0, 0.15, 0.3, 0.55, 0.8],
+        rootMargin: "0px 0px -10% 0px",
+      },
     )
 
     obs.observe(wrap)
 
+    const onVis = () => {
+      if (!videoRef.current) return
+      if (document.hidden) videoRef.current.pause()
+      else if (shouldPlayRef.current) attemptPlay()
+    }
+    document.addEventListener("visibilitychange", onVis)
+
     return () => {
+      document.removeEventListener("visibilitychange", onVis)
+      video.removeEventListener("canplay", onCanPlay)
       obs.disconnect()
     }
   }, [])
@@ -157,6 +209,9 @@ export function ProjectDetailEmotionAttractor() {
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [lightboxIndex, sculptures.length])
 
+  const goPrev = () => setLightboxIndex((i) => (i === null ? 0 : (i - 1 + sculptures.length) % sculptures.length))
+  const goNext = () => setLightboxIndex((i) => (i === null ? 0 : (i + 1) % sculptures.length))
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="space-y-6">
@@ -176,7 +231,7 @@ export function ProjectDetailEmotionAttractor() {
         <div className="flex flex-wrap gap-3">
           <PillLink href="#video">
             <Music2 className="w-4 h-4" />
-            Watch the 120‑day video
+            Watch the 120-day video
           </PillLink>
           <PillLink href="#gallery">
             <Sparkles className="w-4 h-4" />
@@ -194,13 +249,13 @@ export function ProjectDetailEmotionAttractor() {
           </h3>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
             I built an Android diary app (Java) where I logged daily experiences and emotional state. Each entry was sent
-            through a sentence‑embedding model (Python/TensorFlow), mapped into a high‑dimensional semantic space, and then
+            through a sentence-embedding model (Python/TensorFlow), mapped into a high-dimensional semantic space, and then
             projected down into 3D so the trajectory could be seen. Connecting the points reveals loops, spirals, and
             knots — moments of getting stuck, recovering, repeating patterns, or breaking into a new direction.
           </p>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
             From there I used symbolic regression to fit compact equations that reproduce the curve. Those equations became
-            a generative recipe for the final artwork: attractor‑like forms rendered as sculptural objects, each representing
+            a generative recipe for the final artwork: attractor-like forms rendered as sculptural objects, each representing
             a different chapter.
           </p>
         </div>
@@ -227,7 +282,7 @@ export function ProjectDetailEmotionAttractor() {
                 <span className="font-medium">Discover:</span> symbolic regression yields equations describing the curve.
               </li>
               <li>
-                <span className="font-medium">Render:</span> generate high‑quality attractor sculptures.
+                <span className="font-medium">Render:</span> generate high-quality attractor sculptures.
               </li>
             </ol>
           </div>
@@ -236,21 +291,11 @@ export function ProjectDetailEmotionAttractor() {
               Backend & infra
             </h4>
             <ul className="list-disc pl-5 space-y-2" style={{ color: "#1a1a1a" }}>
-              <li>
-                Python + TensorFlow for embeddings and flow modeling
-              </li>
-              <li>
-                AWS S3 for storing daily entries and generated artifacts
-              </li>
-              <li>
-                AWS Lambda for lightweight processing / orchestration
-              </li>
-              <li>
-                EC2 for heavier batch jobs (training, regression, rendering prep)
-              </li>
-              <li>
-                Android (Java) client for journaling + interaction
-              </li>
+              <li>Python + TensorFlow for embeddings and flow modeling</li>
+              <li>AWS S3 for storing daily entries and generated artifacts</li>
+              <li>AWS Lambda for lightweight processing / orchestration</li>
+              <li>EC2 for heavier batch jobs (training, regression, rendering prep)</li>
+              <li>Android (Java) client for journaling + interaction</li>
             </ul>
             <p className="text-sm mt-3" style={{ color: "#6a6a6a" }}>
               Note: the data was personal; the system was designed to keep the diary private while still enabling modeling.
@@ -258,6 +303,7 @@ export function ProjectDetailEmotionAttractor() {
           </div>
         </div>
 
+        {/* ✅ Video section stays EXACTLY like your original nice vertical card (no forced aspect-video). */}
         <div id="video" className="space-y-4">
           <h3 className="text-xl font-semibold" style={{ color: "#1a1a1a" }}>
             Video — 120 days of emotional geometry + music chapters
@@ -266,37 +312,36 @@ export function ProjectDetailEmotionAttractor() {
             This animation shows the sculpture evolving across ~120 days. The soundtrack shifts with chapters of my life,
             guided by listening history.
           </p>
-          <div
-            ref={videoWrapRef}
-            className="relative overflow-hidden bg-white"
-            style={MEDIA_CARD_STYLE}
-          >
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{ boxShadow: "inset 0 1px 2px rgba(255, 255, 255, 0.12)" }}
-            />
+
+          <div ref={videoWrapRef} className="relative overflow-hidden bg-white" style={MEDIA_CARD_STYLE}>
+            <div className="absolute inset-0 pointer-events-none" style={INNER_GLOW_STYLE} />
             <video
               ref={videoRef}
               src="/videos/emotion-attractor/output_audio.mp4"
               poster="/emotion-attractor-composite.png"
               muted
               preload="metadata"
-              controls
               playsInline
+              controls
+              // you can uncomment loop if you want continuous playback while visible
+              // loop
               className="w-full h-auto block"
             />
           </div>
+
           <p className="text-sm" style={{ color: "#6a6a6a" }}>
-            To enable playback, copy your file to: <span className="font-mono">public/videos/emotion-attractor/output_audio.mp4</span>
+            To enable playback, copy your file to:{" "}
+            <span className="font-mono">public/videos/emotion-attractor/output_audio.mp4</span>
           </p>
         </div>
 
+        {/* ✅ Sculpture section stays the SAME layout as before */}
         <div id="gallery" className="space-y-4">
           <h3 className="text-xl font-semibold" style={{ color: "#1a1a1a" }}>
             Sculpture renders
           </h3>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            Click any render to open it full‑screen. The cards respond to your cursor like a physical object.
+            Click any render to open it full-screen. The cards respond to your cursor like a physical object.
           </p>
 
           <div className="grid md:grid-cols-3 gap-4">
@@ -314,10 +359,7 @@ export function ProjectDetailEmotionAttractor() {
                   onMouseMove={onMouseMove}
                   onMouseLeave={onMouseLeave}
                 >
-                  <div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{ boxShadow: "inset 0 1px 2px rgba(255, 255, 255, 0.12)" }}
-                  />
+                  <div className="absolute inset-0 pointer-events-none" style={INNER_GLOW_STYLE} />
                   <div className="relative aspect-[2/5]">
                     <Image
                       src={s.src}
@@ -345,6 +387,7 @@ export function ProjectDetailEmotionAttractor() {
             ))}
           </div>
 
+          {/* ✅ Lightbox now has LEFT DESCRIPTION PANEL (only when clicked) */}
           {lightboxIndex !== null ? (
             <div
               className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8"
@@ -366,26 +409,97 @@ export function ProjectDetailEmotionAttractor() {
                 <X className="w-6 h-6 text-white" />
               </button>
 
-              <div
-                className="relative w-full max-w-5xl"
-                onClick={(e) => e.stopPropagation()}
+              {/* Arrow buttons (optional but nice) */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  goPrev()
+                }}
+                className="hidden md:flex absolute left-6 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center"
+                style={{
+                  backgroundColor: "rgba(26, 26, 26, 0.85)",
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                }}
+                aria-label="Previous"
               >
-                <div
-                  className="relative w-full h-[82vh] overflow-hidden bg-black"
-                  style={MEDIA_CARD_STYLE}
-                >
-                  <Image
-                    src={sculptures[lightboxIndex].src}
-                    alt={sculptures[lightboxIndex].alt}
-                    fill
-                    sizes="100vw"
-                    className="object-contain"
-                    priority
-                  />
+                <ChevronLeft className="w-6 h-6 text-white" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  goNext()
+                }}
+                className="hidden md:flex absolute right-20 md:right-24 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center"
+                style={{
+                  backgroundColor: "rgba(26, 26, 26, 0.85)",
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                }}
+                aria-label="Next"
+              >
+                <ChevronRight className="w-6 h-6 text-white" />
+              </button>
+
+              <div className="relative w-full max-w-6xl" onClick={(e) => e.stopPropagation()}>
+                <div className="grid md:grid-cols-[360px_1fr] gap-5 items-start">
+                  {/* Left description */}
+                  <div
+                    className="border-2 border-black bg-[#F7F3E9] p-4 md:p-5"
+                    style={{
+                      borderRadius: 10,
+                      boxShadow: "0 14px 30px rgba(0,0,0,0.35)",
+                    }}
+                  >
+                    <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>
+                      Chapter
+                    </div>
+                    <div className="mt-1 text-lg font-semibold" style={{ color: "#1a1a1a" }}>
+                      {chapters[lightboxIndex]?.title ?? sculptures[lightboxIndex].alt}
+                    </div>
+                    <div className="mt-2 text-sm leading-relaxed" style={{ color: "#4a4a4a" }}>
+                      {chapters[lightboxIndex]?.body ?? ""}
+                    </div>
+
+                    <div className="mt-4 text-xs" style={{ color: "#6a6a6a" }}>
+                      Tip: use ←/→ to navigate, Esc to close.
+                    </div>
+
+                    {/* Mobile nav buttons */}
+                    <div className="mt-4 flex md:hidden gap-2">
+                      <button
+                        type="button"
+                        onClick={goPrev}
+                        className="flex-1 border-2 border-black bg-white px-3 py-2"
+                        style={{ borderRadius: 10 }}
+                      >
+                        Prev
+                      </button>
+                      <button
+                        type="button"
+                        onClick={goNext}
+                        className="flex-1 border-2 border-black bg-white px-3 py-2"
+                        style={{ borderRadius: 10 }}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right image */}
+                  <div className="relative w-full">
+                    <div className="relative w-full h-[78vh] overflow-hidden bg-black" style={MEDIA_CARD_STYLE}>
+                      <Image
+                        src={sculptures[lightboxIndex].src}
+                        alt={sculptures[lightboxIndex].alt}
+                        fill
+                        sizes="100vw"
+                        className="object-contain"
+                        priority
+                      />
+                    </div>
+                  </div>
                 </div>
-                <p className="mt-3 text-sm" style={{ color: "rgba(255,255,255,0.72)" }}>
-                  Tip: use ←/→ to navigate, Esc to close.
-                </p>
               </div>
             </div>
           ) : null}
