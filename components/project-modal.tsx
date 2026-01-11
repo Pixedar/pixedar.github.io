@@ -4,6 +4,9 @@ import { useEffect } from "react"
 import Image from "next/image"
 import { X } from "lucide-react"
 
+import { ProjectDetailEmotionAttractor } from "@/components/project-detail-emotion-attractor"
+import { ProjectDetailBrainInformationFlow } from "@/components/project-detail-brain-information-flow"
+
 interface Project {
   id: number
   title: string
@@ -32,6 +35,9 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
   }, [project])
 
   if (!project) return null
+
+  const isEmotionAttractor = project.title === "Emotion Attractor"
+  const isBrainInformationFlow = project.title === "Brain Information Flow Research"
 
   return (
     <div
@@ -116,51 +122,65 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
         {/* Bottom Section - Content */}
         <div className="relative bg-[#F2EFE9] px-8 py-12 md:px-16 md:py-16">
           <div className="max-w-4xl mx-auto">
-            {/* Project Title */}
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 text-balance" style={{ color: "#1a1a1a" }}>
-              {project.title}
-            </h1>
+            {(isEmotionAttractor || isBrainInformationFlow) ? (
+              <>
+                {/* Project Title */}
+                <h1 className="text-5xl md:text-7xl font-bold mb-8 text-balance" style={{ color: "#1a1a1a" }}>
+                  {project.title}
+                </h1>
 
-            {/* Project Description */}
-            <p className="text-xl md:text-2xl leading-relaxed text-pretty mb-12" style={{ color: "#4a4a4a" }}>
-              {project.description}
-            </p>
+                {isEmotionAttractor ? <ProjectDetailEmotionAttractor /> : null}
+                {isBrainInformationFlow ? <ProjectDetailBrainInformationFlow /> : null}
+              </>
+            ) : (
+              <>
+                {/* Project Title */}
+                <h1 className="text-5xl md:text-7xl font-bold mb-6 text-balance" style={{ color: "#1a1a1a" }}>
+                  {project.title}
+                </h1>
 
-            {/* Additional Project Details */}
-            <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
-                  Role
-                </h3>
-                <p className="text-lg" style={{ color: "#1a1a1a" }}>
-                  Lead Designer & Developer
+                {/* Project Description */}
+                <p className="text-xl md:text-2xl leading-relaxed text-pretty mb-12" style={{ color: "#4a4a4a" }}>
+                  {project.description}
                 </p>
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
-                  Year
-                </h3>
-                <p className="text-lg" style={{ color: "#1a1a1a" }}>
-                  2024
-                </p>
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
-                  Technologies
-                </h3>
-                <p className="text-lg" style={{ color: "#1a1a1a" }}>
-                  Next.js, React, TypeScript
-                </p>
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
-                  Status
-                </h3>
-                <p className="text-lg" style={{ color: "#1a1a1a" }}>
-                  Research & Development
-                </p>
-              </div>
-            </div>
+
+                {/* Additional Project Details */}
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
+                      Role
+                    </h3>
+                    <p className="text-lg" style={{ color: "#1a1a1a" }}>
+                      Lead Designer & Developer
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
+                      Year
+                    </h3>
+                    <p className="text-lg" style={{ color: "#1a1a1a" }}>
+                      2024
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
+                      Technologies
+                    </h3>
+                    <p className="text-lg" style={{ color: "#1a1a1a" }}>
+                      Next.js, React, TypeScript
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
+                      Status
+                    </h3>
+                    <p className="text-lg" style={{ color: "#1a1a1a" }}>
+                      Research & Development
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
