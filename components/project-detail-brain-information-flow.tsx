@@ -101,9 +101,7 @@ export function ProjectDetailBrainInformationFlow() {
               />
             </div>
           </div>
-          <p className="text-sm" style={{ color: "#6a6a6a" }}>
-            Minimal embed (youtube-nocookie, no controls) for a clean, presentation‑style look.
-          </p>
+
         </div>
 
         <div className="space-y-4">
