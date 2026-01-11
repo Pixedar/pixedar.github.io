@@ -3,13 +3,23 @@
 import type React from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
-import { Download, Maximize2, Music2, Sparkles, X, ChevronLeft, ChevronRight } from "lucide-react"
+import {
+  Download,
+  Maximize2,
+  Music2,
+  Sparkles,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Volume2,
+  VolumeX,
+} from "lucide-react"
 
 type Sculpture = { src: string; alt: string }
 type Chapter = { title: string; body: string }
 
 const MEDIA_CARD_STYLE: React.CSSProperties = {
-  borderRadius: 10,
+  borderRadius: 10, // slightly rounded (less than homepage)
   border: "2px solid rgba(0,0,0,0.9)",
   boxShadow: [
     "0 6px 12px rgba(0, 0, 0, 0.22)",
@@ -21,12 +31,13 @@ const MEDIA_CARD_STYLE: React.CSSProperties = {
 }
 
 const INNER_GLOW_STYLE: React.CSSProperties = {
+  borderRadius: 10,
   boxShadow: "inset 0 1px 2px rgba(255, 255, 255, 0.12)",
 }
 
 /**
- * The project modal scrolls inside its own container.
- * This finds the nearest parent that scrolls so IntersectionObserver works correctly.
+ * The modal scrolls inside its own container.
+ * Find the nearest scroll parent so IntersectionObserver triggers correctly.
  */
 function getScrollParent(el: HTMLElement | null): HTMLElement | null {
   if (!el) return null
@@ -53,7 +64,9 @@ function useTiltHandlers() {
 
     if (raf.current) cancelAnimationFrame(raf.current)
     raf.current = requestAnimationFrame(() => {
-      el.style.transform = `perspective(900px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) scale(1.02)`
+      el.style.transform = `perspective(900px) rotateX(${rx.toFixed(
+        2,
+      )}deg) rotateY(${ry.toFixed(2)}deg) scale(1.02)`
     })
   }
 
@@ -102,7 +115,10 @@ export function ProjectDetailEmotionAttractor() {
   const sculptures = useMemo<Sculpture[]>(
     () => [
       { src: "/projects/emotion-attractor/renders/mind-led-upward-spiral.png", alt: "Mind-Led Upward Spiral" },
-      { src: "/projects/emotion-attractor/renders/reactive-flux-exhaustion-to-ascent.png", alt: "Reactive Flux: Exhaustion to Ascent" },
+      {
+        src: "/projects/emotion-attractor/renders/reactive-flux-exhaustion-to-ascent.png",
+        alt: "Reactive Flux: Exhaustion to Ascent",
+      },
       { src: "/projects/emotion-attractor/renders/social-breathing-oasis.png", alt: "Social Breathing Oasis" },
     ],
     [],
@@ -126,32 +142,46 @@ export function ProjectDetailEmotionAttractor() {
     [],
   )
 
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const { onMouseMove, onMouseLeave } = useTiltHandlers()
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
+  // Video
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const videoWrapRef = useRef<HTMLDivElement | null>(null)
   const shouldPlayRef = useRef(false)
+  const [muted, setMuted] = useState(true)
 
-  // ✅ Autoplay only when visible (works inside modal scroll container)
+  // ✅ Autoplay only when visible inside modal scroll container; loop; no controls.
   useEffect(() => {
     const wrap = videoWrapRef.current
     const video = videoRef.current
     if (!wrap || !video) return
 
-    video.muted = true
     video.playsInline = true
+    video.loop = true
 
-    const attemptPlay = () => {
+    const attemptPlay = async () => {
       const v = videoRef.current
       if (!v) return
       if (!shouldPlayRef.current) return
-      v.muted = true
-      const p = v.play()
-      if (p && typeof p.catch === "function") p.catch(() => {})
+
+      try {
+        await v.play()
+      } catch {
+        // If autoplay fails (usually because sound), force mute and try again
+        v.muted = true
+        setMuted(true)
+        try {
+          await v.play()
+        } catch {
+          // ignore
+        }
+      }
     }
 
-    const onCanPlay = () => attemptPlay()
+    const onCanPlay = () => {
+      if (shouldPlayRef.current) void attemptPlay()
+    }
     video.addEventListener("canplay", onCanPlay)
 
     const root = getScrollParent(wrap)
@@ -159,10 +189,11 @@ export function ProjectDetailEmotionAttractor() {
       (entries) => {
         const entry = entries[0]
         if (!entry) return
+
         const visible = entry.isIntersecting && entry.intersectionRatio >= 0.15
         shouldPlayRef.current = visible
 
-        if (visible) attemptPlay()
+        if (visible) void attemptPlay()
         else video.pause()
       },
       {
@@ -175,9 +206,10 @@ export function ProjectDetailEmotionAttractor() {
     obs.observe(wrap)
 
     const onVis = () => {
-      if (!videoRef.current) return
-      if (document.hidden) videoRef.current.pause()
-      else if (shouldPlayRef.current) attemptPlay()
+      const v = videoRef.current
+      if (!v) return
+      if (document.hidden) v.pause()
+      else if (shouldPlayRef.current) void attemptPlay()
     }
     document.addEventListener("visibilitychange", onVis)
 
@@ -188,21 +220,21 @@ export function ProjectDetailEmotionAttractor() {
     }
   }, [])
 
-  // Lightbox keyboard controls.
+  // Keep actual element muted in sync with state.
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    v.muted = muted
+  }, [muted])
+
+  // Lightbox keyboard controls
   useEffect(() => {
     if (lightboxIndex === null) return
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setLightboxIndex(null)
-        return
-      }
-      if (e.key === "ArrowLeft") {
-        setLightboxIndex((i) => (i === null ? 0 : (i - 1 + sculptures.length) % sculptures.length))
-      }
-      if (e.key === "ArrowRight") {
-        setLightboxIndex((i) => (i === null ? 0 : (i + 1) % sculptures.length))
-      }
+      if (e.key === "Escape") setLightboxIndex(null)
+      if (e.key === "ArrowLeft") setLightboxIndex((i) => (i === null ? 0 : (i - 1 + sculptures.length) % sculptures.length))
+      if (e.key === "ArrowRight") setLightboxIndex((i) => (i === null ? 0 : (i + 1) % sculptures.length))
     }
 
     window.addEventListener("keydown", onKeyDown)
@@ -220,11 +252,10 @@ export function ProjectDetailEmotionAttractor() {
             Geometry of the Soul — from diary text to a strange-attractor sculpture
           </h2>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            Emotion Attractor started as a personal experiment: we feel emotional currents every day, but they’re hard to
-            see while you’re inside them. It feels like chaos — until you zoom out far enough to see the shape. Modern
-            language models can turn meaning into vectors, so I asked: can a daily diary become a trajectory through a
-            semantic space — a geometric trace of how I change over time? Each day becomes a point; the path between days
-            becomes a curve; and the curve becomes a sculpture.
+            Emotion Attractor started as a personal experiment: we feel emotional currents every day, but they’re hard to see while you’re
+            inside them. It feels like chaos — until you zoom out far enough to see the shape. Modern language models can turn meaning into
+            vectors, so I asked: can a daily diary become a trajectory through a semantic space — a geometric trace of how I change over time?
+            Each day becomes a point; the path between days becomes a curve; and the curve becomes a sculpture.
           </p>
         </div>
 
@@ -248,15 +279,14 @@ export function ProjectDetailEmotionAttractor() {
             What this project is
           </h3>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            I built an Android diary app (Java) where I logged daily experiences and emotional state. Each entry was sent
-            through a sentence-embedding model (Python/TensorFlow), mapped into a high-dimensional semantic space, and then
-            projected down into 3D so the trajectory could be seen. Connecting the points reveals loops, spirals, and
-            knots — moments of getting stuck, recovering, repeating patterns, or breaking into a new direction.
+            I built an Android diary app (Java) where I logged daily experiences and emotional state. Each entry was sent through a
+            sentence-embedding model (Python/TensorFlow), mapped into a high-dimensional semantic space, and then projected down into 3D so the
+            trajectory could be seen. Connecting the points reveals loops, spirals, and knots — moments of getting stuck, recovering, repeating
+            patterns, or breaking into a new direction.
           </p>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            From there I used symbolic regression to fit compact equations that reproduce the curve. Those equations became
-            a generative recipe for the final artwork: attractor-like forms rendered as sculptural objects, each representing
-            a different chapter.
+            From there I used symbolic regression to fit compact equations that reproduce the curve. Those equations became a generative recipe
+            for the final artwork: attractor-like forms rendered as sculptural objects, each representing a different chapter.
           </p>
         </div>
 
@@ -303,30 +333,59 @@ export function ProjectDetailEmotionAttractor() {
           </div>
         </div>
 
-        {/* ✅ Video section stays EXACTLY like your original nice vertical card (no forced aspect-video). */}
+        {/* ✅ Video section (restored portrait look, NO black bars, autoplay-on-scroll, loop, no controls, only mute toggle) */}
         <div id="video" className="space-y-4">
           <h3 className="text-xl font-semibold" style={{ color: "#1a1a1a" }}>
             Video — 120 days of emotional geometry + music chapters
           </h3>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            This animation shows the sculpture evolving across ~120 days. The soundtrack shifts with chapters of my life,
-            guided by listening history.
+            This animation shows the sculpture evolving across ~120 days. The soundtrack shifts with chapters of my life, guided by listening
+            history.
           </p>
 
-          <div ref={videoWrapRef} className="relative overflow-hidden bg-white" style={MEDIA_CARD_STYLE}>
-            <div className="absolute inset-0 pointer-events-none" style={INNER_GLOW_STYLE} />
-            <video
-              ref={videoRef}
-              src="/videos/emotion-attractor/output_audio.mp4"
-              poster="/emotion-attractor-composite.png"
-              muted
-              preload="metadata"
-              playsInline
-              controls
-              // you can uncomment loop if you want continuous playback while visible
-              // loop
-              className="w-full h-auto block"
-            />
+          {/* If you want it smaller on the page, change max-w value */}
+          <div className="mx-auto max-w-[720px]">
+            <div ref={videoWrapRef} className="relative overflow-hidden bg-white" style={MEDIA_CARD_STYLE}>
+              <div className="absolute inset-0 pointer-events-none" style={INNER_GLOW_STYLE} />
+
+              {/* pointer-events-none prevents click-to-pause on the video element */}
+              <video
+                ref={videoRef}
+                src="/videos/emotion-attractor/output_audio.mp4"
+                poster="/emotion-attractor-composite.png"
+                preload="metadata"
+                playsInline
+                // state controls muted:
+                muted={muted}
+                // IMPORTANT: keep portrait card (no forced aspect ratio)
+                className="w-full h-auto block pointer-events-none"
+              />
+
+              {/* The only control */}
+              <button
+                type="button"
+                onClick={() => {
+                  setMuted((m) => !m)
+                  // if user unmutes, that counts as interaction; try to keep playing with sound
+                  const v = videoRef.current
+                  if (v && shouldPlayRef.current) {
+                    const p = v.play()
+                    if (p && typeof p.catch === "function") p.catch(() => {})
+                  }
+                }}
+                className="absolute bottom-3 right-3 w-11 h-11 flex items-center justify-center"
+                style={{
+                  borderRadius: 12,
+                  backgroundColor: "rgba(26, 26, 26, 0.86)",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  boxShadow: "0 10px 22px rgba(0,0,0,0.35)",
+                }}
+                aria-label={muted ? "Unmute" : "Mute"}
+                title={muted ? "Unmute" : "Mute"}
+              >
+                {muted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
+              </button>
+            </div>
           </div>
 
           <p className="text-sm" style={{ color: "#6a6a6a" }}>
@@ -335,7 +394,7 @@ export function ProjectDetailEmotionAttractor() {
           </p>
         </div>
 
-        {/* ✅ Sculpture section stays the SAME layout as before */}
+        {/* ✅ Sculpture renders section stays exactly as before */}
         <div id="gallery" className="space-y-4">
           <h3 className="text-xl font-semibold" style={{ color: "#1a1a1a" }}>
             Sculpture renders
@@ -387,7 +446,7 @@ export function ProjectDetailEmotionAttractor() {
             ))}
           </div>
 
-          {/* ✅ Lightbox now has LEFT DESCRIPTION PANEL (only when clicked) */}
+          {/* ✅ Lightbox with left description panel ONLY when clicked */}
           {lightboxIndex !== null ? (
             <div
               className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8"
@@ -409,7 +468,6 @@ export function ProjectDetailEmotionAttractor() {
                 <X className="w-6 h-6 text-white" />
               </button>
 
-              {/* Arrow buttons (optional but nice) */}
               <button
                 type="button"
                 onClick={(e) => {
@@ -425,6 +483,7 @@ export function ProjectDetailEmotionAttractor() {
               >
                 <ChevronLeft className="w-6 h-6 text-white" />
               </button>
+
               <button
                 type="button"
                 onClick={(e) => {
@@ -443,7 +502,6 @@ export function ProjectDetailEmotionAttractor() {
 
               <div className="relative w-full max-w-6xl" onClick={(e) => e.stopPropagation()}>
                 <div className="grid md:grid-cols-[360px_1fr] gap-5 items-start">
-                  {/* Left description */}
                   <div
                     className="border-2 border-black bg-[#F7F3E9] p-4 md:p-5"
                     style={{
@@ -465,7 +523,6 @@ export function ProjectDetailEmotionAttractor() {
                       Tip: use ←/→ to navigate, Esc to close.
                     </div>
 
-                    {/* Mobile nav buttons */}
                     <div className="mt-4 flex md:hidden gap-2">
                       <button
                         type="button"
@@ -486,7 +543,6 @@ export function ProjectDetailEmotionAttractor() {
                     </div>
                   </div>
 
-                  {/* Right image */}
                   <div className="relative w-full">
                     <div className="relative w-full h-[78vh] overflow-hidden bg-black" style={MEDIA_CARD_STYLE}>
                       <Image
@@ -510,9 +566,9 @@ export function ProjectDetailEmotionAttractor() {
             Interactive modeling
           </h3>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            Beyond the static sculpture, the learned flow model lets you “probe” the space: adjust emotional axes and see
-            how the model responds, or release a particle and watch the predicted path evolve. It’s a playful way to explore
-            recurring loops, transitions, and stability in a personal emotional landscape.
+            Beyond the static sculpture, the learned flow model lets you “probe” the space: adjust emotional axes and see how the model responds,
+            or release a particle and watch the predicted path evolve. It’s a playful way to explore recurring loops, transitions, and stability in
+            a personal emotional landscape.
           </p>
         </div>
       </div>
