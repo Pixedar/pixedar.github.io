@@ -71,7 +71,7 @@ export default function PortfolioPage() {
           {/* Social Icons */}
           <div className="flex items-center justify-center gap-4 mb-6">
             <a
-              href="https://linkedin.com"
+              href="https://www.linkedin.com/in/pixedar/"
               target="_blank"
               rel="noopener noreferrer"
               className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
@@ -83,7 +83,7 @@ export default function PortfolioPage() {
               <Linkedin className="w-5 h-5" style={{ color: "#1a1a1a" }} />
             </a>
             <a
-              href="https://github.com"
+              href="https://github.com/Pixedar"
               target="_blank"
               rel="noopener noreferrer"
               className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
@@ -95,7 +95,7 @@ export default function PortfolioPage() {
               <Github className="w-5 h-5" style={{ color: "#1a1a1a" }} />
             </a>
             <a
-              href="https://archive.org"
+              href="https://zenodo.org/records/18200415"
               target="_blank"
               rel="noopener noreferrer"
               className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
