@@ -388,10 +388,7 @@ export function ProjectDetailEmotionAttractor() {
             </div>
           </div>
 
-          <p className="text-sm" style={{ color: "#6a6a6a" }}>
-            To enable playback, copy your file to:{" "}
-            <span className="font-mono">public/videos/emotion-attractor/output_audio.mp4</span>
-          </p>
+
         </div>
 
         {/* ✅ Sculpture renders section stays exactly as before */}
