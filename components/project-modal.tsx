@@ -45,13 +45,17 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
     }
   }, [project])
 
-  if (!project) return null
-
-  const heroType = project.heroMediaType ?? project.mediaType
-  const heroSrc = project.heroMedia ?? project.media
+  // IMPORTANT: keep hook order stable across renders.
+  // This component is mounted even when `project` is null, so we must not
+  // conditionally skip hooks before returning.
+  const heroType = (project?.heroMediaType ?? project?.mediaType ?? "image") as
+    | "image"
+    | "video"
+    | "youtube"
+  const heroSrc = project?.heroMedia ?? project?.media ?? ""
 
   const youtubeEmbedSrc = useMemo(() => {
-    if (heroType !== "youtube") return ""
+    if (heroType !== "youtube" || !heroSrc) return ""
     const id = heroSrc
     const params = new URLSearchParams({
       autoplay: "1",
@@ -65,6 +69,8 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
     })
     return `https://www.youtube.com/embed/${id}?${params.toString()}`
   }, [heroSrc, heroType])
+
+  if (!project) return null
 
   return (
     <div
