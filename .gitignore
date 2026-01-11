@@ -25,3 +25,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+/public/videos/emotion-attractor/output_audio_oryginal.mp4
+/public/videos/emotion-attractor/desktop.ini
