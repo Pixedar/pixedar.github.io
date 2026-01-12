@@ -38,6 +38,8 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
 
   const isEmotionAttractor = project.title === "Emotion Attractor"
   const isBrainInformationFlow = project.title === "Brain Information Flow Research"
+  const isSelfAwareness = project.title === "Self-Awareness in Cognitive Systems"
+
 
   return (
     <div
@@ -131,6 +133,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
 
                 {isEmotionAttractor ? <ProjectDetailEmotionAttractor /> : null}
                 {isBrainInformationFlow ? <ProjectDetailBrainInformationFlow /> : null}
+                {isSelfAwareness ? <ProjectDetailSelfAwareness /> : null}
               </>
             ) : (
               <>
