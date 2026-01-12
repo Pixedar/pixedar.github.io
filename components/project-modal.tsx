@@ -126,7 +126,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
         {/* Bottom Section - Content */}
         <div className="relative bg-[#F2EFE9] px-8 py-12 md:px-16 md:py-16">
           <div className="max-w-4xl mx-auto">
-            {(isEmotionAttractor || isBrainInformationFlow) ? (
+            {(isEmotionAttractor || isBrainInformationFlow || isSelfAwareness) ? (
               <>
                 {/* Project Title */}
                 <h1 className="text-5xl md:text-7xl font-bold mb-8 text-balance" style={{ color: "#1a1a1a" }}>
