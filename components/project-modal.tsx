@@ -6,7 +6,7 @@ import { X } from "lucide-react"
 
 import { ProjectDetailEmotionAttractor } from "@/components/project-detail-emotion-attractor"
 import { ProjectDetailBrainInformationFlow } from "@/components/project-detail-brain-information-flow"
-import { ProjectDetailSelfAwareness } from "@/components/ProjectDetailSelfAwarenessw"
+import { ProjectDetailSelfAwareness } from "@/components/ProjectDetailSelfAwareness"
 
 
 interface Project {
