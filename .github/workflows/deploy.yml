@@ -43,6 +43,17 @@ jobs:
       - name: Disable Jekyll
         run: touch out/.nojekyll
 
+      - name: Inspect export size
+        run: |
+          echo "medium.json size:"
+          wc -c public/data/medium.json || true
+      
+          echo "out folder total:"
+          du -sh out || true
+      
+          echo "largest files in out:"
+          (cd out && du -ah . | sort -hr | head -n 30) || true
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -58,3 +69,5 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 1800000
