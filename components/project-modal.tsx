@@ -38,9 +38,11 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
 
   if (!project) return null
 
-  const isEmotionAttractor = project.title === "Emotion Attractor"
-  const isBrainInformationFlow = project.title === "Brain Information Flow Research"
-  const isSelfAwareness = project.title === "Self-Awareness in Cognitive Systems"
+  // Prefer stable identifiers over string matching.
+  // Title-based checks are fragile (small copy changes can break the routing).
+  const isEmotionAttractor = project.id === 1
+  const isBrainInformationFlow = project.id === 2
+  const isSelfAwareness = project.id === 3
 
 
   return (

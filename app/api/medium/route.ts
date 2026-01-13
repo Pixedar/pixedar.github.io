@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import { XMLParser } from "fast-xml-parser"
 
 function stripHtml(html: string): string {
   return html
@@ -12,6 +11,25 @@ function stripHtml(html: string): string {
 
 function firstImgSrc(html: string): string | null {
   const m = html.match(/<img[^>]+src="([^"]+)"/i)
+  return m?.[1] ?? null
+}
+
+function escRe(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+function tag(itemXml: string, tagName: string): string {
+  const re = new RegExp(`<${escRe(tagName)}[^>]*>([\\s\\S]*?)<\\/${escRe(tagName)}>` , "i")
+  const m = itemXml.match(re)
+  if (!m) return ""
+  let v = (m[1] ?? "").trim()
+  v = v.replace(/^<!\[CDATA\[/, "").replace(/\]\]>$/, "")
+  return v.trim()
+}
+
+function attr(itemXml: string, tagName: string, attrName: string): string | null {
+  const re = new RegExp(`<${escRe(tagName)}[^>]*${escRe(attrName)}="([^"]+)"[^>]*\\/?>`, "i")
+  const m = itemXml.match(re)
   return m?.[1] ?? null
 }
 
@@ -43,31 +61,39 @@ export async function GET(req: Request) {
   }
 
   const xml = await res.text()
-  const parser = new XMLParser({
-    ignoreAttributes: false,
-    attributeNamePrefix: "",
-  })
 
-  const data = parser.parse(xml)
-  const itemsRaw = data?.rss?.channel?.item ?? []
-  const items = (Array.isArray(itemsRaw) ? itemsRaw : [itemsRaw]).map((it: any) => {
-    const html = it["content:encoded"] ?? it.description ?? ""
+  // Regex-based parsing (works on GitHub Pages builds without extra deps).
+  const items: Array<{
+    title: string
+    link: string
+    pubDate: string | null
+    author: string | null
+    thumbnail: string | null
+    snippet: string | null
+  }> = []
+
+  const itemRe = /<item>([\s\S]*?)<\/item>/gi
+  let m: RegExpExecArray | null
+  while ((m = itemRe.exec(xml))) {
+    const itemXml = m[1]
+    const title = tag(itemXml, "title")
+    const link = tag(itemXml, "link") || tag(itemXml, "guid")
+    const pubDate = tag(itemXml, "pubDate") || null
+    const author = tag(itemXml, "dc:creator") || null
+
+    const html = tag(itemXml, "content:encoded") || tag(itemXml, "description") || ""
     const snippet = html ? stripHtml(html).slice(0, 200) : null
+
     const thumbnail =
-      it["media:thumbnail"]?.url ??
-      it["media:content"]?.url ??
-      firstImgSrc(html) ??
+      attr(itemXml, "media:thumbnail", "url") ||
+      attr(itemXml, "media:content", "url") ||
+      firstImgSrc(html) ||
       null
 
-    return {
-      title: it.title ?? "",
-      link: it.link ?? "",
-      pubDate: it.pubDate ?? null,
-      author: it["dc:creator"] ?? null,
-      thumbnail,
-      snippet,
+    if (title && link) {
+      items.push({ title, link, pubDate, author, thumbnail, snippet })
     }
-  })
+  }
 
   return NextResponse.json({ items })
 }
