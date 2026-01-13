@@ -18,6 +18,11 @@ const nextConfig = {
   basePath,
   assetPrefix: basePath,
 
+  // Make basePath available to client code (useful for static exports on GitHub Pages)
+  env: {
+    NEXT_PUBLIC_BASE_PATH: basePath,
+  },
+
   typescript: {
     ignoreBuildErrors: true,
   },
