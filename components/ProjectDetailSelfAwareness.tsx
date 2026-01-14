@@ -217,40 +217,6 @@ export function ProjectDetailSelfAwareness() {
       </div>
 
       {/* Meta */}
-      <div className="grid md:grid-cols-2 gap-8 mt-12">
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
-            Role
-          </h3>
-          <p className="text-lg" style={{ color: "#1a1a1a" }}>
-            Lead Designer & Developer
-          </p>
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
-            Year
-          </h3>
-          <p className="text-lg" style={{ color: "#1a1a1a" }}>
-            2024
-          </p>
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
-            Technologies
-          </h3>
-          <p className="text-lg" style={{ color: "#1a1a1a" }}>
-            Next.js, React, TypeScript
-          </p>
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
-            Status
-          </h3>
-          <p className="text-lg" style={{ color: "#1a1a1a" }}>
-            Research & Development
-          </p>
-        </div>
-      </div>
-    </div>
+
   )
 }
