@@ -1,0 +1,28 @@
+{
+  "items": [
+    {
+      "title": "Part 1: Inside the Loop — Decoding the Mystery of Self‑Awareness in Cognitive Systems",
+      "link": "https://medium.com/@pixedar/part-1-inside-the-loop-decoding-the-mystery-of-self-awareness-in-cognitive-systems-1e2e1716abe7",
+      "pubDate": null,
+      "author": "Wiktor Tomasik",
+      "thumbnail": null,
+      "snippet": "A practical exploration of self-awareness as a feedback loop: perception → prediction → evaluation → adaptation"
+    },
+    {
+      "title": "Part 2: Reinforcement Learning Within the AI's Mind",
+      "link": "https://medium.com/@pixedar/part-2-reinforcement-learning-within-the-ais-mind-c2d0f22a458f",
+      "pubDate": null,
+      "author": "Wiktor Tomasik",
+      "thumbnail": null,
+      "snippet": "How internal reward signals, curiosity, and memory shape an agent that learns about itself"
+    },
+    {
+      "title": "Part 3: Seeing the World Inside",
+      "link": "https://medium.com/@pixedar/part-3-seeing-the-world-inside-398ffc9db3ac",
+      "pubDate": null,
+      "author": "Wiktor Tomasik",
+      "thumbnail": null,
+      "snippet": "From raw sensations to a world-model — and the moment a system begins to reflect"
+    }
+  ]
+}

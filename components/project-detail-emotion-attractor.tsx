@@ -498,50 +498,17 @@ export function ProjectDetailEmotionAttractor() {
               </button>
 
               <div className="relative w-full max-w-6xl" onClick={(e) => e.stopPropagation()}>
-                <div className="grid md:grid-cols-[360px_1fr] gap-5 items-start">
-                  <div
-                    className="border-2 border-black bg-[#F7F3E9] p-4 md:p-5"
-                    style={{
-                      borderRadius: 10,
-                      boxShadow: "0 14px 30px rgba(0,0,0,0.35)",
-                    }}
-                  >
-                    <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>
-                      Chapter
-                    </div>
-                    <div className="mt-1 text-lg font-semibold" style={{ color: "#1a1a1a" }}>
-                      {chapters[lightboxIndex]?.title ?? sculptures[lightboxIndex].alt}
-                    </div>
-                    <div className="mt-2 text-sm leading-relaxed" style={{ color: "#4a4a4a" }}>
-                      {chapters[lightboxIndex]?.body ?? ""}
-                    </div>
-
-                    <div className="mt-4 text-xs" style={{ color: "#6a6a6a" }}>
-                      Tip: use ←/→ to navigate, Esc to close.
-                    </div>
-
-                    <div className="mt-4 flex md:hidden gap-2">
-                      <button
-                        type="button"
-                        onClick={goPrev}
-                        className="flex-1 border-2 border-black bg-white px-3 py-2"
-                        style={{ borderRadius: 10 }}
-                      >
-                        Prev
-                      </button>
-                      <button
-                        type="button"
-                        onClick={goNext}
-                        className="flex-1 border-2 border-black bg-white px-3 py-2"
-                        style={{ borderRadius: 10 }}
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="relative w-full">
-                    <div className="relative w-full h-[78vh] overflow-hidden bg-black" style={MEDIA_CARD_STYLE}>
+                {/* ✅ Single fullscreen card: image + chapter description in ONE unified container */}
+                <div
+                  className="overflow-hidden border-2 border-black bg-[#F7F3E9]"
+                  style={{
+                    borderRadius: 14,
+                    boxShadow: "0 18px 44px rgba(0,0,0,0.45)",
+                  }}
+                >
+                  <div className="grid md:grid-cols-[1fr_420px]">
+                    {/* Image */}
+                    <div className="relative w-full h-[72vh] md:h-[78vh] bg-black">
                       <Image
                         src={sculptures[lightboxIndex].src}
                         alt={sculptures[lightboxIndex].alt}
@@ -550,6 +517,42 @@ export function ProjectDetailEmotionAttractor() {
                         className="object-contain"
                         priority
                       />
+                    </div>
+
+                    {/* Chapter (right side) */}
+                    <div className="p-5 md:p-6 border-t-2 md:border-t-0 md:border-l-2 border-black/20">
+                      <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>
+                        Chapter
+                      </div>
+                      <div className="mt-1 text-xl md:text-2xl font-semibold text-balance" style={{ color: "#1a1a1a" }}>
+                        {chapters[lightboxIndex]?.title ?? sculptures[lightboxIndex].alt}
+                      </div>
+                      <div className="mt-3 text-base leading-relaxed" style={{ color: "#4a4a4a" }}>
+                        {chapters[lightboxIndex]?.body ?? ""}
+                      </div>
+
+                      <div className="mt-6 text-xs" style={{ color: "#6a6a6a" }}>
+                        Tip: use ←/→ to navigate, Esc to close.
+                      </div>
+
+                      <div className="mt-5 flex md:hidden gap-2">
+                        <button
+                          type="button"
+                          onClick={goPrev}
+                          className="flex-1 border-2 border-black bg-white px-3 py-2"
+                          style={{ borderRadius: 10 }}
+                        >
+                          Prev
+                        </button>
+                        <button
+                          type="button"
+                          onClick={goNext}
+                          className="flex-1 border-2 border-black bg-white px-3 py-2"
+                          style={{ borderRadius: 10 }}
+                        >
+                          Next
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
