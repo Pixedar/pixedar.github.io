@@ -500,7 +500,7 @@ export function ProjectDetailEmotionAttractor() {
               <div className="relative w-full max-w-6xl" onClick={(e) => e.stopPropagation()}>
                 {/* ✅ Single fullscreen card: image + chapter description in ONE unified container */}
                 <div
-                  className="overflow-hidden border-2 border-black bg-[#F7F3E9]"
+                  className="overflow-hidden border-2 border-black bg-[#a6a09f]"
                   style={{
                     borderRadius: 14,
                     boxShadow: "0 15px 38px rgba(0,0,0,0.38)",
@@ -508,7 +508,7 @@ export function ProjectDetailEmotionAttractor() {
                 >
                   <div className="grid md:grid-cols-[1fr_420px]">
                     {/* Image */}
-                    <div className="relative w-full h-[72vh] md:h-[78vh] bg-[#F7F3E9]">
+                    <div className="relative w-full h-[72vh] md:h-[78vh] bg-[#a6a09f]">
                       <Image
                         src={sculptures[lightboxIndex].src}
                         alt={sculptures[lightboxIndex].alt}
@@ -520,7 +520,7 @@ export function ProjectDetailEmotionAttractor() {
                     </div>
 
                     {/* Chapter (right side) */}
-                    <div className="p-5 md:p-6 bg-[#b8a69e]">
+                    <div className="p-5 md:p-6 bg-[#a6a09f]">
                       <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>
                         Chapter
                       </div>
