@@ -1,0 +1,13 @@
+Put supplementary files here if you want to mirror them on GitHub Pages.
+
+Suggested paths:
+- public/projects/brain-information-flow/supplementary/brainflow_mdn_k6_hq_model.pt
+- public/projects/brain-information-flow/supplementary/derived_dataset.zip
+- public/projects/brain-information-flow/supplementary/supplementary_movie.mp4
+
+Notes:
+- The model file (1.1 MB) is small enough to host in the repo if you want.
+- The dataset and movie are large; it is usually better to keep them hosted on Zenodo.
+
+Canonical Zenodo record:
+https://zenodo.org/records/18200415

@@ -216,7 +216,31 @@ export function ProjectDetailSelfAwareness() {
         })}
       </div>
 
-      {/* Meta */}
-
+      {/* Meta (kept minimal — no placeholder role cards) */}
+      <div className="mt-10 grid md:grid-cols-2 gap-6">
+        <div
+          className="border-2 border-black p-5 bg-[#F7F3E9]"
+          style={{ borderRadius: 12 }}
+        >
+          <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>
+            Format
+          </div>
+          <div className="mt-2 text-base" style={{ color: "#1a1a1a" }}>
+            3-part research series + interactive prototypes
+          </div>
+        </div>
+        <div
+          className="border-2 border-black p-5 bg-[#F7F3E9]"
+          style={{ borderRadius: 12 }}
+        >
+          <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>
+            Themes
+          </div>
+          <div className="mt-2 text-base" style={{ color: "#1a1a1a" }}>
+            Feedback loops • internal world-models • reinforcement learning
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

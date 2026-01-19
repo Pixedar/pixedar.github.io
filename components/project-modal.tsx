@@ -7,6 +7,7 @@ import { X } from "lucide-react"
 import { ProjectDetailEmotionAttractor } from "@/components/project-detail-emotion-attractor"
 import { ProjectDetailBrainInformationFlow } from "@/components/project-detail-brain-information-flow"
 import { ProjectDetailSelfAwareness } from "@/components/ProjectDetailSelfAwareness"
+import { ProjectDetailGenerativeWallpaper } from "@/components/project-detail-generative-wallpaper"
 
 
 interface Project {
@@ -43,6 +44,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
   const isEmotionAttractor = project.id === 1
   const isBrainInformationFlow = project.id === 2
   const isSelfAwareness = project.id === 3
+  const isGenerativeWallpaper = project.id === 4
 
 
   return (
@@ -128,7 +130,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
         {/* Bottom Section - Content */}
         <div className="relative bg-[#F2EFE9] px-8 py-12 md:px-16 md:py-16">
           <div className="max-w-4xl mx-auto">
-            {(isEmotionAttractor || isBrainInformationFlow || isSelfAwareness) ? (
+            {(isEmotionAttractor || isBrainInformationFlow || isSelfAwareness || isGenerativeWallpaper) ? (
               <>
                 {/* Project Title */}
                 <h1 className="text-5xl md:text-7xl font-bold mb-8 text-balance" style={{ color: "#1a1a1a" }}>
@@ -138,6 +140,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
                 {isEmotionAttractor ? <ProjectDetailEmotionAttractor /> : null}
                 {isBrainInformationFlow ? <ProjectDetailBrainInformationFlow /> : null}
                 {isSelfAwareness ? <ProjectDetailSelfAwareness /> : null}
+                {isGenerativeWallpaper ? <ProjectDetailGenerativeWallpaper /> : null}
               </>
             ) : (
               <>
