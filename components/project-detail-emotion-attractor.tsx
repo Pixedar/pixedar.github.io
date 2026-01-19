@@ -22,10 +22,10 @@ const MEDIA_CARD_STYLE: React.CSSProperties = {
   borderRadius: 10, // slightly rounded (less than homepage)
   border: "2px solid rgba(0,0,0,0.9)",
   boxShadow: [
-    "0 6px 12px rgba(0, 0, 0, 0.22)",
-    "0 16px 32px rgba(0, 0, 0, 0.28)",
-    "0 32px 64px rgba(0, 0, 0, 0.34)",
-    "0 64px 128px rgba(0, 0, 0, 0.38)",
+    "0 5px 10px rgba(0, 0, 0, 0.19)",
+    "0 14px 28px rgba(0, 0, 0, 0.24)",
+    "0 27px 54px rgba(0, 0, 0, 0.29)",
+    "0 54px 108px rgba(0, 0, 0, 0.32)",
   ].join(", "),
   willChange: "transform",
 }
@@ -378,7 +378,7 @@ export function ProjectDetailEmotionAttractor() {
                   borderRadius: 12,
                   backgroundColor: "rgba(26, 26, 26, 0.86)",
                   border: "1px solid rgba(255,255,255,0.22)",
-                  boxShadow: "0 10px 22px rgba(0,0,0,0.35)",
+                  boxShadow: "0 8px 18px rgba(0,0,0,0.30)",
                 }}
                 aria-label={muted ? "Unmute" : "Mute"}
                 title={muted ? "Unmute" : "Mute"}
@@ -503,12 +503,12 @@ export function ProjectDetailEmotionAttractor() {
                   className="overflow-hidden border-2 border-black bg-[#F7F3E9]"
                   style={{
                     borderRadius: 14,
-                    boxShadow: "0 18px 44px rgba(0,0,0,0.45)",
+                    boxShadow: "0 15px 38px rgba(0,0,0,0.38)",
                   }}
                 >
                   <div className="grid md:grid-cols-[1fr_420px]">
                     {/* Image */}
-                    <div className="relative w-full h-[72vh] md:h-[78vh] bg-black">
+                    <div className="relative w-full h-[72vh] md:h-[78vh] bg-[#F7F3E9]">
                       <Image
                         src={sculptures[lightboxIndex].src}
                         alt={sculptures[lightboxIndex].alt}
@@ -520,7 +520,7 @@ export function ProjectDetailEmotionAttractor() {
                     </div>
 
                     {/* Chapter (right side) */}
-                    <div className="p-5 md:p-6 border-t-2 md:border-t-0 md:border-l-2 border-black/20">
+                    <div className="p-5 md:p-6 bg-[#b8a69e]">
                       <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>
                         Chapter
                       </div>
