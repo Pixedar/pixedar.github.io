@@ -149,7 +149,7 @@ export function ProjectDetailGenerativeWallpaper() {
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
             This app generates a new wallpaper by combining real‑time signals: current top Google search results, local weather conditions
             (temperature, pressure, humidity and rapid changes), moon phase, stock market movement, astronomy/planet alignment hints, and
-            other public data feeds. The goal is not “random art” — it’s an image that reflects what’s happening right now.
+            other public data feeds. Each wallpaper becomes a visual snapshot of the day — shaped by the strongest signals and the most meaningful anomalies.
           </p>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
             A custom attention/anomaly scoring layer filters the noise (for example: if search is flooded with football, the system looks for
@@ -157,7 +157,7 @@ export function ProjectDetailGenerativeWallpaper() {
             model to produce the final wallpaper.
           </p>
           <p className="text-sm" style={{ color: "#6a6a6a" }}>
-            Fun detail: the seed can be driven by quantum random noise (for playful “the universe picked this” vibes — not the main feature).
+            Optional: the seed can be sourced from quantum random noise — a playful touch that makes each generation feel a little more "alive".
           </p>
         </div>
 
