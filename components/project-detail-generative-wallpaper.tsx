@@ -63,7 +63,7 @@ export function ProjectDetailGenerativeWallpaper() {
   const wallpapers = useMemo<Wallpaper[]>(
     () => [
       {
-        src: "/projects/generative-wallpaper/gallery/wallpaper.jpg",
+        src: "/projects/generative-wallpaper/gallery/wallpaper-01.jpg",
         title: "Pressure Break",
         why: "A fast local pressure drop + rising humidity signaled an incoming front. The model treated it as an outlier worth visual emphasis.",
         representation:
