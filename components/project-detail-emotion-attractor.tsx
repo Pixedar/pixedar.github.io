@@ -699,15 +699,15 @@ export function ProjectDetailEmotionAttractor() {
         {/* ✅ 120-day video (moved to the end, below Sculpture renders) */}
         <div id="video" className="space-y-4">
           <h3 className="text-2xl md:text-[26px] font-semibold" style={{ color: "#1a1a1a" }}>
-            Sculpture evolution — 120 days + music chapters
+            Sculpture evolution — chapters synced with spotify music
           </h3>
 
           <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-start">
             {/* Description (right on desktop, under title on mobile) */}
             <div className="w-full md:flex-[1_1_44%] order-1 md:order-2">
               <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-                This animation shows the sculpture evolving across ~120 days. The soundtrack shifts with chapters of my life, guided by
-                listening history.
+                This animation shows the sculpture evolving across ~120 days. The soundtrack shifts with chapters of my life, synced by
+                my listening history of spotify.
               </p>
             </div>
 
