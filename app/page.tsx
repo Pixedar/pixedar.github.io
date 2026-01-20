@@ -47,44 +47,95 @@ const projects = [
 export default function PortfolioPage() {
   const [selectedProject, setSelectedProject] = useState<(typeof projects)[0] | null>(null)
 
-  // Preload the Emotion Attractor video in the background (helps on slower connections)
+  // Preload Emotion Attractor videos in the background (helps on slower connections)
   useEffect(() => {
     // Only run in the browser
     if (typeof window === "undefined") return
 
     const basePath = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, "")
-    const videoUrl = `${basePath}/videos/emotion-attractor/output_audio.mp4`
+    // ✅ Priority preload: Android app walkthrough first, then the 120-day chapter video.
+    const appVideoUrl = `${basePath}/videos/emotion-attractor/app_demo.mp4`
+    const chapterVideoUrl = `${basePath}/videos/emotion-attractor/output_audio.mp4`
 
     // Respect data-saver mode when available
     const anyNav = navigator as any
     const conn = anyNav?.connection
     if (conn?.saveData) return
 
-    const v = document.createElement("video")
-    v.src = videoUrl
-    v.preload = "auto"
-    v.muted = true
-    v.playsInline = true
-    v.setAttribute("aria-hidden", "true")
-    v.style.position = "fixed"
-    v.style.width = "1px"
-    v.style.height = "1px"
-    v.style.opacity = "0"
-    v.style.pointerEvents = "none"
-    document.body.appendChild(v)
+    const preloaded: HTMLVideoElement[] = []
+    let startedChapter = false
+    let fallbackTimer: number | null = null
 
-    try {
-      v.load()
-    } catch {
-      // ignore
+    const makeHiddenPreload = (src: string) => {
+      const v = document.createElement("video")
+      v.src = src
+      v.preload = "auto"
+      v.muted = true
+      v.playsInline = true
+      v.setAttribute("aria-hidden", "true")
+      v.style.position = "fixed"
+      v.style.width = "1px"
+      v.style.height = "1px"
+      v.style.opacity = "0"
+      v.style.pointerEvents = "none"
+      document.body.appendChild(v)
+      preloaded.push(v)
+      try {
+        v.load()
+      } catch {
+        // ignore
+      }
+      return v
     }
+
+    const startChapterPreload = () => {
+      if (startedChapter) return
+      startedChapter = true
+      makeHiddenPreload(chapterVideoUrl)
+    }
+
+    const startAppPreload = () => {
+      const v1 = makeHiddenPreload(appVideoUrl)
+
+      // When the first video has started loading, begin the second.
+      const onReady = () => startChapterPreload()
+      v1.addEventListener("loadeddata", onReady, { once: true })
+      v1.addEventListener("error", onReady, { once: true })
+
+      // Fallback in case events never fire.
+      fallbackTimer = window.setTimeout(() => startChapterPreload(), 1800)
+    }
+
+    // Let the homepage paint first, then start background preloads.
+    const anyWin = window as any
+    const cancelToken =
+      typeof anyWin.requestIdleCallback === "function"
+        ? anyWin.requestIdleCallback(startAppPreload)
+        : window.setTimeout(startAppPreload, 350)
 
     return () => {
       try {
-        v.src = ""
-        v.remove()
+        if (typeof anyWin.cancelIdleCallback === "function") anyWin.cancelIdleCallback(cancelToken)
+        else clearTimeout(cancelToken)
       } catch {
         // ignore
+      }
+
+      if (fallbackTimer !== null) {
+        try {
+          clearTimeout(fallbackTimer)
+        } catch {
+          // ignore
+        }
+      }
+
+      for (const v of preloaded) {
+        try {
+          v.src = ""
+          v.remove()
+        } catch {
+          // ignore
+        }
       }
     }
   }, [])
