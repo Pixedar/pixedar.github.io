@@ -145,13 +145,86 @@ export function ProjectDetailEmotionAttractor() {
   const { onMouseMove, onMouseLeave } = useTiltHandlers()
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
-  // Video
+  // Videos
+  const appVideoRef = useRef<HTMLVideoElement | null>(null)
+  const appVideoWrapRef = useRef<HTMLDivElement | null>(null)
+  const shouldPlayAppVideoRef = useRef(false)
+  const [appMuted, setAppMuted] = useState(true)
+
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const videoWrapRef = useRef<HTMLDivElement | null>(null)
   const shouldPlayRef = useRef(false)
   const [muted, setMuted] = useState(true)
 
   // ✅ Autoplay only when visible inside modal scroll container; loop; no controls.
+  useEffect(() => {
+    const wrap = appVideoWrapRef.current
+    const video = appVideoRef.current
+    if (!wrap || !video) return
+
+    video.playsInline = true
+    video.loop = true
+
+    const attemptPlay = async () => {
+      const v = appVideoRef.current
+      if (!v) return
+      if (!shouldPlayAppVideoRef.current) return
+
+      try {
+        await v.play()
+      } catch {
+        // If autoplay fails (usually because sound), force mute and try again
+        v.muted = true
+        setAppMuted(true)
+        try {
+          await v.play()
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    const onCanPlay = () => {
+      if (shouldPlayAppVideoRef.current) void attemptPlay()
+    }
+    video.addEventListener("canplay", onCanPlay)
+
+    const root = getScrollParent(wrap)
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        if (!entry) return
+
+        const visible = entry.isIntersecting && entry.intersectionRatio >= 0.15
+        shouldPlayAppVideoRef.current = visible
+
+        if (visible) void attemptPlay()
+        else video.pause()
+      },
+      {
+        root,
+        threshold: [0, 0.15, 0.3, 0.55, 0.8],
+        rootMargin: "0px 0px -10% 0px",
+      },
+    )
+
+    obs.observe(wrap)
+
+    const onVis = () => {
+      const v = appVideoRef.current
+      if (!v) return
+      if (document.hidden) v.pause()
+      else if (shouldPlayAppVideoRef.current) void attemptPlay()
+    }
+    document.addEventListener("visibilitychange", onVis)
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVis)
+      video.removeEventListener("canplay", onCanPlay)
+      obs.disconnect()
+    }
+  }, [])
+
   useEffect(() => {
     const wrap = videoWrapRef.current
     const video = videoRef.current
@@ -227,6 +300,12 @@ export function ProjectDetailEmotionAttractor() {
     v.muted = muted
   }, [muted])
 
+  useEffect(() => {
+    const v = appVideoRef.current
+    if (!v) return
+    v.muted = appMuted
+  }, [appMuted])
+
   // Lightbox keyboard controls
   useEffect(() => {
     if (lightboxIndex === null) return
@@ -260,13 +339,17 @@ export function ProjectDetailEmotionAttractor() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <PillLink href="#video">
+          <PillLink href="#app-video">
             <Music2 className="w-4 h-4" />
-            Watch the 120-day video
+            Watch the app video
           </PillLink>
           <PillLink href="#gallery">
             <Sparkles className="w-4 h-4" />
             View sculpture renders
+          </PillLink>
+          <PillLink href="#video">
+            <Music2 className="w-4 h-4" />
+            Watch the 120-day video
           </PillLink>
           <PillLink href="#" disabled>
             <Download className="w-4 h-4" />
@@ -323,9 +406,9 @@ export function ProjectDetailEmotionAttractor() {
             <ul className="list-disc pl-5 space-y-2" style={{ color: "#1a1a1a" }}>
               <li>Python + TensorFlow for embeddings and flow modeling</li>
               <li>AWS S3 for storing daily entries and generated artifacts</li>
-              <li>AWS Lambda for lightweight processing / orchestration</li>
-              <li>EC2 for heavier batch jobs (training, regression, rendering prep)</li>
-              <li>Android (Java) client for journaling + interaction</li>
+              <li>EC2 for heavier batch jobs (training, regression, rendering)</li>
+              <li>Android (Java) client for journaling + interactive exploration</li>
+              <li>LLM-based interpretation for trajectories and chapter summaries</li>
             </ul>
             <p className="text-sm mt-3" style={{ color: "#6a6a6a" }}>
               Note: the data was personal; the system was designed to keep the diary private while still enabling modeling.
@@ -333,42 +416,39 @@ export function ProjectDetailEmotionAttractor() {
           </div>
         </div>
 
-        {/* ✅ Video section (restored portrait look, NO black bars, autoplay-on-scroll, loop, no controls, only mute toggle) */}
-        <div id="video" className="space-y-4">
+        {/* ✅ Android app walkthrough video (same card style as the 120-day video) */}
+        <div id="app-video" className="space-y-4">
           <h3 className="text-xl font-semibold" style={{ color: "#1a1a1a" }}>
-            Video — 120 days of emotional geometry + music chapters
+            Video — Android app walkthrough (diary clusters, trajectories, attractors)
           </h3>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            This animation shows the sculpture evolving across ~120 days. The soundtrack shifts with chapters of my life, guided by listening
-            history.
+            This demo shows the Android app that turns diary entries into a 3D emotional map. Days cluster into recurring states, connect into a
+            trajectory through time, and reveal stable “attractor” regions in the flow field. You can color the space by speed or valence,
+            interactively probe dimensions like stress escalation, then release the probe and get an LLM interpretation of the path.
+            High-quality chapter sculptures are generated by automatically segmenting the trajectory — and each chapter is distilled into its
+            own symbolic equation.
           </p>
 
-          {/* If you want it smaller on the page, change max-w value */}
           <div className="mx-auto max-w-[720px]">
-            <div ref={videoWrapRef} className="relative overflow-hidden bg-white" style={MEDIA_CARD_STYLE}>
+            <div ref={appVideoWrapRef} className="relative overflow-hidden bg-white" style={MEDIA_CARD_STYLE}>
               <div className="absolute inset-0 pointer-events-none" style={INNER_GLOW_STYLE} />
 
-              {/* pointer-events-none prevents click-to-pause on the video element */}
               <video
-                ref={videoRef}
-                src="/videos/emotion-attractor/output_audio.mp4"
+                ref={appVideoRef}
+                src="/videos/emotion-attractor/app_demo.mp4"
                 poster="/emotion-attractor-composite.png"
                 preload="metadata"
                 playsInline
-                // state controls muted:
-                muted={muted}
-                // IMPORTANT: keep portrait card (no forced aspect ratio)
+                muted={appMuted}
                 className="w-full h-auto block pointer-events-none"
               />
 
-              {/* The only control */}
               <button
                 type="button"
                 onClick={() => {
-                  setMuted((m) => !m)
-                  // if user unmutes, that counts as interaction; try to keep playing with sound
-                  const v = videoRef.current
-                  if (v && shouldPlayRef.current) {
+                  setAppMuted((m) => !m)
+                  const v = appVideoRef.current
+                  if (v && shouldPlayAppVideoRef.current) {
                     const p = v.play()
                     if (p && typeof p.catch === "function") p.catch(() => {})
                   }
@@ -380,15 +460,13 @@ export function ProjectDetailEmotionAttractor() {
                   border: "1px solid rgba(255,255,255,0.22)",
                   boxShadow: "0 8px 18px rgba(0,0,0,0.30)",
                 }}
-                aria-label={muted ? "Unmute" : "Mute"}
-                title={muted ? "Unmute" : "Mute"}
+                aria-label={appMuted ? "Unmute" : "Mute"}
+                title={appMuted ? "Unmute" : "Mute"}
               >
-                {muted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
+                {appMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
               </button>
             </div>
           </div>
-
-
         </div>
 
         {/* ✅ Sculpture renders section stays exactly as before */}
@@ -561,15 +639,54 @@ export function ProjectDetailEmotionAttractor() {
           ) : null}
         </div>
 
-        <div className="space-y-4">
+        {/* ✅ 120-day video (moved to the end, below Sculpture renders) */}
+        <div id="video" className="space-y-4">
           <h3 className="text-xl font-semibold" style={{ color: "#1a1a1a" }}>
-            Interactive modeling
+            Video — 120 days of emotional geometry + music chapters
           </h3>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            Beyond the static sculpture, the learned flow model lets you “probe” the space: adjust emotional axes and see how the model responds,
-            or release a particle and watch the predicted path evolve. It’s a playful way to explore recurring loops, transitions, and stability in
-            a personal emotional landscape.
+            This animation shows the sculpture evolving across ~120 days. The soundtrack shifts with chapters of my life, guided by listening
+            history.
           </p>
+
+          <div className="mx-auto max-w-[720px]">
+            <div ref={videoWrapRef} className="relative overflow-hidden bg-white" style={MEDIA_CARD_STYLE}>
+              <div className="absolute inset-0 pointer-events-none" style={INNER_GLOW_STYLE} />
+
+              <video
+                ref={videoRef}
+                src="/videos/emotion-attractor/output_audio.mp4"
+                poster="/emotion-attractor-composite.png"
+                preload="metadata"
+                playsInline
+                muted={muted}
+                className="w-full h-auto block pointer-events-none"
+              />
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMuted((m) => !m)
+                  const v = videoRef.current
+                  if (v && shouldPlayRef.current) {
+                    const p = v.play()
+                    if (p && typeof p.catch === "function") p.catch(() => {})
+                  }
+                }}
+                className="absolute bottom-3 right-3 w-11 h-11 flex items-center justify-center"
+                style={{
+                  borderRadius: 12,
+                  backgroundColor: "rgba(26, 26, 26, 0.86)",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  boxShadow: "0 8px 18px rgba(0,0,0,0.30)",
+                }}
+                aria-label={muted ? "Unmute" : "Mute"}
+                title={muted ? "Unmute" : "Mute"}
+              >
+                {muted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
