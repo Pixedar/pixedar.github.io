@@ -384,10 +384,11 @@ export function ProjectDetailEmotionAttractor() {
             What this project is
           </h3>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            I built an Android diary app (Java) where I logged daily experiences and emotional state. Each entry was sent through a
-            sentence-embedding model (Python/TensorFlow), mapped into a high-dimensional semantic space, and then projected down into 3D so the
-            trajectory could be seen. Connecting the points reveals loops, spirals, and knots — moments of getting stuck, recovering, repeating
-            patterns, or breaking into a new direction.
+            I built an Android diary app where I logged daily experiences and emotional state. Each entry was sent through a
+            sentence-embedding model, mapped into a high-dimensional semantic space, and then projected down into 3D so the
+            trajectory could be seen. Connecting the points reveals the underlying shape of emotional experience over time.
+            What makes this especially useful is that the structure becomes something a person can engage with directly.
+            Instead of reading past entries one by one, you can see where you tend to drift, where you circle, and where change actually happens — and then play with the flow itself, experimenting with how different emotional pressures might gently push you out of a loop or pull you toward a more stable state.
           </p>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
             From there I used symbolic regression to fit compact equations that reproduce the curve. Those equations became a generative recipe
