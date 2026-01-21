@@ -35,6 +35,7 @@ export function ProjectDetailSelfAwareness() {
   const [items, setItems] = useState<MediumItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [trajectoryOpen, setTrajectoryOpen] = useState(false)
 
   // The 3 posts you want to show (and the order you want).
   const pinned = useMemo(
@@ -225,13 +226,16 @@ export function ProjectDetailSelfAwareness() {
           In a parallel research track, I built a custom interpretability pipeline for a LLaMA-style transformer to track how token representations evolve across layers via the residual stream. By visualizing layer-by-layer “semantic trajectories,” I observed how competing features and meanings pull representations in different directions over depth. I then fed these internal trajectory signals back into training as an auxiliary objective, encouraging a form of model-level self-monitoring (proto-metacognition). This work is ongoing and currently in active research.
         </p>
 
-        <div
-          className="rounded-2xl overflow-hidden"
+        <button
+          type="button"
+          onClick={() => setTrajectoryOpen(true)}
+          className="rounded-2xl overflow-hidden text-left"
           style={{
             border: "2px solid rgba(0,0,0,0.85)",
             boxShadow: "0 10px 24px rgba(0,0,0,0.18)",
             backgroundColor: "rgba(255,255,255,0.35)",
           }}
+          aria-label="Open residual stream trajectory image full-screen"
         >
           <div className="relative w-full aspect-[16/9]">
             <Image
@@ -241,13 +245,54 @@ export function ProjectDetailSelfAwareness() {
               className="object-cover"
             />
           </div>
-        </div>
-
-        <p className="text-xs" style={{ color: "#6a6a6a" }}>
-          Tip: replace the placeholder image in <span className="font-mono">public/projects/self-awareness/residual-stream-trajectories.png</span>.
-        </p>
+        </button>
       </div>
 
+      {/* Fullscreen trajectory image */}
+      {trajectoryOpen ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.72)" }}
+          onClick={() => setTrajectoryOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-5xl rounded-2xl overflow-hidden"
+            style={{
+              border: "2px solid rgba(255,255,255,0.26)",
+              boxShadow: "0 18px 50px rgba(0,0,0,0.55)",
+              backgroundColor: "rgba(255,255,255,0.08)",
+              backdropFilter: "blur(10px)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setTrajectoryOpen(false)}
+              className="absolute top-3 right-3 px-3 py-1.5 text-sm font-semibold"
+              style={{
+                borderRadius: 999,
+                backgroundColor: "rgba(0,0,0,0.65)",
+                border: "1px solid rgba(255,255,255,0.22)",
+                color: "white",
+              }}
+              aria-label="Close"
+            >
+              Close
+            </button>
+
+            <div className="relative w-full aspect-[16/9]">
+              <Image
+                src="/projects/self-awareness/residual-stream-trajectories.png"
+                alt="Residual stream semantic trajectories across transformer layers"
+                fill
+                sizes="100vw"
+                priority
+                className="object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
 
     </div>
   )
