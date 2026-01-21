@@ -703,7 +703,7 @@ export function ProjectDetailEmotionAttractor() {
             </div>
           </div>
 
-        </div>   {/* ✅ THIS closing div was missing */}
+        </div>
       ) : null}
 
         </div>
