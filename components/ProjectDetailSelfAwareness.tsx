@@ -36,6 +36,7 @@ export function ProjectDetailSelfAwareness() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [trajectoryOpen, setTrajectoryOpen] = useState(false)
+  const [trajectoryZoomed, setTrajectoryZoomed] = useState(false)
 
   // The 3 posts you want to show (and the order you want).
   const pinned = useMemo(
@@ -228,7 +229,7 @@ export function ProjectDetailSelfAwareness() {
 
         <button
           type="button"
-          onClick={() => setTrajectoryOpen(true)}
+          onClick={() => { setTrajectoryZoomed(false); setTrajectoryOpen(true) }}
           className="block w-full rounded-2xl overflow-hidden text-left"
           style={{
             border: "2px solid rgba(0,0,0,0.85)",
@@ -256,7 +257,7 @@ export function ProjectDetailSelfAwareness() {
           onClick={() => setTrajectoryOpen(false)}
         >
           <div
-            className="relative w-full max-w-5xl rounded-2xl overflow-hidden"
+            className="relative w-[96vw] max-w-none rounded-2xl overflow-hidden"
             style={{
               border: "2px solid rgba(255,255,255,0.26)",
               boxShadow: "0 18px 50px rgba(0,0,0,0.55)",
@@ -265,29 +266,55 @@ export function ProjectDetailSelfAwareness() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              type="button"
-              onClick={() => setTrajectoryOpen(false)}
-              className="absolute top-3 right-3 px-3 py-1.5 text-sm font-semibold"
-              style={{
-                borderRadius: 999,
-                backgroundColor: "rgba(0,0,0,0.65)",
-                border: "1px solid rgba(255,255,255,0.22)",
-                color: "white",
-              }}
-              aria-label="Close"
-            >
-              Close
-            </button>
+            <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+              <button
+                type="button"
+                onClick={() => setTrajectoryZoomed((z) => !z)}
+                className="px-3 py-1.5 text-sm font-semibold"
+                style={{
+                  borderRadius: 999,
+                  backgroundColor: "rgba(0,0,0,0.65)",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  color: "white",
+                }}
+                aria-label={trajectoryZoomed ? "Fit to screen" : "Zoom"}
+                title={trajectoryZoomed ? "Fit to screen" : "Zoom"}
+              >
+                {trajectoryZoomed ? "Fit" : "Zoom"}
+              </button>
 
-            <div className="relative w-full aspect-[16/9]">
+              <button
+                type="button"
+                onClick={() => setTrajectoryOpen(false)}
+                className="px-3 py-1.5 text-sm font-semibold"
+                style={{
+                  borderRadius: 999,
+                  backgroundColor: "rgba(0,0,0,0.65)",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  color: "white",
+                }}
+                aria-label="Close"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="max-h-[88vh] overflow-auto">
               <Image
                 src="/projects/self-awareness/residual-stream-trajectories.png"
                 alt="Residual stream semantic trajectories across transformer layers"
-                fill
-                sizes="100vw"
+                width={2400}
+                height={1350}
                 priority
-                className="object-contain"
+                className={
+                  (trajectoryZoomed
+                    ? "w-[160%] md:w-[170%] lg:w-[180%]"
+                    : "w-full") +
+                  " h-auto block"
+                }
+                style={{
+                  maxWidth: trajectoryZoomed ? "none" : "100%",
+                }}
               />
             </div>
           </div>
