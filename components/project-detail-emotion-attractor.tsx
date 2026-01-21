@@ -585,124 +585,127 @@ export function ProjectDetailEmotionAttractor() {
             ))}
           </div>
 
-          {/* ✅ Lightbox with left description panel ONLY when clicked */}
-          {lightboxIndex !== null ? (
-            <div
-              className="fixed inset-0 z-[60] overflow-y-auto"
-              style={{ backgroundColor: "rgba(0,0,0,0.82)" }}
-              onClick={() => setLightboxIndex(null)}
-              role="dialog"
-              aria-modal="true"
-            >
-              {/* Keep controls visible even when the modal content scrolls on mobile */}
-              <button
-                type="button"
-                onClick={() => setLightboxIndex(null)}
-                className="fixed top-6 right-6 md:top-8 md:right-8 w-12 h-12 rounded-full flex items-center justify-center"
-                style={{
-                  backgroundColor: "rgba(26, 26, 26, 0.9)",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                }}
-                aria-label="Close image"
-              >
-                <X className="w-6 h-6 text-white" />
-              </button>
+      {/* ✅ Lightbox with left description panel ONLY when clicked */}
+      {lightboxIndex !== null ? (
+        <div
+          className="fixed inset-0 z-[60] overflow-y-auto"
+          style={{ backgroundColor: "rgba(0,0,0,0.82)" }}
+          onClick={() => setLightboxIndex(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          {/* Keep controls visible even when the modal content scrolls on mobile */}
+          <button
+            type="button"
+            onClick={() => setLightboxIndex(null)}
+            className="fixed top-6 right-6 md:top-8 md:right-8 w-12 h-12 rounded-full flex items-center justify-center"
+            style={{
+              backgroundColor: "rgba(26, 26, 26, 0.9)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+            }}
+            aria-label="Close image"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
 
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  goPrev()
-                }}
-                className="hidden md:flex fixed left-6 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center"
-                style={{
-                  backgroundColor: "rgba(26, 26, 26, 0.85)",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                }}
-                aria-label="Previous"
-              >
-                <ChevronLeft className="w-6 h-6 text-white" />
-              </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              goPrev()
+            }}
+            className="hidden md:flex fixed left-6 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center"
+            style={{
+              backgroundColor: "rgba(26, 26, 26, 0.85)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+            }}
+            aria-label="Previous"
+          >
+            <ChevronLeft className="w-6 h-6 text-white" />
+          </button>
 
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  goNext()
-                }}
-                className="hidden md:flex fixed right-20 md:right-24 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center"
-                style={{
-                  backgroundColor: "rgba(26, 26, 26, 0.85)",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                }}
-                aria-label="Next"
-              >
-                <ChevronRight className="w-6 h-6 text-white" />
-              </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              goNext()
+            }}
+            className="hidden md:flex fixed right-20 md:right-24 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center"
+            style={{
+              backgroundColor: "rgba(26, 26, 26, 0.85)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+            }}
+            aria-label="Next"
+          >
+            <ChevronRight className="w-6 h-6 text-white" />
+          </button>
 
-              <div className="min-h-full flex items-start md:items-center justify-center p-4 md:p-8">
-                <div className="relative w-full max-w-6xl" onClick={(e) => e.stopPropagation()}>
-                  {/* ✅ Single fullscreen card: image + chapter description in ONE unified container */}
-                  <div
-                    className="overflow-hidden border-2 border-black bg-[#a6a09f]"
-                    style={{
-                      borderRadius: 14,
-                      boxShadow: "0 15px 38px rgba(0,0,0,0.38)",
-                    }}
-                  >
-                    <div className="grid md:grid-cols-[1fr_420px]">
-                    {/* Image */}
-                    <div className="relative w-full h-[72vh] md:h-[78vh] bg-[#a6a09f]">
-                      <Image
-                        src={sculptures[lightboxIndex].src}
-                        alt={sculptures[lightboxIndex].alt}
-                        fill
-                        sizes="100vw"
-                        className="object-contain"
-                        priority
-                      />
+          <div className="min-h-full flex items-start md:items-center justify-center p-4 md:p-8">
+            <div className="relative w-full max-w-6xl" onClick={(e) => e.stopPropagation()}>
+              {/* ✅ Single fullscreen card: image + chapter description in ONE unified container */}
+              <div
+                className="overflow-hidden border-2 border-black bg-[#a6a09f]"
+                style={{
+                  borderRadius: 14,
+                  boxShadow: "0 15px 38px rgba(0,0,0,0.38)",
+                }}
+              >
+                <div className="grid md:grid-cols-[1fr_420px]">
+                  {/* Image */}
+                  <div className="relative w-full h-[72vh] md:h-[78vh] bg-[#a6a09f]">
+                    <Image
+                      src={sculptures[lightboxIndex].src}
+                      alt={sculptures[lightboxIndex].alt}
+                      fill
+                      sizes="100vw"
+                      className="object-contain"
+                      priority
+                    />
+                  </div>
+
+                  {/* Chapter (right side) */}
+                  <div className="p-5 md:p-6 bg-[#a6a09f]">
+                    <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>
+                      Chapter
+                    </div>
+                    <div className="mt-1 text-xl md:text-2xl font-semibold text-balance" style={{ color: "#1a1a1a" }}>
+                      {chapters[lightboxIndex]?.title ?? sculptures[lightboxIndex].alt}
+                    </div>
+                    <div className="mt-3 text-base leading-relaxed" style={{ color: "#4a4a4a" }}>
+                      {chapters[lightboxIndex]?.body ?? ""}
                     </div>
 
-                    {/* Chapter (right side) */}
-                    <div className="p-5 md:p-6 bg-[#a6a09f]">
-                      <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>
-                        Chapter
-                      </div>
-                      <div className="mt-1 text-xl md:text-2xl font-semibold text-balance" style={{ color: "#1a1a1a" }}>
-                        {chapters[lightboxIndex]?.title ?? sculptures[lightboxIndex].alt}
-                      </div>
-                      <div className="mt-3 text-base leading-relaxed" style={{ color: "#4a4a4a" }}>
-                        {chapters[lightboxIndex]?.body ?? ""}
-                      </div>
+                    <div className="mt-6 text-xs" style={{ color: "#6a6a6a" }}>
+                      Tip: use ←/→ to navigate, Esc to close.
+                    </div>
 
-                      <div className="mt-6 text-xs" style={{ color: "#6a6a6a" }}>
-                        Tip: use ←/→ to navigate, Esc to close.
-                      </div>
-
-                      <div className="mt-5 flex md:hidden gap-2">
-                        <button
-                          type="button"
-                          onClick={goPrev}
-                          className="flex-1 border-2 border-black bg-white px-3 py-2"
-                          style={{ borderRadius: 10 }}
-                        >
-                          Prev
-                        </button>
-                        <button
-                          type="button"
-                          onClick={goNext}
-                          className="flex-1 border-2 border-black bg-white px-3 py-2"
-                          style={{ borderRadius: 10 }}
-                        >
-                          Next
-                        </button>
-                      </div>
+                    <div className="mt-5 flex md:hidden gap-2">
+                      <button
+                        type="button"
+                        onClick={goPrev}
+                        className="flex-1 border-2 border-black bg-white px-3 py-2"
+                        style={{ borderRadius: 10 }}
+                      >
+                        Prev
+                      </button>
+                      <button
+                        type="button"
+                        onClick={goNext}
+                        className="flex-1 border-2 border-black bg-white px-3 py-2"
+                        style={{ borderRadius: 10 }}
+                      >
+                        Next
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          ) : null}
+          </div>
+
+        </div>   {/* ✅ THIS closing div was missing */}
+      ) : null}
+
         </div>
 
         {/* ✅ 120-day video (moved to the end, below Sculpture renders) */}
