@@ -47,7 +47,8 @@ const projects = [
 export default function PortfolioPage() {
   const [selectedProject, setSelectedProject] = useState<(typeof projects)[0] | null>(null)
 
-  // Preload Emotion Attractor videos in the background (helps on slower connections)
+  // Preload Emotion Attractor videos in the background (helps on desktop).
+  // ⚠️ These MP4s can be large, so we avoid preloading on mobile / slow networks.
   useEffect(() => {
     // Only run in the browser
     if (typeof window === "undefined") return
@@ -57,10 +58,22 @@ export default function PortfolioPage() {
     const appVideoUrl = `${basePath}/videos/emotion-attractor/app_demo.mp4`
     const chapterVideoUrl = `${basePath}/videos/emotion-attractor/output_audio.mp4`
 
-    // Respect data-saver mode when available
+    // Respect data-saver mode + slow connections when available
     const anyNav = navigator as any
     const conn = anyNav?.connection
+
+    const isLikelyMobile =
+      window.matchMedia?.("(max-width: 768px)")?.matches ||
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+
+    // If the browser gives us network hints, only preload on fast connections.
+    const effectiveType: string | undefined = conn?.effectiveType
+    const downlink: number | undefined = conn?.downlink
+
     if (conn?.saveData) return
+    if (isLikelyMobile) return
+    if (effectiveType && effectiveType !== "4g") return
+    if (typeof downlink === "number" && downlink < 6) return
 
     const preloaded: HTMLVideoElement[] = []
     let startedChapter = false

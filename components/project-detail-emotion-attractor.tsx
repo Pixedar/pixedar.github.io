@@ -587,16 +587,17 @@ export function ProjectDetailEmotionAttractor() {
           {/* ✅ Lightbox with left description panel ONLY when clicked */}
           {lightboxIndex !== null ? (
             <div
-              className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8"
+              className="fixed inset-0 z-[60] overflow-y-auto"
               style={{ backgroundColor: "rgba(0,0,0,0.82)" }}
               onClick={() => setLightboxIndex(null)}
               role="dialog"
               aria-modal="true"
             >
+              {/* Keep controls visible even when the modal content scrolls on mobile */}
               <button
                 type="button"
                 onClick={() => setLightboxIndex(null)}
-                className="absolute top-6 right-6 md:top-8 md:right-8 w-12 h-12 rounded-full flex items-center justify-center"
+                className="fixed top-6 right-6 md:top-8 md:right-8 w-12 h-12 rounded-full flex items-center justify-center"
                 style={{
                   backgroundColor: "rgba(26, 26, 26, 0.9)",
                   border: "1px solid rgba(255, 255, 255, 0.2)",
@@ -612,7 +613,7 @@ export function ProjectDetailEmotionAttractor() {
                   e.stopPropagation()
                   goPrev()
                 }}
-                className="hidden md:flex absolute left-6 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center"
+                className="hidden md:flex fixed left-6 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center"
                 style={{
                   backgroundColor: "rgba(26, 26, 26, 0.85)",
                   border: "1px solid rgba(255, 255, 255, 0.2)",
@@ -628,7 +629,7 @@ export function ProjectDetailEmotionAttractor() {
                   e.stopPropagation()
                   goNext()
                 }}
-                className="hidden md:flex absolute right-20 md:right-24 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center"
+                className="hidden md:flex fixed right-20 md:right-24 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center"
                 style={{
                   backgroundColor: "rgba(26, 26, 26, 0.85)",
                   border: "1px solid rgba(255, 255, 255, 0.2)",
@@ -638,16 +639,17 @@ export function ProjectDetailEmotionAttractor() {
                 <ChevronRight className="w-6 h-6 text-white" />
               </button>
 
-              <div className="relative w-full max-w-6xl" onClick={(e) => e.stopPropagation()}>
-                {/* ✅ Single fullscreen card: image + chapter description in ONE unified container */}
-                <div
-                  className="overflow-hidden border-2 border-black bg-[#a6a09f]"
-                  style={{
-                    borderRadius: 14,
-                    boxShadow: "0 15px 38px rgba(0,0,0,0.38)",
-                  }}
-                >
-                  <div className="grid md:grid-cols-[1fr_420px]">
+              <div className="min-h-full flex items-start md:items-center justify-center p-4 md:p-8">
+                <div className="relative w-full max-w-6xl" onClick={(e) => e.stopPropagation()}>
+                  {/* ✅ Single fullscreen card: image + chapter description in ONE unified container */}
+                  <div
+                    className="overflow-hidden border-2 border-black bg-[#a6a09f]"
+                    style={{
+                      borderRadius: 14,
+                      boxShadow: "0 15px 38px rgba(0,0,0,0.38)",
+                    }}
+                  >
+                    <div className="grid md:grid-cols-[1fr_420px]">
                     {/* Image */}
                     <div className="relative w-full h-[72vh] md:h-[78vh] bg-[#a6a09f]">
                       <Image
