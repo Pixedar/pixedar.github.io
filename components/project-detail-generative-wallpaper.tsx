@@ -64,57 +64,59 @@ export function ProjectDetailGenerativeWallpaper() {
     () => [
       {
         src: "/projects/generative-wallpaper/gallery/wallpaper-01.jpg",
-        title: "Pressure Break",
-        why: "A fast local pressure drop + rising humidity signaled an incoming front. The model treated it as an outlier worth visual emphasis.",
+        title: "Collapsing bubble and matrix reality",
+        why: "Environment impact\n" +
+            "The 'collapsing bubble' metaphor was chosen because the atmospheric pressure seems to be dropping quickly. Dropping atmospheric pressure allows air to rise upward typically sianaling cloudier, rainier conditions. The 'matrix realitv' phrase was chosen because quantum random number generators showed an unusual pattern, and some believe truly random data can reflect mysterious global events.",
         representation:
-          "Hard edges soften into foggy gradients — geometry ‘melts’ into mist as the atmosphere destabilizes.",
+          "The image metaphorically represents the concept of a \"collapsing bubble\" through the depiction of transparent and reflective orbs that seem fragile, suggesting impermanence and transition. The \"matrix reality\" is conveved by the intricate, interconnected network of golden structures, svmbolizing a complex, underlying framework that holds these bubbles in a suspended state, hinting at the interplay between chaos and order.",
         alternatePath:
-          "Could have focused on trending search topics instead, but weather was the strongest anomaly at generation time.",
+          "The chosen quantum seed path led to dynamic, chaotic imagery, contrasting with alternatives of stability, order, abstraction, and unpredictability. Each path uniquely manipulates pressure, style, and artist choice, impacting theme continuity. Through collapsing bubble visuals, the artist conveys fragility in the face of uncertainty and change.",
       },
       {
         src: "/projects/generative-wallpaper/gallery/wallpaper-02.jpg",
-        title: "Trend Surge",
-        why: "The search stream briefly concentrated around a single global event (spike + high novelty).",
+        title: "Locked door",
+        why: "A locked door precisely svmbolizes restriction and controlled access, reflectina the impact of covid restrictions, states of emergency",
         representation:
-          "A central luminous ‘headline’ motif pulls the composition inward, while peripheral symbols dissolve like background noise.",
+          "The locked door metaphorically represents a barrier or threshold to be crossed, adorned with beauty and mystery inviting exploration beyond the immediate while shrouded in natural vibrancy and the silent guardianship of the surrounding lush foliage",
         alternatePath:
-          "A market-first prompt was possible, but the news signal had higher salience and stronger cross-source agreement.",
+            "The algorithm's stages explore \"locked door\" and potential \"closed book\" themes, impacted by artist choice and quantum seeds. Each decision influences trend. environment and image, yielding diverse societal interpretations. Alternative paths reveal varying perspectives on restriction and secrecy. Artist examines restricted access in modern society creatively",
       },
       {
-        src: "/projects/generative-wallpaper/gallery/wallpaper-03.jpg",
-        title: "Cold Snap",
-        why: "Temperature deviated sharply from the recent 7‑day baseline.",
+        src: "/projects/generative-wallpaper/gallery/wallpaper-08.jpg",
+        title: "Broken clock",
+        why: "A broken clock symbolizes halted progress, suspended time, and unresolved conflict, reflecting ceasefire, tensions and uncertainty present in the listed geopolitical trends and dates.",
         representation:
-          "Crystalline structures and high-frequency detail appear — ‘frozen’ textures amplifying the sudden drop.",
+          "The shattered clock face represents the idea of time being fraamented and unreliable. The missing and disordered pieces svmbolize chaos and a loss of control, suagestina disruption in the flow of time and life's unpredictability",
         alternatePath:
-          "Could have leaned into moon phase imagery, but the thermal delta was the cleanest outlier.",
+          "The algorithm's \"broken clock\" theme symbolizes halted progress and geopolitical tension, contrasting with potentia alternatives like \"shattered glass\" for fragility or \"melting clock\" for transformation. Artist's choice directs these outcomes, ensuring varied yet interconnected reflections on qlobal dynamics. The artist shows us: \"Time's halt echoes geopolitical discord and change.'",
       },
       {
         src: "/projects/generative-wallpaper/gallery/wallpaper-04.jpg",
-        title: "Market Gravity",
-        why: "A notable index swing + volatility clustering made finance the dominant signal cluster.",
+        title: "Surrounded by clear sky",
+        why: "Environment impact: The 'surrounded by clear sky' phrase was chosen because it reflects the current weather conditions.",
         representation:
-          "A subtle grid emerges under the image, with curves bending like a price chart under tension.",
+          "The image metaphorically depicts the sky as a vibrant radiant portal amidst the darkness, suggesting transcendence and the boundless possibilities of the horizon beyond constraints",
         alternatePath:
-          "The system considered sports-heavy search results, but filtered them as ‘expected noise’ for that day.",
+          "Quantum-controlled seeds introduce variabilitv to image generation, influencina atmospheric outcomes. A 'clear sky' reflects serenity, while alternative seeds yield diverse narratives, like somber stormy settings. Interactions across algorithm stages maintain aesthetic coherence, merging unpredictability with artistic intent. Artist explores chance, influencing narrative depth. Embrace randomness to enrich visual storytellinq",
       },
       {
-        src: "/projects/generative-wallpaper/gallery/wallpaper-05.jpg",
+        src: "/projects/generative-wallpaper/gallery/wallpaper-10.jpg",
         title: "Moon Bias",
-        why: "Moon phase transition coincided with a calm signal landscape elsewhere.",
+        why: "cash and surrounded by broken clouds",
         representation:
-          "Arc highlights and crescent shadows steer the palette — a quiet composition with orbital rhythm.",
+          "The cash is represented by the structured, geometric shapes and lined patterns conveying wealth, stability, and control while the broken clouds are symbolized by fragmented abstract patches that suggest disruption, impermanence, and a barrier to clarity.",
         alternatePath:
-          "Could have used NASA imagery as reference, but the prompt favored abstract symbolism over literal space photography.",
+          "The chosen path emphasizes material economics via \"cash.\" contrasting with an alternative \"matrix reality\" rooted in philosophy. Quantum seeds further influence imagery, with volatility depicted through \"broken clouds,\" unlike the stable \"clear skies.\" This highlights quantum-driven creativity's variability and unpredictability\n" +
+            "\"Art mirrors chaotic market forces through creative unpredictability.'.",
       },
       {
         src: "/projects/generative-wallpaper/gallery/wallpaper-06.jpg",
-        title: "Alignment Day",
-        why: "Planetary/astronomy feeds hit a rare configuration marker, nudging the cosmic theme upward.",
+        title: "Gold record",
+        why: "Both Brad Pitt and Katy Perry are entertainment icons; a gold record uniquely symbolizes fame, achievement, and their collective impact in music and film.",
         representation:
-          "Radial symmetry and ‘tuned’ spacing — like a system snapping into harmonic alignment.",
+          "The image presents a harmonious blend of textures and patterns, with a central disc-like form adorned with intricate gold embellishments, svmbolizina the fusion of music's timeless beauty and the grandeur of achievement, akin to a gold record's representation of success in sound",
         alternatePath:
-          "The model could have prioritized local weather gradients, but astronomy scored higher on rarity.",
+          "The algorithm utilizes quantum seeds, combining artist choice to select paths like \"gold record,\" influencing image outcomes with fame associations. Alternatives like \"silk scarf\" suggest varied cultural narratives. This showcases how quantum variability enriches artistic creativity, exploring multiple possibilities. The artist emphasizes unpredictability's role in creative interpretation.",
       },
     ],
     [],
@@ -162,6 +164,10 @@ export function ProjectDetailGenerativeWallpaper() {
         </div>
 
         <div className="flex flex-wrap gap-3">
+          <PillLink href="#app-demo">
+            <Sparkles className="w-4 h-4" />
+            Watch Android demo
+          </PillLink>
           <PillLink href="#gallery">
             <Sparkles className="w-4 h-4" />
             View generated gallery
@@ -207,6 +213,42 @@ export function ProjectDetailGenerativeWallpaper() {
               <li>Signals: Google Search/Trends, weather API, NASA API, finance feeds, astronomy sources</li>
               <li>Custom attention + anomaly heuristics for prompt building</li>
             </ul>
+          </div>
+        </div>
+
+
+        {/* ✅ Android app demo (silent loop) */}
+        <div id="app-demo" className="space-y-4">
+          <h3 className="text-2xl md:text-[26px] font-semibold" style={{ color: "#1a1a1a" }}>
+            Android app demo — wallpaper gallery + explanations
+          </h3>
+
+          <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-start">
+            {/* Description (right on desktop, under title on mobile) */}
+            <div className="w-full md:flex-[1_1_44%] order-1 md:order-2">
+              <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
+                A quick walkthrough of the MetaMorph Android client: a scrollable grid of generated wallpapers, one-tap full-screen viewing, and
+                the metadata that explains the why behind each image — what signal triggered it, how that idea appears visually, and what
+                alternate algorithmic path the system could have taken at generation time.
+              </p>
+            </div>
+
+            {/* Video card */}
+            <div className="w-full md:flex-[0_0_56%] md:max-w-[56%] order-2 md:order-1 md:pr-2">
+              <div className="relative overflow-hidden bg-white" style={MEDIA_CARD_STYLE}>
+                <div className="absolute inset-0 pointer-events-none" style={INNER_GLOW_STYLE} />
+                <video
+                  src="/videos/metamorph/app_demo.mp4"
+                  poster="/abstract-generative-art-wallpaper.jpg"
+                  preload="metadata"
+                  playsInline
+                  autoPlay
+                  loop
+                  muted
+                  className="w-full h-auto block pointer-events-none"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -348,7 +390,7 @@ export function ProjectDetailGenerativeWallpaper() {
                         <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>
                           Why this was generated
                         </div>
-                        <div className="mt-2 text-sm leading-relaxed" style={{ color: "#4a4a4a" }}>
+                        <div className="mt-2 text-sm leading-relaxed" style={{ color: "#4a4a4a", whiteSpace: "pre-line" }}>
                           {wallpapers[lightboxIndex].why}
                         </div>
                       </div>
@@ -357,7 +399,7 @@ export function ProjectDetailGenerativeWallpaper() {
                         <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>
                           How it appears in the image
                         </div>
-                        <div className="mt-2 text-sm leading-relaxed" style={{ color: "#4a4a4a" }}>
+                        <div className="mt-2 text-sm leading-relaxed" style={{ color: "#4a4a4a", whiteSpace: "pre-line" }}>
                           {wallpapers[lightboxIndex].representation}
                         </div>
                       </div>
@@ -366,7 +408,7 @@ export function ProjectDetailGenerativeWallpaper() {
                         <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>
                           Alternate path considered
                         </div>
-                        <div className="mt-2 text-sm leading-relaxed" style={{ color: "#4a4a4a" }}>
+                        <div className="mt-2 text-sm leading-relaxed" style={{ color: "#4a4a4a", whiteSpace: "pre-line" }}>
                           {wallpapers[lightboxIndex].alternatePath}
                         </div>
                       </div>
