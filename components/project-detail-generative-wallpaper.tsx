@@ -101,8 +101,10 @@ export function ProjectDetailGenerativeWallpaper() {
       },
       {
         src: "/projects/generative-wallpaper/gallery/wallpaper-10.jpg",
-        title: "Moon Bias",
-        why: "cash and surrounded by broken clouds",
+        title: "Cash and surrounded by broken clouds",
+        why: "Environment impact:\n" +
+          "The 'cash' phrase was chosen because there was a strong shift in global markets.\n" +
+          "The 'surrounded by broken clouds' phrase was chosen because it reflects the current weather conditions",
         representation:
           "The cash is represented by the structured, geometric shapes and lined patterns conveying wealth, stability, and control while the broken clouds are symbolized by fragmented abstract patches that suggest disruption, impermanence, and a barrier to clarity.",
         alternatePath:
@@ -123,6 +125,12 @@ export function ProjectDetailGenerativeWallpaper() {
   )
 
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [alphaOpen, setAlphaOpen] = useState(false)
+
+  // Replace with your own Google Form embed link (works best with "?embedded=true")
+  const ALPHA_FORM_URL =
+    process.env.NEXT_PUBLIC_METAMORPH_ALPHA_FORM_URL ??
+    "https://docs.google.com/forms/d/e/REPLACE_ME/viewform?embedded=true"
 
   // Keyboard controls for lightbox
   useEffect(() => {
@@ -239,7 +247,7 @@ export function ProjectDetailGenerativeWallpaper() {
                 <div className="absolute inset-0 pointer-events-none" style={INNER_GLOW_STYLE} />
                 <video
                   src="/videos/metamorph/app_demo.mp4"
-                  poster="/abstract-generative-art-wallpaper.jpg"
+                  poster="/abstract-generative-art-wallpaper.png"
                   preload="metadata"
                   playsInline
                   autoPlay
@@ -439,6 +447,61 @@ export function ProjectDetailGenerativeWallpaper() {
                   </div>
                 </div>
               </div>
+            </div>
+          ) : null}
+        </div>
+
+        {/* ✅ Early alpha testing form */}
+        <div id="alpha" className="mt-12 space-y-4">
+          <h3 className="text-2xl md:text-[26px] font-semibold" style={{ color: "#1a1a1a" }}>
+            Early alpha testing
+          </h3>
+          <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
+            I’m collecting early testers for MetaMorph. If you want to join the private alpha, share your Android device model + email, or
+            report bugs / ideas — fill the short form below.
+          </p>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  window.open(ALPHA_FORM_URL.replace("embedded=true", ""), "_blank", "noopener,noreferrer")
+                } catch {
+                  // ignore
+                }
+              }}
+              className="border-2 border-black bg-white px-4 py-2 text-sm font-semibold"
+              style={{ borderRadius: 12, boxShadow: "0 10px 22px rgba(0,0,0,0.18)" }}
+            >
+              Open Google Form
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAlphaOpen((v) => !v)}
+              className="border-2 border-black bg-white px-4 py-2 text-sm font-semibold"
+              style={{ borderRadius: 12, boxShadow: "0 10px 22px rgba(0,0,0,0.18)" }}
+            >
+              {alphaOpen ? "Hide form" : "Show form"}
+            </button>
+          </div>
+
+          {alphaOpen ? (
+            <div
+              className="rounded-2xl overflow-hidden bg-white"
+              style={{
+                border: "2px solid rgba(0,0,0,0.85)",
+                boxShadow: "0 14px 34px rgba(0,0,0,0.22)",
+              }}
+            >
+              <iframe
+                src={ALPHA_FORM_URL}
+                title="MetaMorph Alpha Signup"
+                className="w-full"
+                style={{ height: 860, border: "none" }}
+                loading="lazy"
+              />
             </div>
           ) : null}
         </div>
