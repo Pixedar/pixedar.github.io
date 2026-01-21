@@ -798,7 +798,7 @@ export function ProjectDetailEmotionAttractor() {
           </h3>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
             If you’d like to join the first alpha wave for Emotion Attractor (or leave suggestions), this form lets you register interest.
-            I’m mainly measuring whether there’s enough demand to run a proper testing campaign.
+            I’m mainly measuring whether there’s enough demand to run a proper testing campaign. If there’s enough interest, I’ll start the first stage of alpha/beta testing.
           </p>
 
           <button
@@ -851,6 +851,11 @@ export function ProjectDetailEmotionAttractor() {
             </div>
           </div>
         ) : null}
+
+        {/* Subtle rights notice (Android app projects only) */}
+        <p className="mt-10 text-[10px] leading-snug text-black/40 text-center">
+          © 2026 Wiktor Tomasik. All rights reserved. For licensing/collaboration, contact me.
+        </p>
       </div>
     </div>
   )
