@@ -313,16 +313,17 @@ export function ProjectDetailGenerativeWallpaper() {
 
           {lightboxIndex !== null ? (
             <div
-              className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8"
+              className="fixed inset-0 z-[60] overflow-y-auto"
               style={{ backgroundColor: "rgba(0,0,0,0.82)" }}
               onClick={() => setLightboxIndex(null)}
               role="dialog"
               aria-modal="true"
             >
+              {/* Keep controls visible even when the modal content scrolls on mobile */}
               <button
                 type="button"
                 onClick={() => setLightboxIndex(null)}
-                className="absolute top-6 right-6 md:top-8 md:right-8 w-12 h-12 rounded-full flex items-center justify-center"
+                className="fixed top-6 right-6 md:top-8 md:right-8 w-12 h-12 rounded-full flex items-center justify-center"
                 style={{
                   backgroundColor: "rgba(26, 26, 26, 0.9)",
                   border: "1px solid rgba(255, 255, 255, 0.2)",
@@ -338,7 +339,7 @@ export function ProjectDetailGenerativeWallpaper() {
                   e.stopPropagation()
                   goPrev()
                 }}
-                className="hidden md:flex absolute left-6 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center"
+                className="hidden md:flex fixed left-6 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center"
                 style={{
                   backgroundColor: "rgba(26, 26, 26, 0.85)",
                   border: "1px solid rgba(255, 255, 255, 0.2)",
@@ -354,7 +355,7 @@ export function ProjectDetailGenerativeWallpaper() {
                   e.stopPropagation()
                   goNext()
                 }}
-                className="hidden md:flex absolute right-6 md:right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center"
+                className="hidden md:flex fixed right-6 md:right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full items-center justify-center"
                 style={{
                   backgroundColor: "rgba(26, 26, 26, 0.85)",
                   border: "1px solid rgba(255, 255, 255, 0.2)",
@@ -364,7 +365,8 @@ export function ProjectDetailGenerativeWallpaper() {
                 <ChevronRight className="w-6 h-6 text-white" />
               </button>
 
-              <div className="relative w-full max-w-6xl" onClick={(e) => e.stopPropagation()}>
+              <div className="min-h-full flex items-start md:items-center justify-center p-4 md:p-8">
+                <div className="relative w-full max-w-6xl" onClick={(e) => e.stopPropagation()}>
                 {/* Single unified card */}
                 <div
                   className="overflow-hidden border-2 border-black bg-[#F7F3E9]"
@@ -445,6 +447,7 @@ export function ProjectDetailGenerativeWallpaper() {
                       </div>
                     </div>
                   </div>
+                </div>
                 </div>
               </div>
             </div>
