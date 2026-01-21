@@ -90,8 +90,7 @@ export function ProjectDetailSelfAwareness() {
     <div className="mt-2">
       {/* Intro */}
       <p className="text-xl md:text-2xl leading-relaxed text-pretty mb-10" style={{ color: "#4a4a4a" }}>
-        A research series exploring self-awareness and consciousness within cognitive systems—bridging artificial and
-        natural intelligence through feedback loops, reinforcement learning, and internal world-models.
+        A 3-part experimental research series (published on Medium) exploring self-referential neural networks and internal world formation. Using reversed autoencoders, sensitivity maps, and internal reinforcement learning, I combine reconstruction objectives with exploration/divergence pressures—creating feedback loops that produce incomplete self-models and evolving internal “worlds.” The work bridges rigorous ML dynamics with visual, generative exploration, and is accompanied by a longer research manuscript currently under peer review.
       </p>
 
       <div className="flex items-end justify-between gap-4 mb-6">
@@ -216,31 +215,40 @@ export function ProjectDetailSelfAwareness() {
         })}
       </div>
 
-      {/* Meta (kept minimal — no placeholder role cards) */}
-      <div className="mt-10 grid md:grid-cols-2 gap-6">
+      
+      {/* LLM Metacognition section */}
+      <div className="mt-12 space-y-4">
+        <h2 className="text-2xl md:text-3xl font-semibold" style={{ color: "#1a1a1a" }}>
+          LLM Metacognition via Residual Stream Trajectories
+        </h2>
+        <p className="text-lg leading-relaxed text-pretty" style={{ color: "#4a4a4a" }}>
+          In a parallel research track, I built a custom interpretability pipeline for a LLaMA-style transformer to track how token representations evolve across layers via the residual stream. By visualizing layer-by-layer “semantic trajectories,” I observed how competing features and meanings pull representations in different directions over depth. I then fed these internal trajectory signals back into training as an auxiliary objective, encouraging a form of model-level self-monitoring (proto-metacognition). This work is ongoing and currently in active research.
+        </p>
+
         <div
-          className="border-2 border-black p-5 bg-[#F7F3E9]"
-          style={{ borderRadius: 12 }}
+          className="rounded-2xl overflow-hidden"
+          style={{
+            border: "2px solid rgba(0,0,0,0.85)",
+            boxShadow: "0 10px 24px rgba(0,0,0,0.18)",
+            backgroundColor: "rgba(255,255,255,0.35)",
+          }}
         >
-          <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>
-            Format
-          </div>
-          <div className="mt-2 text-base" style={{ color: "#1a1a1a" }}>
-            3-part research series + interactive prototypes
+          <div className="relative w-full aspect-[16/9]">
+            <Image
+              src="/projects/self-awareness/residual-stream-trajectories.png"
+              alt="Residual stream semantic trajectories across transformer layers"
+              fill
+              className="object-cover"
+            />
           </div>
         </div>
-        <div
-          className="border-2 border-black p-5 bg-[#F7F3E9]"
-          style={{ borderRadius: 12 }}
-        >
-          <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>
-            Themes
-          </div>
-          <div className="mt-2 text-base" style={{ color: "#1a1a1a" }}>
-            Feedback loops • internal world-models • reinforcement learning
-          </div>
-        </div>
+
+        <p className="text-xs" style={{ color: "#6a6a6a" }}>
+          Tip: replace the placeholder image in <span className="font-mono">public/projects/self-awareness/residual-stream-trajectories.png</span>.
+        </p>
       </div>
+
+
     </div>
   )
 }
