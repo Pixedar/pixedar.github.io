@@ -165,7 +165,7 @@ export function ProjectDetailEmotionAttractor() {
   // Replace with your own Google Form embed link (works best with "?embedded=true")
   const ALPHA_FORM_URL =
     process.env.NEXT_PUBLIC_EMOTION_ATTRACTOR_ALPHA_FORM_URL ??
-    "https://docs.google.com/forms/d/e/REPLACE_ME/viewform?embedded=true"
+    "https://docs.google.com/forms/d/e/1FAIpQLScZvt_NKFrZr3PVIENcOo5WDMk5OeGcd34T03c5XFm0WrsRVw/viewform?embedded=true"
   const userPausedRef = useRef(false)
 
   // ✅ Autoplay only when visible inside modal scroll container; loop; no controls.
@@ -797,54 +797,60 @@ export function ProjectDetailEmotionAttractor() {
             Early alpha testing
           </h3>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            I’m collecting early testers for Emotion Attractor. If you want to join the private alpha, share your Android device model + email,
-            or report bugs / improvements — fill the short form below.
+            If you’d like to join the first alpha wave for Emotion Attractor (or leave suggestions), this form lets you register interest.
+            I’m mainly measuring whether there’s enough demand to run a proper testing campaign.
           </p>
 
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                try {
-                  window.open(ALPHA_FORM_URL.replace("embedded=true", ""), "_blank", "noopener,noreferrer")
-                } catch {
-                  // ignore
-                }
-              }}
-              className="border-2 border-black bg-white px-4 py-2 text-sm font-semibold"
-              style={{ borderRadius: 12, boxShadow: "0 10px 22px rgba(0,0,0,0.18)" }}
-            >
-              Open Google Form
-            </button>
+          <button
+            type="button"
+            onClick={() => setAlphaOpen(true)}
+            className="border-2 border-black bg-white px-4 py-2 text-sm font-semibold"
+            style={{ borderRadius: 12, boxShadow: "0 10px 22px rgba(0,0,0,0.18)" }}
+          >
+            Open alpha form
+          </button>
+        </div>
 
-            <button
-              type="button"
-              onClick={() => setAlphaOpen((v) => !v)}
-              className="border-2 border-black bg-white px-4 py-2 text-sm font-semibold"
-              style={{ borderRadius: 12, boxShadow: "0 10px 22px rgba(0,0,0,0.18)" }}
-            >
-              {alphaOpen ? "Hide form" : "Show form"}
-            </button>
-          </div>
-
-          {alphaOpen ? (
+        {/* Fullscreen alpha form */}
+        {alphaOpen ? (
+          <div
+            className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+            style={{ backgroundColor: "rgba(0,0,0,0.72)" }}
+            onClick={() => setAlphaOpen(false)}
+          >
             <div
-              className="rounded-2xl overflow-hidden bg-white"
+              className="relative w-full max-w-5xl rounded-2xl overflow-hidden bg-white"
               style={{
-                border: "2px solid rgba(0,0,0,0.85)",
-                boxShadow: "0 14px 34px rgba(0,0,0,0.22)",
+                border: "2px solid rgba(255,255,255,0.22)",
+                boxShadow: "0 18px 50px rgba(0,0,0,0.55)",
               }}
+              onClick={(e) => e.stopPropagation()}
             >
+              <button
+                type="button"
+                onClick={() => setAlphaOpen(false)}
+                className="absolute top-3 right-3 px-3 py-1.5 text-sm font-semibold"
+                style={{
+                  borderRadius: 999,
+                  backgroundColor: "rgba(0,0,0,0.72)",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  color: "white",
+                }}
+                aria-label="Close"
+              >
+                Close
+              </button>
+
               <iframe
                 src={ALPHA_FORM_URL}
                 title="Emotion Attractor Alpha Signup"
                 className="w-full"
-                style={{ height: 860, border: "none" }}
+                style={{ height: "82vh", border: "none" }}
                 loading="lazy"
               />
             </div>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
     </div>
   )

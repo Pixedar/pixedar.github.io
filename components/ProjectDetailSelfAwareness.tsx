@@ -229,7 +229,7 @@ export function ProjectDetailSelfAwareness() {
         <button
           type="button"
           onClick={() => setTrajectoryOpen(true)}
-          className="rounded-2xl overflow-hidden text-left"
+          className="block w-full rounded-2xl overflow-hidden text-left"
           style={{
             border: "2px solid rgba(0,0,0,0.85)",
             boxShadow: "0 10px 24px rgba(0,0,0,0.18)",
