@@ -225,7 +225,7 @@ MetaMorph can refresh your wallpaper automatically on a schedule, and it adapts 
               <li>Image generation via OpenAI and Stability APIs</li>
               <li>Signals from Google Trends/Search, weather feeds, finance APIs, NASA, astronomy sources</li>
               <li>Custom attention mechanism using semantic similarity and adaptive weighting</li>
-              <li>Optional location-aware modes and cross-app sync hooks</li>
+              <li>Optional location-aware context and Emotion Attractor integration</li>
             </ul>
           </div>
         </div>
