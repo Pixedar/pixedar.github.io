@@ -373,10 +373,6 @@ export function ProjectDetailEmotionAttractor() {
             <Music2 className="w-4 h-4" />
             Watch the 120-day video
           </PillLink>
-          <PillLink href="#" disabled>
-            <Download className="w-4 h-4" />
-            Download APK (soon)
-          </PillLink>
         </div>
 
         <div className="space-y-4">
