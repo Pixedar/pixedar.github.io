@@ -403,22 +403,22 @@ export function ProjectDetailEmotionAttractor() {
             </h4>
             <ol className="list-decimal pl-5 space-y-2" style={{ color: "#1a1a1a" }}>
               <li>
-                <span className="font-medium">Capture:</span> Android app logs daily text + a lightweight emotion profile.
+                <span className="font-medium">Capture:</span> Android app for journaling, clustering, and interactive 3D exploration.
               </li>
               <li>
-                <span className="font-medium">Embed:</span> sentence encoder → vector representation (semantic space).
+                <span className="font-medium">Encode:</span> a fine-tuned sentence model compresses each entry into an emotional state vector.
               </li>
               <li>
-                <span className="font-medium">Project:</span> dimensionality reduction into 3D for visualization.
+                <span className="font-medium">Project:</span> the space is reduced into 3D using an automatically selected projection.
               </li>
               <li>
-                <span className="font-medium">Model:</span> MDN learns a probabilistic “flow” between emotional states.
+                <span className="font-medium">Cluster:</span> recurring states are discovered and organized into meaningful regions.
               </li>
               <li>
-                <span className="font-medium">Discover:</span> symbolic regression yields equations describing the curve.
+                <span className="font-medium">Flow:</span> an MDN learns a probabilistic motion field and stable attractor zones.
               </li>
               <li>
-                <span className="font-medium">Render:</span> generate high-quality attractor sculptures.
+                <span className="font-medium">Sculpt:</span> chapters are segmented, approximated with symbolic regression, and rendered as sculptures.
               </li>
             </ol>
           </div>
@@ -427,10 +427,10 @@ export function ProjectDetailEmotionAttractor() {
               Backend & infra
             </h4>
             <ul className="list-disc pl-5 space-y-2" style={{ color: "#1a1a1a" }}>
-              <li>Python + TensorFlow for embeddings and flow modeling</li>
-              <li>AWS S3 for storing daily entries and generated artifacts</li>
-              <li>EC2 for heavier batch jobs (training, regression, rendering)</li>
-              <li>Android (Java) client for journaling + interactive exploration</li>
+              <li>Android client written in Java for journaling and interactive 3D exploration</li>
+              <li>Custom embedding pipeline built around a fine-tuned emotion encoder</li>
+              <li>Topology and clustering algorithms for state discovery and chapter segmentation</li>
+              <li>AWS EC2 for flow modeling, symbolic regression, and Blender rendering</li>
               <li>LLM-based interpretation for trajectories and chapter summaries</li>
             </ul>
             <p className="text-sm mt-3" style={{ color: "#6a6a6a" }}>
@@ -711,15 +711,15 @@ export function ProjectDetailEmotionAttractor() {
         {/* ✅ 120-day video (moved to the end, below Sculpture renders) */}
         <div id="video" className="space-y-4">
           <h3 className="text-2xl md:text-[26px] font-semibold" style={{ color: "#1a1a1a" }}>
-            Sculpture evolution — 120 days + music chapters
+            Sculpture Evolution — chapters over time
           </h3>
 
           <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-start">
             {/* Description (right on desktop, under title on mobile) */}
             <div className="w-full md:flex-[1_1_44%] order-1 md:order-2">
               <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-                This animation shows the sculpture evolving across ~120 days. The soundtrack shifts with chapters of my life, guided by
-                listening history.
+                This animation shows the sculpture evolving across time as new entries accumulate. Chapters are detected automatically from the trajectory’s topology, and the soundtrack shifts with each chapter using Spotify listening history from the same period.
+                It’s implemented as an automated monthly pipeline. An EC2 job batch-renders the updated animation and stores it in S3, so the app gradually builds a growing archive of chapters, motion, and form.
               </p>
             </div>
 
