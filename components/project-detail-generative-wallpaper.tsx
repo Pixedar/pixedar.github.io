@@ -153,36 +153,40 @@ export function ProjectDetailGenerativeWallpaper() {
     <div className="max-w-4xl mx-auto">
       <div className="space-y-6">
         <div className="space-y-3">
-          <h2 className="text-2xl md:text-3xl font-semibold" style={{ color: "#1a1a1a" }}>
+          <h2 className="text-2xl md:text-3xl font-semibold" style={{color: "#1a1a1a"}}>
             A wallpaper engine that listens to the world
           </h2>
-          <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            This app generates a new wallpaper by combining real‑time signals: current top Google search results, local weather conditions
-            (temperature, pressure, humidity and rapid changes), moon phase, stock market movement, astronomy/planet alignment hints, and
-            other public data feeds. Each wallpaper becomes a visual snapshot of the day — shaped by the strongest signals and the most meaningful anomalies.
+          <p className="text-lg leading-relaxed" style={{color: "#4a4a4a"}}>
+            MetaMorph is a wallpaper engine that listens to the world.
+            It generates lock-screen wallpapers from real-time signals like top Google searches, local weather shifts,
+            market motion, moon phase, and astronomical events. Every image becomes a visual snapshot of the day — not
+            just “pretty”, but anchored in reality.
           </p>
-          <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            A custom attention/anomaly scoring layer filters the noise (for example: if search is flooded with football, the system looks for
-            unusual spikes, fresh events, or cross‑source outliers). The highest‑salience signals are fused into a prompt and sent to an image
-            model to produce the final wallpaper.
+          <p className="text-lg leading-relaxed" style={{color: "#4a4a4a"}}>
+            At the core is a custom attention system inspired by how humans filter noise. The world is full of
+            repetitive signal floods, so MetaMorph looks for what’s actually worth noticing: unusual spikes, sudden
+            changes, rare combinations, and strange alignments across sources. Sometimes the image is direct. Sometimes
+            it’s symbolic — like a painter hiding meaning in a scene.
           </p>
-          <p className="text-sm" style={{ color: "#6a6a6a" }}>
-            Optional: the seed can be sourced from quantum random noise — a playful touch that makes each generation feel a little more "alive".
+
+          <p className="text-lg leading-relaxed" style={{color: "#4a4a4a"}}>
+The best part is that the app doesn’t just generate wallpapers — it explains them. You can open any image and see what triggered it, how that idea appears visually, and what other paths the system considered before choosing the final concept.
+MetaMorph can refresh your wallpaper automatically on a schedule, and it adapts its frequency based on how many generation credits you have available.
+          </p>
+
+          <p className="text-sm" style={{color: "#6a6a6a"}}>
+            Fun fact: the seed can be sourced from quantum random noise. Since image generation is seeded, this makes the results genuinely unpredictable rather than pseudo-random.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-3">
           <PillLink href="#app-demo">
-            <Sparkles className="w-4 h-4" />
+            <Sparkles className="w-4 h-4"/>
             Watch Android demo
           </PillLink>
           <PillLink href="#gallery">
-            <Sparkles className="w-4 h-4" />
+            <Sparkles className="w-4 h-4"/>
             View generated gallery
-          </PillLink>
-          <PillLink href="#" disabled>
-            <Download className="w-4 h-4" />
-            Download APK (soon)
           </PillLink>
         </div>
 
@@ -193,20 +197,21 @@ export function ProjectDetailGenerativeWallpaper() {
             </h4>
             <ol className="list-decimal pl-5 space-y-2" style={{ color: "#1a1a1a" }}>
               <li>
-                <span className="font-medium">Ingest signals:</span> search trends, weather, moon/astro, markets, NASA/other APIs.
+                <span className="font-medium">Collect signals:</span> search trends, local weather, markets, moon phase, astronomy feeds, and public APIs.
               </li>
               <li>
-                <span className="font-medium">Score anomalies:</span> detect spikes, deltas vs baselines, rare configurations.
+                <span className="font-medium">Detect anomalies:</span> find spikes, rapid shifts, and rare configurations across sources.
               </li>
               <li>
-                <span className="font-medium">Attention fusion:</span> weigh what’s “most relevant right now” and suppress expected noise.
+                <span className="font-medium">Attention engine:</span> rank what matters right now and suppress predictable background noise.
               </li>
               <li>
-                <span className="font-medium">Prompt compose:</span> build a structured prompt + negative prompt + style constraints.
+                <span className="font-medium">Concept synthesis:</span> translate signals into an image idea with a coherent style and composition.
               </li>
               <li>
-                <span className="font-medium">Generate & curate:</span> produce candidates, pick the strongest, save metadata.
+                <span className="font-medium">Generate and select:</span> produce variations, pick the strongest result, and store full metadata.
               </li>
+
             </ol>
           </div>
 
@@ -214,12 +219,13 @@ export function ProjectDetailGenerativeWallpaper() {
             <h4 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
               Tech stack
             </h4>
-            <ul className="list-disc pl-5 space-y-2" style={{ color: "#1a1a1a" }}>
+            <ul className="list-disc pl-5 space-y-2" style={{color: "#1a1a1a"}}>
               <li>Android client: Java</li>
-              <li>Backend orchestration: Python</li>
-              <li>Image generation: OpenAI + Stability AI APIs</li>
-              <li>Signals: Google Search/Trends, weather API, NASA API, finance feeds, astronomy sources</li>
-              <li>Custom attention + anomaly heuristics for prompt building</li>
+              <li>Backend pipeline for signal analysis, attention ranking, and orchestration</li>
+              <li>Image generation via OpenAI and Stability APIs</li>
+              <li>Signals from Google Trends/Search, weather feeds, finance APIs, NASA, astronomy sources</li>
+              <li>Custom attention mechanism using semantic similarity and adaptive weighting</li>
+              <li>Optional location-aware modes and cross-app sync hooks</li>
             </ul>
           </div>
         </div>
@@ -228,16 +234,14 @@ export function ProjectDetailGenerativeWallpaper() {
         {/* ✅ Android app demo (silent loop) */}
         <div id="app-demo" className="space-y-4">
           <h3 className="text-2xl md:text-[26px] font-semibold" style={{ color: "#1a1a1a" }}>
-            Android app demo — wallpaper gallery + explanations
+            Inside the App — explore the wallpaper’s logic
           </h3>
 
           <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-start">
             {/* Description (right on desktop, under title on mobile) */}
             <div className="w-full md:flex-[1_1_44%] order-1 md:order-2">
               <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-                A quick walkthrough of the MetaMorph Android client: a scrollable grid of generated wallpapers, one-tap full-screen viewing, and
-                the metadata that explains the why behind each image — what signal triggered it, how that idea appears visually, and what
-                alternate algorithmic path the system could have taken at generation time.
+This walkthrough shows the Android client: a scrollable wallpaper gallery, full-screen preview, and the explanation cards behind each generation. For every image, the app reveals what signals triggered it, how the concept maps onto the visual details, and which alternative generation paths the attention engine considered before selecting the final result.
               </p>
             </div>
 
@@ -265,7 +269,7 @@ export function ProjectDetailGenerativeWallpaper() {
             Gallery
           </h3>
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            A growing grid of wallpapers generated by the app. Click any image to see the full prompt rationale.
+            A growing archive of wallpapers generated from real-world conditions. Open any image to see the reasoning, the trigger signals, and the concept interpretation.
           </p>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
