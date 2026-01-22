@@ -214,19 +214,6 @@ export default function PortfolioPage() {
             >
               <Mail className="w-5 h-5" style={{color: "#1a1a1a"}}/>
             </a>
-
-            <a
-                href="https://zenodo.org/records/18200415"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
-                style={{
-                  backgroundColor: "rgba(26, 26, 26, 0.08)",
-                  border: "1px solid rgba(26, 26, 26, 0.15)",
-                }}
-            >
-              <Archive className="w-5 h-5" style={{color: "#1a1a1a"}}/>
-            </a>
           </div>
 
           <p className="text-lg md:text-xl text-pretty max-w-2xl mx-auto" style={{color: "#4a4a4a"}}>
