@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react"
 import { ProjectCard } from "@/components/project-card"
 import { ProjectModal } from "@/components/project-modal"
-import { Linkedin, Github, Archive } from "lucide-react"
+import { Linkedin, Github, Mail, Archive } from "lucide-react"
+
 
 const projects = [
   {
@@ -177,44 +178,58 @@ export default function PortfolioPage() {
           {/* Social Icons */}
           <div className="flex items-center justify-center gap-4 mb-6">
             <a
-              href="https://www.linkedin.com/in/pixedar/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
-              style={{
-                backgroundColor: "rgba(26, 26, 26, 0.08)",
-                border: "1px solid rgba(26, 26, 26, 0.15)",
-              }}
+                href="https://www.linkedin.com/in/pixedar/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
+                style={{
+                  backgroundColor: "rgba(26, 26, 26, 0.08)",
+                  border: "1px solid rgba(26, 26, 26, 0.15)",
+                }}
             >
-              <Linkedin className="w-5 h-5" style={{ color: "#1a1a1a" }} />
+              <Linkedin className="w-5 h-5" style={{color: "#1a1a1a"}}/>
             </a>
             <a
-              href="https://github.com/Pixedar"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
-              style={{
-                backgroundColor: "rgba(26, 26, 26, 0.08)",
-                border: "1px solid rgba(26, 26, 26, 0.15)",
-              }}
+                href="https://github.com/Pixedar"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
+                style={{
+                  backgroundColor: "rgba(26, 26, 26, 0.08)",
+                  border: "1px solid rgba(26, 26, 26, 0.15)",
+                }}
             >
-              <Github className="w-5 h-5" style={{ color: "#1a1a1a" }} />
+              <Github className="w-5 h-5" style={{color: "#1a1a1a"}}/>
             </a>
+
             <a
-              href="https://zenodo.org/records/18200415"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
-              style={{
-                backgroundColor: "rgba(26, 26, 26, 0.08)",
-                border: "1px solid rgba(26, 26, 26, 0.15)",
-              }}
+                href="mailto:pixedar@gmail.com"
+                className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
+                style={{
+                  backgroundColor: "rgba(26, 26, 26, 0.08)",
+                  border: "1px solid rgba(26, 26, 26, 0.15)",
+                }}
+                aria-label="Email"
+                title="pixedar@gmail.com"
             >
-              <Archive className="w-5 h-5" style={{ color: "#1a1a1a" }} />
+              <Mail className="w-5 h-5" style={{color: "#1a1a1a"}}/>
+            </a>
+
+            <a
+                href="https://zenodo.org/records/18200415"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
+                style={{
+                  backgroundColor: "rgba(26, 26, 26, 0.08)",
+                  border: "1px solid rgba(26, 26, 26, 0.15)",
+                }}
+            >
+              <Archive className="w-5 h-5" style={{color: "#1a1a1a"}}/>
             </a>
           </div>
 
-          <p className="text-lg md:text-xl text-pretty max-w-2xl mx-auto" style={{ color: "#4a4a4a" }}>
+          <p className="text-lg md:text-xl text-pretty max-w-2xl mx-auto" style={{color: "#4a4a4a"}}>
             Welcome to my portfolio. Here you'll find a curated selection of my work, showcasing projects that push
             creative and technical boundaries.
           </p>
