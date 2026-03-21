@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import {
   Download,
+  Github,
   Maximize2,
   Music2,
   Sparkles,
@@ -316,10 +317,12 @@ export function ProjectDetailEmotionAttractor() {
   }, [])
 
   // Keep actual element muted in sync with state.
+  // Sculpture Evolution video plays at reduced volume so it doesn't overpower.
   useEffect(() => {
     const v = videoRef.current
     if (!v) return
     v.muted = muted
+    v.volume = 0.15
   }, [muted])
 
   useEffect(() => {
@@ -853,6 +856,41 @@ export function ProjectDetailEmotionAttractor() {
             </div>
           </div>
         ) : null}
+
+        {/* TraceScope — general-purpose tool born from this project */}
+        <div id="tracescope" className="space-y-4">
+          <h3 className="text-2xl md:text-[26px] font-semibold" style={{ color: "#1a1a1a" }}>
+            TraceScope — a general-purpose tool born from this project
+          </h3>
+          <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
+            The pipeline behind Emotion Attractor — embedding, clustering, flow-field learning, trajectory interpretation — turned out to be useful far beyond personal diaries. So I extracted and generalized it into{" "}
+            <a
+              href="https://github.com/Pixedar/TraceScope"
+              target="_blank"
+              rel="noreferrer"
+              className="underline font-medium"
+              style={{ color: "#1a1a1a" }}
+            >
+              TraceScope
+            </a>
+            , an open-source tool that maps the flow of meaning for any collection of texts.
+          </p>
+          <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
+            Give it chatbot conversations, agent traces, news headlines, research papers, support logs, or anything ordered — TraceScope embeds them, discovers clusters with labeled semantic axes, learns a continuous flow field over 3D semantic space using Mixture Density Networks, and lets you visualize not just where texts are, but how meaning tends to move between them. It ships with an interactive 3D renderer and a lightweight programmatic API for integration into LLM agents, observability pipelines, and research tools.
+          </p>
+
+          <div className="flex flex-wrap gap-3">
+            <a
+              href="https://github.com/Pixedar/TraceScope"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 border-2 border-black bg-[#F7F3E9] hover:bg-white transition-colors"
+            >
+              <Github className="w-4 h-4" />
+              GitHub repo
+            </a>
+          </div>
+        </div>
 
         {/* Subtle rights notice (Android app projects only) */}
         <p className="mt-10 text-[10px] leading-snug text-black/40 text-center">
