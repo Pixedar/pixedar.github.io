@@ -201,10 +201,19 @@ export function ProjectDetailBrainInformationFlow() {
               </div>
             </a>
           </div>
+
+          <div className="border-2 border-black p-5 bg-[#F7F3E9]">
+            <h4 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
+              Citation
+            </h4>
+            <p className="text-lg" style={{ color: "#1a1a1a" }}>
+              DOI: <span className="font-mono">{doi}</span>
+            </p>
+          </div>
         </div>
 
         {/* MindVisualizer — interactive tool built from this research */}
-        <div id="mindvisualizer" className="space-y-4">
+        <div id="mindvisualizer" className="mt-12 space-y-4">
           <h3 className="text-xl font-semibold" style={{ color: "#1a1a1a" }}>
             MindVisualizer — interactive exploration tool
           </h3>
@@ -222,7 +231,7 @@ export function ProjectDetailBrainInformationFlow() {
             {" "}— a tool for exploring how information may move through the brain at rest. It combines the continuous MDN flow field from the paper with a raw effective connectivity graph, giving two complementary ways to look at resting-state brain dynamics.
           </p>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 justify-center">
             <PillLink href="https://github.com/Pixedar/MindVisualizer">
               <Github className="w-4 h-4" />
               GitHub repo
@@ -284,15 +293,6 @@ export function ProjectDetailBrainInformationFlow() {
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="border-2 border-black p-5 bg-[#F7F3E9]">
-          <h4 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "#6a6a6a" }}>
-            Citation
-          </h4>
-          <p className="text-lg" style={{ color: "#1a1a1a" }}>
-            DOI: <span className="font-mono">{doi}</span>
-          </p>
         </div>
       </div>
     </div>
