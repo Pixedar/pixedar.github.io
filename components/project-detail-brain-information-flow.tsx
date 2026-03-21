@@ -222,6 +222,13 @@ export function ProjectDetailBrainInformationFlow() {
             {" "}— a tool for exploring how information may move through the brain at rest. It combines the continuous MDN flow field from the paper with a raw effective connectivity graph, giving two complementary ways to look at resting-state brain dynamics.
           </p>
 
+          <div className="flex flex-wrap gap-3">
+            <PillLink href="https://github.com/Pixedar/MindVisualizer">
+              <Github className="w-4 h-4" />
+              GitHub repo
+            </PillLink>
+          </div>
+
           <div className="space-y-6">
             <div className="space-y-3">
               <h4 className="text-lg font-semibold" style={{ color: "#1a1a1a" }}>
@@ -232,14 +239,18 @@ export function ProjectDetailBrainInformationFlow() {
               </p>
               <div className="flex justify-center">
                 <div
-                  className="w-1/2 overflow-hidden bg-white border-2 border-black"
+                  className="overflow-hidden bg-white border-2 border-black"
                   style={{
+                    width: "65%",
                     boxShadow: "0 5px 10px rgba(0,0,0,0.19), 0 14px 28px rgba(0,0,0,0.24)",
                   }}
                 >
-                  <img
-                    src="/projects/brain-information-flow/mindvisualizer/gifA.gif"
-                    alt="MindVisualizer flow mode — probe tracing information flow through the brain"
+                  <video
+                    src="/projects/brain-information-flow/mindvisualizer/gifA.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
                     className="w-full h-auto block"
                   />
                 </div>
@@ -255,26 +266,23 @@ export function ProjectDetailBrainInformationFlow() {
               </p>
               <div className="flex justify-center">
                 <div
-                  className="w-1/2 overflow-hidden bg-white border-2 border-black"
+                  className="overflow-hidden bg-white border-2 border-black"
                   style={{
+                    width: "65%",
                     boxShadow: "0 5px 10px rgba(0,0,0,0.19), 0 14px 28px rgba(0,0,0,0.24)",
                   }}
                 >
-                  <img
-                    src="/projects/brain-information-flow/mindvisualizer/gifB.gif"
-                    alt="MindVisualizer rDCIM mode — perturbation propagation through connectivity graph"
+                  <video
+                    src="/projects/brain-information-flow/mindvisualizer/gifB.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
                     className="w-full h-auto block"
                   />
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="flex flex-wrap gap-3 justify-center">
-            <PillLink href="https://github.com/Pixedar/MindVisualizer">
-              <Github className="w-4 h-4" />
-              GitHub repo
-            </PillLink>
           </div>
         </div>
 

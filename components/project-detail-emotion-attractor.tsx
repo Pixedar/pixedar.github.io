@@ -801,7 +801,7 @@ export function ProjectDetailEmotionAttractor() {
         </div>
 
         {/* TraceScope — general-purpose tool born from this project */}
-        <div id="tracescope" className="space-y-4">
+        <div id="tracescope" className="mt-12 space-y-4">
           <h3 className="text-2xl md:text-[26px] font-semibold" style={{ color: "#1a1a1a" }}>
             TraceScope — a general-purpose tool born from this project
           </h3>
