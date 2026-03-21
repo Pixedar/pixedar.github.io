@@ -76,7 +76,7 @@ export function ProjectDetailBrainInformationFlow() {
             <Youtube className="w-4 h-4" />
             YouTube
           </PillLink>
-          <PillLink href="#" disabled>
+          <PillLink href="https://github.com/Pixedar/MindVisualizer">
             <Github className="w-4 h-4" />
             Code
           </PillLink>
@@ -230,12 +230,19 @@ export function ProjectDetailBrainInformationFlow() {
               <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
                 In flow mode, the MDN-learned vector field is rendered as a continuous 3D flow over the brain anatomy. You can place a probe anywhere in the field — it gets carried by the flow itself, tracing a path as if "grabbed" by the underlying information dynamics. Then an LLM identifies which anatomical regions the probe passed through and interprets what that trajectory could mean, using neuroscience knowledge from a RAG database.
               </p>
-              <div className="border-2 border-black overflow-hidden bg-white">
-                <img
-                  src="/projects/brain-information-flow/mindvisualizer/gifA.gif"
-                  alt="MindVisualizer flow mode — probe tracing information flow through the brain"
-                  className="w-full h-auto block"
-                />
+              <div className="flex justify-center">
+                <div
+                  className="w-1/2 overflow-hidden bg-white border-2 border-black"
+                  style={{
+                    boxShadow: "0 5px 10px rgba(0,0,0,0.19), 0 14px 28px rgba(0,0,0,0.24)",
+                  }}
+                >
+                  <img
+                    src="/projects/brain-information-flow/mindvisualizer/gifA.gif"
+                    alt="MindVisualizer flow mode — probe tracing information flow through the brain"
+                    className="w-full h-auto block"
+                  />
+                </div>
               </div>
             </div>
 
@@ -246,17 +253,24 @@ export function ProjectDetailBrainInformationFlow() {
               <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
                 In the raw rDCIM mode, the brain is represented as a 3D graph of effective connectivity between ROIs. You can initialize each region with a functional state (e.g. "currently processing a face"), then select any ROI and perturb it. The system propagates that perturbation through the connectivity graph in real time, showing how the change spreads to other regions — and an LLM interprets what the perturbation changed in the broader network.
               </p>
-              <div className="border-2 border-black overflow-hidden bg-white">
-                <img
-                  src="/projects/brain-information-flow/mindvisualizer/gifB.gif"
-                  alt="MindVisualizer rDCIM mode — perturbation propagation through connectivity graph"
-                  className="w-full h-auto block"
-                />
+              <div className="flex justify-center">
+                <div
+                  className="w-1/2 overflow-hidden bg-white border-2 border-black"
+                  style={{
+                    boxShadow: "0 5px 10px rgba(0,0,0,0.19), 0 14px 28px rgba(0,0,0,0.24)",
+                  }}
+                >
+                  <img
+                    src="/projects/brain-information-flow/mindvisualizer/gifB.gif"
+                    alt="MindVisualizer rDCIM mode — perturbation propagation through connectivity graph"
+                    className="w-full h-auto block"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 justify-center">
             <PillLink href="https://github.com/Pixedar/MindVisualizer">
               <Github className="w-4 h-4" />
               GitHub repo

@@ -376,6 +376,10 @@ export function ProjectDetailEmotionAttractor() {
             <Music2 className="w-4 h-4" />
             Watch the 120-day video
           </PillLink>
+          <PillLink href="#tracescope">
+            <Github className="w-4 h-4" />
+            TraceScope
+          </PillLink>
         </div>
 
         <div className="space-y-4">
@@ -796,6 +800,36 @@ export function ProjectDetailEmotionAttractor() {
           </div>
         </div>
 
+        {/* TraceScope — general-purpose tool born from this project */}
+        <div id="tracescope" className="space-y-4">
+          <h3 className="text-2xl md:text-[26px] font-semibold" style={{ color: "#1a1a1a" }}>
+            TraceScope — a general-purpose tool born from this project
+          </h3>
+          <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
+            The pipeline behind Emotion Attractor — embedding, clustering, flow-field learning, trajectory interpretation — turned out to be useful far beyond personal diaries. So I extracted and generalized it into{" "}
+            <a
+              href="https://github.com/Pixedar/TraceScope"
+              target="_blank"
+              rel="noreferrer"
+              className="underline font-medium"
+              style={{ color: "#1a1a1a" }}
+            >
+              TraceScope
+            </a>
+            , an open-source tool that maps the flow of meaning for any collection of texts.
+          </p>
+          <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
+            Give it chatbot conversations, agent traces, news headlines, research papers, support logs, or anything ordered — TraceScope embeds them, discovers clusters with labeled semantic axes, learns a continuous flow field over 3D semantic space using Mixture Density Networks, and lets you visualize not just where texts are, but how meaning tends to move between them. It ships with an interactive 3D renderer and a lightweight programmatic API for integration into LLM agents, observability pipelines, and research tools.
+          </p>
+
+          <div className="flex flex-wrap gap-3 justify-center">
+            <PillLink href="https://github.com/Pixedar/TraceScope">
+              <Github className="w-4 h-4" />
+              GitHub repo
+            </PillLink>
+          </div>
+        </div>
+
         {/* ✅ Early alpha testing form */}
         <div id="alpha" className="mt-12 space-y-4">
           <h3 className="text-2xl md:text-[26px] font-semibold" style={{ color: "#1a1a1a" }}>
@@ -806,14 +840,16 @@ export function ProjectDetailEmotionAttractor() {
             I’m mainly measuring whether there’s enough demand to run a proper testing campaign. If there’s enough interest, I’ll start the first stage of alpha/beta testing.
           </p>
 
-          <button
-            type="button"
-            onClick={() => setAlphaOpen(true)}
-            className="border-2 border-black bg-white px-4 py-2 text-sm font-semibold"
-            style={{ borderRadius: 12, boxShadow: "0 10px 22px rgba(0,0,0,0.18)" }}
-          >
-            Open alpha form
-          </button>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <button
+              type="button"
+              onClick={() => setAlphaOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 border-2 border-black bg-[#F7F3E9] hover:bg-white transition-colors"
+            >
+              <Sparkles className="w-4 h-4" />
+              Open alpha form
+            </button>
+          </div>
         </div>
 
         {/* Fullscreen alpha form */}
@@ -856,41 +892,6 @@ export function ProjectDetailEmotionAttractor() {
             </div>
           </div>
         ) : null}
-
-        {/* TraceScope — general-purpose tool born from this project */}
-        <div id="tracescope" className="space-y-4">
-          <h3 className="text-2xl md:text-[26px] font-semibold" style={{ color: "#1a1a1a" }}>
-            TraceScope — a general-purpose tool born from this project
-          </h3>
-          <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            The pipeline behind Emotion Attractor — embedding, clustering, flow-field learning, trajectory interpretation — turned out to be useful far beyond personal diaries. So I extracted and generalized it into{" "}
-            <a
-              href="https://github.com/Pixedar/TraceScope"
-              target="_blank"
-              rel="noreferrer"
-              className="underline font-medium"
-              style={{ color: "#1a1a1a" }}
-            >
-              TraceScope
-            </a>
-            , an open-source tool that maps the flow of meaning for any collection of texts.
-          </p>
-          <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
-            Give it chatbot conversations, agent traces, news headlines, research papers, support logs, or anything ordered — TraceScope embeds them, discovers clusters with labeled semantic axes, learns a continuous flow field over 3D semantic space using Mixture Density Networks, and lets you visualize not just where texts are, but how meaning tends to move between them. It ships with an interactive 3D renderer and a lightweight programmatic API for integration into LLM agents, observability pipelines, and research tools.
-          </p>
-
-          <div className="flex flex-wrap gap-3">
-            <a
-              href="https://github.com/Pixedar/TraceScope"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 border-2 border-black bg-[#F7F3E9] hover:bg-white transition-colors"
-            >
-              <Github className="w-4 h-4" />
-              GitHub repo
-            </a>
-          </div>
-        </div>
 
         {/* Subtle rights notice (Android app projects only) */}
         <p className="mt-10 text-[10px] leading-snug text-black/40 text-center">

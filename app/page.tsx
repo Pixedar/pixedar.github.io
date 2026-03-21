@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { ProjectCard } from "@/components/project-card"
 import { ProjectModal } from "@/components/project-modal"
 import { Linkedin, Github, Mail, Archive, Youtube } from "lucide-react"
@@ -47,6 +47,33 @@ const projects = [
 
 export default function PortfolioPage() {
   const [selectedProject, setSelectedProject] = useState<(typeof projects)[0] | null>(null)
+  const modalOpenRef = useRef(false)
+
+  // Push a history entry when a modal opens so the browser back button closes it.
+  const openProject = useCallback((project: (typeof projects)[0]) => {
+    setSelectedProject(project)
+    modalOpenRef.current = true
+    window.history.pushState({ modal: true }, "")
+  }, [])
+
+  const closeProject = useCallback(() => {
+    if (modalOpenRef.current) {
+      modalOpenRef.current = false
+      window.history.back()
+    }
+    setSelectedProject(null)
+  }, [])
+
+  useEffect(() => {
+    const onPopState = () => {
+      if (modalOpenRef.current) {
+        modalOpenRef.current = false
+        setSelectedProject(null)
+      }
+    }
+    window.addEventListener("popstate", onPopState)
+    return () => window.removeEventListener("popstate", onPopState)
+  }, [])
 
   // Preload Emotion Attractor videos in the background (helps on desktop).
   // ⚠️ These MP4s can be large, so we avoid preloading on mobile / slow networks.
@@ -240,12 +267,12 @@ export default function PortfolioPage() {
         {/* Grid of project cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 max-w-7xl mx-auto">
           {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} onClick={() => setSelectedProject(project)} />
+            <ProjectCard key={project.id} project={project} onClick={() => openProject(project)} />
           ))}
         </div>
       </div>
 
-      <ProjectModal project={selectedProject} onClose={() => setSelectedProject(null)} />
+      <ProjectModal project={selectedProject} onClose={closeProject} />
     </main>
   )
 }
