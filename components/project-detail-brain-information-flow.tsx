@@ -231,6 +231,34 @@ export function ProjectDetailBrainInformationFlow() {
             {" "}— a tool for exploring how information may move through the brain at rest. It combines the continuous MDN flow field from the paper with a raw effective connectivity graph, giving two complementary ways to look at resting-state brain dynamics.
           </p>
 
+          <a
+            href="/ai/mindvisualizer/"
+            className="grid gap-4 border-2 border-black bg-[#F7F3E9] p-4 transition-colors hover:bg-white md:grid-cols-[220px_minmax(0,1fr)]"
+          >
+            <div className="overflow-hidden border-2 border-black bg-black">
+              <video
+                src="/projects/brain-information-flow/mindvisualizer/gifA.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="aspect-video w-full object-cover"
+              />
+            </div>
+            <div className="flex min-w-0 flex-col justify-center gap-2">
+              <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>
+                <Rocket className="h-4 w-4" />
+                Web playground
+              </div>
+              <h4 className="text-2xl font-semibold" style={{ color: "#1a1a1a" }}>
+                Launch MindVisualizer
+              </h4>
+              <p className="text-base leading-relaxed" style={{ color: "#4a4a4a" }}>
+                Open the live WebGL version with the exported grid64 flow field, particle controls, probes, and the hosted Python explanation backend.
+              </p>
+            </div>
+          </a>
+
           <div className="flex flex-wrap gap-3 justify-center">
             <PillLink href="/ai/mindvisualizer/">
               <Rocket className="w-4 h-4" />
