@@ -1,5 +1,5 @@
 import type React from "react"
-import { Database, FileDown, FileText, Github, Package, Youtube } from "lucide-react"
+import { Database, FileDown, FileText, Github, Package, Rocket, Youtube } from "lucide-react"
 
 function PillLink({
   href,
@@ -232,6 +232,10 @@ export function ProjectDetailBrainInformationFlow() {
           </p>
 
           <div className="flex flex-wrap gap-3 justify-center">
+            <PillLink href="/ai/mindvisualizer/">
+              <Rocket className="w-4 h-4" />
+              Launch web playground
+            </PillLink>
             <PillLink href="https://github.com/Pixedar/MindVisualizer">
               <Github className="w-4 h-4" />
               GitHub repo

@@ -38,6 +38,8 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Build (static export)
+        env:
+          NEXT_PUBLIC_MINDVIS_API_URL: https://pixedar-mindvisualizer-api.hf.space
         run: pnpm build
 
       - name: Disable Jekyll

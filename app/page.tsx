@@ -43,6 +43,15 @@ const projects = [
     media: "/abstract-generative-art-wallpaper.png",
     mediaType: "image" as const,
   },
+  {
+    id: 5,
+    title: "MindVisualizer Web Playground",
+    shortDescription: "Interactive brain information-flow field hosted as a GitHub Pages AI subpage",
+    description:
+      "A browser-hosted version of MindVisualizer, using the exported grid64 MDN flow field with WebGL2 particles and controls for live exploration.",
+    media: "/projects/brain-information-flow/mindvisualizer/gifA.mp4",
+    mediaType: "video" as const,
+  },
 ]
 
 export default function PortfolioPage() {
@@ -51,6 +60,12 @@ export default function PortfolioPage() {
 
   // Push a history entry when a modal opens so the browser back button closes it.
   const openProject = useCallback((project: (typeof projects)[0]) => {
+    if (project.id === 5) {
+      const basePath = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, "")
+      window.location.href = `${basePath}/ai/mindvisualizer/`
+      return
+    }
+
     setSelectedProject(project)
     modalOpenRef.current = true
     window.history.pushState({ modal: true }, "")
