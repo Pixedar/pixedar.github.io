@@ -59,12 +59,12 @@ const initialSettings: MindVisSettings = {
   fieldMode: "mean",
   colorMode: "speed",
   colorMap: "turbo",
-  particleCount: 60000,
+  particleCount: 100000,
   speedScale: 1,
   lifetimeScale: 1,
   opacityScale: 1,
   dt: 1,
-  pointSize: 2,
+  pointSize: 5,
   speedFilter: false,
   filterHigh: true,
   filterFraction: 1,
@@ -504,6 +504,23 @@ type GridMeta = {
 type Probe = {
   slot: number
   path: number[][]
+  regions: string[]
+  lastRegion: string | null
+}
+
+type LabelGrid = {
+  grid: Int16Array
+  n: number
+  origin: [number, number, number]
+  spacing: [number, number, number]
+  keys: string[]
+}
+
+type StructureInfo = {
+  id: number
+  name: string
+  acronym?: string
+  rgb_triplet?: [number, number, number]
 }
 
 type MeshManifest = {
@@ -533,6 +550,7 @@ class MindVisRenderer {
   private renderProgram: WebGLProgram | null = null
   private oosProgram: WebGLProgram | null = null
   private lineProgram: WebGLProgram | null = null
+  private highlightProgram: WebGLProgram | null = null
   private meshProgram: WebGLProgram | null = null
   private particleBuffers: [WebGLBuffer | null, WebGLBuffer | null] = [null, null]
   private particleVaos: [WebGLVertexArrayObject | null, WebGLVertexArrayObject | null] = [null, null]
@@ -547,6 +565,12 @@ class MindVisRenderer {
   private meshIndexBuffer: WebGLBuffer | null = null
   private meshIndexCount = 0
   private trailBuffer: WebGLBuffer | null = null
+  private regionHighlightBuffer: WebGLBuffer | null = null
+  private regionHighlightCount = 0
+  private currentRegionKey: string | null = null
+  private labelGrid: LabelGrid | null = null
+  private regionNames = new Map<string, string>()
+  private regionColors = new Map<string, [number, number, number]>()
   private animationFrame = 0
   private disposed = false
   private frames = 0
@@ -560,7 +584,7 @@ class MindVisRenderer {
 
   private readonly strideFloats = 10
   private readonly strideBytes = 10 * 4
-  private readonly displayScale: [number, number, number] = [1.72, 1.5, 1.42]
+  private readonly displayScale: [number, number, number] = [1.55, 1.51, 2.0]
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -599,10 +623,12 @@ class MindVisRenderer {
     const meta = (await fetchJson(`${fieldRoot}/meta.json`)) as GridMeta
     this.meta = meta
 
-    const [fieldBuffers, entropy, oos] = await Promise.all([
+    const [fieldBuffers, entropy, oos, labelGrid, structures] = await Promise.all([
       Promise.all(fieldModes.map((mode) => fetchBytes(`${fieldRoot}/field_${mode}.f16.bin`))),
       fetchBytes(`${fieldRoot}/field_entropy.f16.bin`),
       fetchBytes(`${fieldRoot}/oos_points.f16.bin`),
+      this.loadLabelGrid(root),
+      fetchJson(`${root}/structures.json`).catch(() => []),
     ])
 
     fieldModes.forEach((mode, index) => {
@@ -610,6 +636,8 @@ class MindVisRenderer {
     })
     this.entropyTexture = this.uploadEntropyTexture(entropy, meta.grid, Boolean(linearFloat))
     this.uploadOos(oos)
+    this.labelGrid = labelGrid
+    this.loadStructures(structures as StructureInfo[])
 
     this.updateProgram = linkProgram(
       gl,
@@ -620,10 +648,12 @@ class MindVisRenderer {
     this.renderProgram = linkProgram(gl, particleVertexShader, particleFragmentShader)
     this.oosProgram = linkProgram(gl, oosVertexShader, oosFragmentShader)
     this.lineProgram = linkProgram(gl, lineVertexShader, lineFragmentShader)
+    this.highlightProgram = linkProgram(gl, highlightVertexShader, highlightFragmentShader)
     this.meshProgram = linkProgram(gl, meshVertexShader, meshFragmentShader)
     this.transformFeedback = gl.createTransformFeedback()
     this.boxBuffer = makeBuffer(gl, new Float32Array(makeBoxLines(this.displayScale)), gl.STATIC_DRAW)
     this.trailBuffer = gl.createBuffer()
+    this.regionHighlightBuffer = gl.createBuffer()
     await this.loadMesh(root)
     this.setParticleCount(this.settings.particleCount)
     this.bindEvents()
@@ -643,6 +673,7 @@ class MindVisRenderer {
     cancelAnimationFrame(this.animationFrame)
     if (this.meshBuffer) this.gl.deleteBuffer(this.meshBuffer)
     if (this.meshIndexBuffer) this.gl.deleteBuffer(this.meshIndexBuffer)
+    if (this.regionHighlightBuffer) this.gl.deleteBuffer(this.regionHighlightBuffer)
     this.canvas.removeEventListener("pointerdown", this.onPointerDown)
     this.canvas.removeEventListener("pointermove", this.onPointerMove)
     this.canvas.removeEventListener("pointerup", this.onPointerUp)
@@ -668,6 +699,8 @@ class MindVisRenderer {
 
   clearProbes() {
     this.probes = []
+    this.currentRegionKey = null
+    this.regionHighlightCount = 0
     this.setAnalysis("Probe trajectory analysis will appear here.")
   }
 
@@ -711,9 +744,12 @@ class MindVisRenderer {
     if (Math.abs(worldDelta[0]) === dominantAxis) parts.push(worldDelta[0] > 0 ? "rightward" : "leftward")
     if (Math.abs(worldDelta[1]) === dominantAxis) parts.push(worldDelta[1] > 0 ? "anterior" : "posterior")
     if (Math.abs(worldDelta[2]) === dominantAxis) parts.push(worldDelta[2] > 0 ? "superior" : "inferior")
+    const transitions = uniqueConsecutive(probe.regions).map((key) => this.regionLabel(key))
 
     this.setAnalysis(
-      `Probe path ${probe.path.length} samples, ${distance.toFixed(3)} field units. Dominant drift is ${parts.join(
+      `Probe path ${probe.path.length} samples, ${distance.toFixed(3)} field units. ${
+        transitions.length ? `Region path: ${transitions.join(" -> ")}. ` : ""
+      }Dominant drift is ${parts.join(
         " / ",
       )}; entropy/color response is taken from the shipped grid125 MDN snapshot.`,
     )
@@ -782,14 +818,18 @@ class MindVisRenderer {
         clamp(picked[2] + offset[2], 0.01, 0.99),
       ]
       this.writeParticle(index, pos, 0, 1000000, pos, 0, 0)
-      this.probes.push({ slot: index, path: [pos] })
+      const region = this.lookupRegion(pos)
+      this.probes.push({ slot: index, path: [pos], regions: region ? [region.key] : [], lastRegion: region?.key ?? null })
     })
+    this.setCurrentRegion(this.probes[0]?.lastRegion ?? null)
 
     const world = this.meta
       ? picked.map((value, axis) => this.meta!.axisMin[axis] + value * this.meta!.span[axis])
       : picked
     this.setAnalysis(
-      `${count} probe${count === 1 ? "" : "s"} placed at ${world.map((value) => value.toFixed(3)).join(", ")}. Shift+G or Analyze to interpret the path.`,
+      `${count} probe${count === 1 ? "" : "s"} placed at ${world.map((value) => value.toFixed(3)).join(", ")}${
+        this.currentRegionKey ? ` in ${this.regionLabel(this.currentRegionKey)}` : ""
+      }. Shift+G or Analyze to interpret the path.`,
     )
   }
 
@@ -814,10 +854,22 @@ class MindVisRenderer {
     ]
     const hit = intersectBox(eye, dir, [-half[0], -half[1], -half[2]], [half[0], half[1], half[2]])
     if (!hit) return null
+    return this.sceneToField(hit)
+  }
+
+  private fieldToScene(point: number[]): [number, number, number] {
     return [
-      clamp(hit[0] / this.displayScale[0] + 0.5, 0.01, 0.99),
-      clamp(hit[1] / this.displayScale[1] + 0.5, 0.01, 0.99),
-      clamp(hit[2] / this.displayScale[2] + 0.5, 0.01, 0.99),
+      (point[0] - 0.5) * this.displayScale[0],
+      (point[2] - 0.5) * this.displayScale[1],
+      (point[1] - 0.5) * this.displayScale[2],
+    ]
+  }
+
+  private sceneToField(point: number[]): [number, number, number] {
+    return [
+      clamp(point[0] / this.displayScale[0] + 0.5, 0.01, 0.99),
+      clamp(point[2] / this.displayScale[2] + 0.5, 0.01, 0.99),
+      clamp(point[1] / this.displayScale[1] + 0.5, 0.01, 0.99),
     ]
   }
 
@@ -858,6 +910,104 @@ class MindVisRenderer {
     if (this.meta) this.seedPoints = decodeF16WorldPoints(buffer, this.meta)
     gl.bindBuffer(gl.ARRAY_BUFFER, this.oosBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, new Uint16Array(buffer), gl.STATIC_DRAW)
+  }
+
+  private async loadLabelGrid(root: string): Promise<LabelGrid | null> {
+    try {
+      const meta = (await fetchJson(`${root}/label_grid/meta.json`)) as {
+        shape: [number, number, number]
+        origin: [number, number, number]
+        spacing: [number, number, number]
+        keys: string[]
+      }
+      const bytes = await fetchBytes(`${root}/label_grid/grid.i16.bin`)
+      return {
+        grid: new Int16Array(bytes),
+        n: meta.shape[0],
+        origin: meta.origin,
+        spacing: meta.spacing,
+        keys: meta.keys,
+      }
+    } catch (error) {
+      console.warn("MindVisualizer label grid unavailable", error)
+      return null
+    }
+  }
+
+  private loadStructures(items: StructureInfo[]) {
+    for (const item of items) {
+      const key = String(item.id)
+      const suffix = item.acronym && item.acronym !== "root" ? ` (${item.acronym})` : ""
+      this.regionNames.set(key, `${item.name}${suffix}`)
+      if (item.rgb_triplet) {
+        this.regionColors.set(key, [
+          item.rgb_triplet[0] / 255,
+          item.rgb_triplet[1] / 255,
+          item.rgb_triplet[2] / 255,
+        ])
+      }
+    }
+  }
+
+  private lookupRegion(pos: number[]) {
+    if (!this.meta || !this.labelGrid) return null
+    const grid = this.labelGrid
+    const world = [
+      this.meta.axisMin[0] + pos[0] * this.meta.span[0],
+      this.meta.axisMin[1] + pos[1] * this.meta.span[1],
+      this.meta.axisMin[2] + pos[2] * this.meta.span[2],
+    ]
+    const ix = Math.floor((world[0] - grid.origin[0]) / grid.spacing[0])
+    const iy = Math.floor((world[1] - grid.origin[1]) / grid.spacing[1])
+    const iz = Math.floor((world[2] - grid.origin[2]) / grid.spacing[2])
+    if (ix < 0 || iy < 0 || iz < 0 || ix >= grid.n || iy >= grid.n || iz >= grid.n) return null
+    const value = grid.grid[(ix * grid.n + iy) * grid.n + iz]
+    if (value <= 0) return null
+    const key = grid.keys[value]
+    return key ? { key, world } : null
+  }
+
+  private setCurrentRegion(key: string | null) {
+    if (this.currentRegionKey === key) return
+    this.currentRegionKey = key
+    this.rebuildRegionHighlight(key)
+  }
+
+  private regionLabel(key: string) {
+    return this.regionNames.get(key) ?? `region ${key}`
+  }
+
+  private rebuildRegionHighlight(key: string | null) {
+    this.regionHighlightCount = 0
+    if (!key || !this.labelGrid || !this.meta || !this.regionHighlightBuffer) return
+    const keyIndex = this.labelGrid.keys.indexOf(key)
+    if (keyIndex <= 0) return
+
+    const points: number[] = []
+    const n = this.labelGrid.n
+    const stride = 2
+    for (let ix = 0; ix < n; ix += stride) {
+      for (let iy = 0; iy < n; iy += stride) {
+        for (let iz = 0; iz < n; iz += stride) {
+          if (this.labelGrid.grid[(ix * n + iy) * n + iz] !== keyIndex) continue
+          const world = [
+            this.labelGrid.origin[0] + (ix + 0.5) * this.labelGrid.spacing[0],
+            this.labelGrid.origin[1] + (iy + 0.5) * this.labelGrid.spacing[1],
+            this.labelGrid.origin[2] + (iz + 0.5) * this.labelGrid.spacing[2],
+          ]
+          const field = [
+            (world[0] - this.meta.axisMin[0]) / this.meta.span[0],
+            (world[1] - this.meta.axisMin[1]) / this.meta.span[1],
+            (world[2] - this.meta.axisMin[2]) / this.meta.span[2],
+          ]
+          points.push(...this.fieldToScene(field))
+        }
+      }
+    }
+
+    this.regionHighlightCount = points.length / 3
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.regionHighlightBuffer)
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(points), this.gl.DYNAMIC_DRAW)
   }
 
   private async loadMesh(root: string) {
@@ -1029,8 +1179,19 @@ class MindVisRenderer {
       gl.getBufferSubData(gl.ARRAY_BUFFER, probe.slot * this.strideBytes, pos)
       const last = probe.path[probe.path.length - 1]
       if (!last || Math.hypot(pos[0] - last[0], pos[1] - last[1], pos[2] - last[2]) > 0.0025) {
-        probe.path.push([pos[0], pos[1], pos[2]])
+        const nextPos = [pos[0], pos[1], pos[2]]
+        probe.path.push(nextPos)
         if (probe.path.length > 700) probe.path.shift()
+        const region = this.lookupRegion(nextPos)
+        if (region && region.key !== probe.lastRegion) {
+          probe.lastRegion = region.key
+          probe.regions.push(region.key)
+          if (probe.regions.length > 80) probe.regions.shift()
+          if (probe.slot === this.probes[0]?.slot) {
+            this.setCurrentRegion(region.key)
+            this.setAnalysis(`Probe entered ${this.regionLabel(region.key)}.`)
+          }
+        }
       }
     }
   }
@@ -1048,6 +1209,7 @@ class MindVisRenderer {
     if (this.settings.meshVisible) this.drawMesh(mvp)
     if (this.settings.oosVisible) this.drawOos(mvp)
     this.drawParticles(mvp)
+    this.drawRegionHighlight(mvp)
     this.drawTrails(mvp)
   }
 
@@ -1127,6 +1289,21 @@ class MindVisRenderer {
     gl.drawArrays(gl.LINES, 0, 24)
   }
 
+  private drawRegionHighlight(mvp: Float32Array) {
+    if (!this.highlightProgram || !this.regionHighlightBuffer || !this.currentRegionKey || this.regionHighlightCount <= 0) return
+    const gl = this.gl
+    const color = this.regionColors.get(this.currentRegionKey) ?? [1, 0.86, 0.25]
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE)
+    gl.useProgram(this.highlightProgram)
+    gl.uniformMatrix4fv(gl.getUniformLocation(this.highlightProgram, "u_mvp"), false, mvp)
+    gl.uniform4f(gl.getUniformLocation(this.highlightProgram, "u_color"), color[0], color[1], color[2], 0.58)
+    gl.bindVertexArray(null)
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.regionHighlightBuffer)
+    gl.enableVertexAttribArray(0)
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
+    gl.drawArrays(gl.POINTS, 0, this.regionHighlightCount)
+  }
+
   private drawTrails(mvp: Float32Array) {
     if (!this.lineProgram || !this.trailBuffer || !this.probes.length) return
     const gl = this.gl
@@ -1143,9 +1320,10 @@ class MindVisRenderer {
       if (probe.path.length < 2) continue
       const points = new Float32Array(probe.path.length * 3)
       for (let j = 0; j < probe.path.length; j += 1) {
-        points[j * 3] = (probe.path[j][0] - 0.5) * this.displayScale[0]
-        points[j * 3 + 1] = (probe.path[j][1] - 0.5) * this.displayScale[1]
-        points[j * 3 + 2] = (probe.path[j][2] - 0.5) * this.displayScale[2]
+        const p = this.fieldToScene(probe.path[j])
+        points[j * 3] = p[0]
+        points[j * 3 + 1] = p[1]
+        points[j * 3 + 2] = p[2]
       }
       gl.bufferData(gl.ARRAY_BUFFER, points, gl.DYNAMIC_DRAW)
       const hue = i / Math.max(this.probes.length, 1)
@@ -1288,7 +1466,7 @@ void main() {
   v_deltaEntropy = a_entropyEma;
   float ageN = a_age / max(a_ttl, 1.0);
   v_alpha = smoothstep(0.0, 0.08, ageN) * (1.0 - smoothstep(0.82, 1.0, ageN));
-  vec3 p = (a_pos - 0.5) * u_displayScale;
+  vec3 p = vec3(a_pos.x - 0.5, a_pos.z - 0.5, a_pos.y - 0.5) * u_displayScale;
   gl_Position = u_mvp * vec4(p, 1.0);
   gl_PointSize = u_pointSize * (0.8 + 0.9 * v_speed);
 }`
@@ -1354,7 +1532,8 @@ uniform vec3 u_amin;
 uniform vec3 u_span;
 uniform vec3 u_displayScale;
 void main() {
-  vec3 p = ((a_world - u_amin) / max(u_span, vec3(0.0001)) - 0.5) * u_displayScale;
+  vec3 n = (a_world - u_amin) / max(u_span, vec3(0.0001));
+  vec3 p = vec3(n.x - 0.5, n.z - 0.5, n.y - 0.5) * u_displayScale;
   gl_Position = u_mvp * vec4(p, 1.0);
   gl_PointSize = 1.5;
 }`
@@ -1368,13 +1547,32 @@ void main() {
   outColor = vec4(0.7, 0.95, 1.0, 0.16);
 }`
 
+const highlightVertexShader = `#version 300 es
+precision highp float;
+layout(location=0) in vec3 a_pos;
+uniform mat4 u_mvp;
+void main() {
+  gl_Position = u_mvp * vec4(a_pos, 1.0);
+  gl_PointSize = 4.5;
+}`
+
+const highlightFragmentShader = `#version 300 es
+precision highp float;
+uniform vec4 u_color;
+out vec4 outColor;
+void main() {
+  vec2 d = gl_PointCoord - 0.5;
+  if (length(d) > 0.5) discard;
+  outColor = u_color;
+}`
+
 const meshVertexShader = `#version 300 es
 precision highp float;
 layout(location=0) in vec3 a_pos;
 uniform mat4 u_mvp;
 uniform vec3 u_displayScale;
 void main() {
-  vec3 p = (a_pos - 0.5) * u_displayScale;
+  vec3 p = vec3(a_pos.x - 0.5, a_pos.z - 0.5, a_pos.y - 0.5) * u_displayScale;
   gl_Position = u_mvp * vec4(p, 1.0);
 }`
 
@@ -1408,6 +1606,14 @@ function colorModeIndex(mode: ColorMode) {
 
 function colorMapIndex(map: ColorMap) {
   return ["turbo", "rainbow", "bipolar"].indexOf(map)
+}
+
+function uniqueConsecutive(items: string[]) {
+  const out: string[] = []
+  for (const item of items) {
+    if (item && out[out.length - 1] !== item) out.push(item)
+  }
+  return out
 }
 
 async function fetchJson(url: string) {
