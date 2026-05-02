@@ -249,7 +249,7 @@ export function MindVisualizerViewer() {
               <div className="pointer-events-none absolute left-1/2 top-4 max-w-[min(40rem,calc(100%-2rem))] -translate-x-1/2 border border-[#FFE45E]/45 bg-black/65 px-5 py-3 text-center shadow-xl backdrop-blur">
                 <div className="text-base font-semibold text-[#FFE45E] md:text-lg">Move mode is on</div>
                 <div className="mt-1 text-sm text-white/78">
-                  Drag anywhere inside the large colored gizmo to move the probe. Press Enter to start or stop live flow.
+                  Press and drag the probe ball or colored gizmo to move it. Drag empty space to rotate. Enter starts or stops live flow.
                 </div>
               </div>
             )}
@@ -377,7 +377,7 @@ export function MindVisualizerViewer() {
                 <SliderRow label="Bounds alpha" min={0.04} max={0.8} step={0.01} value={settings.boundsOpacity} onChange={(value) => updateSetting("boundsOpacity", value)} />
                 <div className="flex items-center gap-2 border border-white/10 bg-black/20 px-3 py-2 text-xs text-white/55">
                   <Gauge className="h-4 w-4 shrink-0" />
-                  <span>Click to place probe. Drag the large colored gizmo to move it. Enter/Start follows the live field; press again to stop.</span>
+                  <span>Click empty space to place probe. Drag the probe ball or colored gizmo to move it. Drag elsewhere rotates the view.</span>
                 </div>
               </ControlSection>
             </div>
@@ -899,7 +899,11 @@ class MindVisRenderer {
       this.probes.length > 0 &&
       !this.probePlayback &&
       !this.probes.some((probe) => probe.active || probe.pending) &&
-      (this.settings.probeMoveMode || this.hitProbeMarker(event.clientX, event.clientY))
+      this.hitProbeMarker(event.clientX, event.clientY)
+    if (canMoveProbe) {
+      this.settings = { ...this.settings, probeMoveMode: true }
+      this.setSettingsState((current) => ({ ...current, probeMoveMode: true }))
+    }
     this.pointer = {
       id: event.pointerId,
       x: event.clientX,
@@ -916,7 +920,7 @@ class MindVisRenderer {
     if (Math.hypot(dx, dy) > 3) this.pointer.drag = true
     if (this.pointer.drag) {
       if (this.pointer.mode === "probe") {
-        this.placeProbe(event.clientX, event.clientY, true)
+        this.moveProbeByScreenDelta(dx, dy)
       } else {
         this.azimuth += dx * 0.006
         this.elevation = clamp(this.elevation + dy * 0.004, -1.1, 1.1)
@@ -932,7 +936,9 @@ class MindVisRenderer {
     const mode = this.pointer.mode
     this.pointer = null
     if (mode === "probe") {
-      this.placeProbe(event.clientX, event.clientY, false)
+      this.settings = { ...this.settings, probeMoveMode: false }
+      this.setSettingsState((current) => ({ ...current, probeMoveMode: false }))
+      if (wasDrag) this.setAnalysis("Probe moved. Press Enter or Start to follow the live flow.")
     } else if (!wasDrag) {
       this.placeProbe(event.clientX, event.clientY, false)
     }
@@ -986,6 +992,39 @@ class MindVisRenderer {
     }
   }
 
+  private moveProbeByScreenDelta(dx: number, dy: number) {
+    if (!this.probes.length) return
+    const rect = this.canvas.getBoundingClientRect()
+    const eye = this.cameraEye()
+    const backward = vec3Normalize(eye)
+    const forward = vec3Scale(backward, -1)
+    const right = vec3Normalize(vec3Cross([0, 1, 0], backward))
+    const up = vec3Normalize(vec3Cross(backward, right))
+    const anchor = this.fieldToScene(this.probes[0].path[this.probes[0].path.length - 1])
+    const distance = Math.max(0.25, vec3Dot(vec3Sub(anchor, eye), forward))
+    const worldPerPixel = (2 * Math.tan(Math.PI / 6) * distance) / Math.max(rect.height, 1)
+    const sceneDelta = vec3Add(vec3Scale(right, dx * worldPerPixel), vec3Scale(up, -dy * worldPerPixel))
+
+    for (const probe of this.probes) {
+      const current = probe.path[probe.path.length - 1]
+      if (!current) continue
+      const moved = this.sceneToFieldUnclamped(vec3Add(this.fieldToScene(current), sceneDelta))
+      const next = [
+        clamp(moved[0], 0.01, 0.99),
+        clamp(moved[1], 0.01, 0.99),
+        clamp(moved[2], 0.01, 0.99),
+      ]
+      probe.path = [next]
+      const region = this.lookupRegion(next)
+      probe.regions = region ? [region.key] : []
+      probe.lastRegion = region?.key ?? null
+      probe.active = false
+      probe.pending = false
+    }
+    this.probePlayback = null
+    this.setCurrentRegion(this.probes[0]?.lastRegion ?? null)
+  }
+
   private hitProbeMarker(clientX: number, clientY: number) {
     if (!this.probes.length) return false
     const rect = this.canvas.getBoundingClientRect()
@@ -998,6 +1037,7 @@ class MindVisRenderer {
       const c = this.fieldToScene(point)
       const center = this.projectSceneToScreen(c, mvp, rect)
       if (center && Math.hypot(center[0] - clientX, center[1] - clientY) < hitRadius) return true
+      if (!this.settings.probeMoveMode && this.pointer?.mode !== "probe") continue
 
       const axes: [number[], number[]][] = [
         [
@@ -1093,6 +1133,10 @@ class MindVisRenderer {
       clamp(point[2] / this.displayScale[2] + 0.5, 0.01, 0.99),
       clamp(point[1] / this.displayScale[1] + 0.5, 0.01, 0.99),
     ]
+  }
+
+  private sceneToFieldUnclamped(point: number[]): [number, number, number] {
+    return [point[0] / this.displayScale[0] + 0.5, point[2] / this.displayScale[2] + 0.5, point[1] / this.displayScale[1] + 0.5]
   }
 
   private uploadFieldTexture(buffer: ArrayBuffer, grid: number, linear: boolean) {
@@ -1721,6 +1765,7 @@ class MindVisRenderer {
   private drawProbeGizmo(mvp: Float32Array) {
     if (!this.lineProgram || !this.trailBuffer || !this.probes.length) return
     if (this.probePlayback || this.probes.some((probe) => probe.pending || probe.active)) return
+    if (!this.settings.probeMoveMode && this.pointer?.mode !== "probe") return
     const gl = this.gl
     const r = this.probeGizmoRadius()
     const axes = [
@@ -2240,8 +2285,16 @@ function vec3Add(a: number[], b: number[]): [number, number, number] {
   return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
 }
 
+function vec3Sub(a: number[], b: number[]): [number, number, number] {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+}
+
 function vec3Scale(v: number[], scale: number): [number, number, number] {
   return [v[0] * scale, v[1] * scale, v[2] * scale]
+}
+
+function vec3Dot(a: number[], b: number[]) {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 }
 
 function vec3Cross(a: number[], b: number[]): [number, number, number] {
