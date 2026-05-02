@@ -907,12 +907,10 @@ class MindVisRenderer {
 
   private onPointerDown(event: PointerEvent) {
     this.canvas.setPointerCapture(event.pointerId)
-    const axisPick =
-      this.probes.length > 0 &&
-      !this.probePlayback &&
-      !this.probes.some((probe) => probe.active || probe.pending)
-        ? this.pickProbeAxis(event.clientX, event.clientY)
-        : null
+    let axisPick: ReturnType<MindVisRenderer["pickProbeAxis"]> = null
+    if (this.probes.length > 0 && !this.probePlayback && !this.probes.some((probe) => probe.active || probe.pending)) {
+      axisPick = this.pickProbeAxis(event.clientX, event.clientY)
+    }
     if (axisPick) {
       this.settings = { ...this.settings, probeMoveMode: true }
       this.setSettingsState((current) => ({ ...current, probeMoveMode: true }))
@@ -1060,7 +1058,7 @@ class MindVisRenderer {
   private pickProbeAxis(clientX: number, clientY: number) {
     if (!this.probes.length) return null
     const rect = this.canvas.getBoundingClientRect()
-    const mvp = this.currentMvp()
+    const mvp = this.mvp()
     const axisHitRadius = 150
     const ballHitRadius = 72
     const probe = this.probes[0]
@@ -2327,16 +2325,8 @@ function vec3Add(a: number[], b: number[]): [number, number, number] {
   return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
 }
 
-function vec3Sub(a: number[], b: number[]): [number, number, number] {
-  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
-}
-
 function vec3Scale(v: number[], scale: number): [number, number, number] {
   return [v[0] * scale, v[1] * scale, v[2] * scale]
-}
-
-function vec3Dot(a: number[], b: number[]) {
-  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 }
 
 function vec3Cross(a: number[], b: number[]): [number, number, number] {
