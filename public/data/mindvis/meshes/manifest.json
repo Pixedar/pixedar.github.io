@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "defaultMesh": "cortex",
+  "meshes": {
+    "cortex": {
+      "name": "cerebral cortex (Cx)",
+      "positions": "cortex_positions.f32.bin",
+      "indices": "cortex_indices.u32.bin",
+      "vertexCount": 2548,
+      "indexCount": 15168,
+      "sourceRegion": "10159"
+    }
+  }
+}
