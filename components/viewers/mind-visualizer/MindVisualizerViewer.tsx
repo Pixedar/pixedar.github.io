@@ -10,15 +10,15 @@ import {
   Crosshair,
   Eraser,
   Gauge,
-  GitBranch,
   Home,
   RefreshCcw,
   Sparkles,
+  X,
   Waves,
 } from "lucide-react"
 
 type FieldMode = "mean" | "gated" | "mu1" | "mu2" | "mu3" | "mu4" | "mu5" | "mu6"
-type ColorMode = "speed" | "entropy" | "deltaEntropy" | "directionalDelta"
+type ColorMode = "speed" | "entropy"
 type ColorMap = "turbo" | "rainbow" | "bipolar"
 
 type MindVisSettings = {
@@ -95,8 +95,6 @@ const fieldModes = ["mean", "gated", "mu1", "mu2", "mu3", "mu4", "mu5", "mu6"] a
 const colorLabels: Record<ColorMode, string> = {
   speed: "Speed",
   entropy: "Entropy",
-  deltaEntropy: "Delta Ent",
-  directionalDelta: "Dir Delta",
 }
 
 const basePath = () => (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, "")
@@ -114,12 +112,13 @@ export function MindVisualizerViewer() {
     field: initialSettings.fieldMode,
   })
   const [analysis, setAnalysis] = useState("Probe trajectory analysis will appear here.")
+  const [analysisOpen, setAnalysisOpen] = useState(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const renderer = new MindVisRenderer(canvas, settings, setStatus, setAnalysis)
+    const renderer = new MindVisRenderer(canvas, settings, setStatus, setAnalysis, setAnalysisOpen)
     rendererRef.current = renderer
     renderer.load().catch((error) => {
       setStatus((current) => ({
@@ -158,8 +157,7 @@ export function MindVisualizerViewer() {
         const key = event.key
         if (key === " ") next.paused = !current.paused
         else if (key.toLowerCase() === "f") next.fieldMode = cycle(fieldModes, current.fieldMode)
-        else if (key.toLowerCase() === "v")
-          next.colorMode = cycle(["speed", "entropy", "deltaEntropy", "directionalDelta"] as const, current.colorMode)
+        else if (key.toLowerCase() === "v") next.colorMode = cycle(["speed", "entropy"] as const, current.colorMode)
         else if (key.toLowerCase() === "m") next.colorMap = cycle(["turbo", "rainbow", "bipolar"] as const, current.colorMap)
         else if (key === "[") next.dt = clamp(current.dt / 1.25, 0.05, 4)
         else if (key === "]") next.dt = clamp(current.dt * 1.25, 0.05, 4)
@@ -182,6 +180,7 @@ export function MindVisualizerViewer() {
         else if (key === "0") next.boundsOpacity = clamp(current.boundsOpacity * 1.25, 0.04, 0.8)
         else if (key.toLowerCase() === "b") next.branching = !current.branching
         else if (key.toLowerCase() === "n") next.probeCount = current.probeCount === 1 ? 4 : current.probeCount === 4 ? 8 : 1
+        else if (key === "Enter") rendererRef.current?.startProbeFlow()
         else if (key.toLowerCase() === "c") rendererRef.current?.clearProbes()
         else if (key.toLowerCase() === "g" && event.shiftKey) rendererRef.current?.explainProbe()
         else return current
@@ -195,9 +194,9 @@ export function MindVisualizerViewer() {
   }, [cycle])
 
   return (
-    <div className="min-h-screen bg-[#070A0D] text-[#EFF7F1]">
-      <main className="flex min-h-screen flex-col">
-        <header className="flex min-h-16 flex-wrap items-center gap-3 border-b border-white/10 bg-[#0B1014] px-4 py-3 md:px-6">
+    <div className="h-screen overflow-hidden bg-[#070A0D] text-[#EFF7F1]">
+      <main className="flex h-screen flex-col">
+        <header className="flex min-h-14 flex-wrap items-center gap-3 border-b border-white/10 bg-[#0B1014] px-4 py-2 md:px-6">
           <a
             href="/"
             className="inline-flex h-10 w-10 items-center justify-center border border-white/15 bg-white/5 text-white transition-colors hover:bg-white/10"
@@ -220,10 +219,13 @@ export function MindVisualizerViewer() {
         </header>
 
         <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <section className="relative min-h-[58vh] overflow-hidden bg-black xl:min-h-0">
-            <canvas ref={canvasRef} className="block h-full min-h-[58vh] w-full xl:min-h-0" />
+          <section className="relative min-h-0 overflow-hidden bg-black">
+            <canvas ref={canvasRef} className="block h-full min-h-0 w-full" />
             <div className="pointer-events-none absolute left-4 top-4 border border-white/10 bg-black/35 px-3 py-2 text-xs text-white/70 backdrop-blur">
               {status.message}
+            </div>
+            <div className="pointer-events-none absolute bottom-4 left-4 max-h-28 max-w-[min(34rem,calc(100%-2rem))] overflow-hidden border border-[#7AF7B1]/25 bg-black/45 px-3 py-2 text-xs leading-relaxed text-white/72 backdrop-blur">
+              {analysis}
             </div>
           </section>
 
@@ -259,7 +261,7 @@ export function MindVisualizerViewer() {
               <ControlSection title="Color">
                 <Segmented
                   value={settings.colorMode}
-                  items={["speed", "entropy", "deltaEntropy", "directionalDelta"] as const}
+                  items={["speed", "entropy"] as const}
                   labels={colorLabels}
                   onChange={(value) => updateSetting("colorMode", value)}
                 />
@@ -307,8 +309,8 @@ export function MindVisualizerViewer() {
                   <IconButton label="Probe" active>
                     <Crosshair className="h-4 w-4" />
                   </IconButton>
-                  <IconButton label="Branch" active={settings.branching} onClick={() => updateSetting("branching", !settings.branching)}>
-                    <GitBranch className="h-4 w-4" />
+                  <IconButton label="Start" onClick={() => rendererRef.current?.startProbeFlow()}>
+                    <CirclePlay className="h-4 w-4" />
                   </IconButton>
                   <IconButton label="Clear" onClick={() => rendererRef.current?.clearProbes()}>
                     <Eraser className="h-4 w-4" />
@@ -337,13 +339,31 @@ export function MindVisualizerViewer() {
                 <SliderRow label="Bounds alpha" min={0.04} max={0.8} step={0.01} value={settings.boundsOpacity} onChange={(value) => updateSetting("boundsOpacity", value)} />
                 <div className="flex items-center gap-2 border border-white/10 bg-black/20 px-3 py-2 text-xs text-white/55">
                   <Gauge className="h-4 w-4 shrink-0" />
-                  <span>GPU WebGL2 renderer; click the brain to place probes</span>
+                  <span>Click to place probe, drag the yellow marker to move it, Enter starts Python probe flow</span>
                 </div>
               </ControlSection>
             </div>
           </aside>
         </div>
       </main>
+      {analysisOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
+          <section className="max-h-[78vh] w-full max-w-2xl overflow-auto border border-[#7AF7B1]/35 bg-[#0B1115] p-5 shadow-2xl">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">Probe Analysis</h2>
+              <button
+                type="button"
+                onClick={() => setAnalysisOpen(false)}
+                className="inline-flex h-9 w-9 items-center justify-center border border-white/15 bg-white/5 text-white hover:bg-white/10"
+                title="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/78">{analysis}</p>
+          </section>
+        </div>
+      )}
     </div>
   )
 }
@@ -506,6 +526,8 @@ type Probe = {
   path: number[][]
   regions: string[]
   lastRegion: string | null
+  active: boolean
+  pending?: boolean
 }
 
 type LabelGrid = {
@@ -521,6 +543,13 @@ type StructureInfo = {
   name: string
   acronym?: string
   rgb_triplet?: [number, number, number]
+}
+
+type RegionMeshItem = {
+  positions: string
+  indices: string
+  vertexCount: number
+  indexCount: number
 }
 
 type MeshManifest = {
@@ -543,6 +572,7 @@ class MindVisRenderer {
   private settings: MindVisSettings
   private setStatus: React.Dispatch<React.SetStateAction<ViewerStatus>>
   private setAnalysis: React.Dispatch<React.SetStateAction<string>>
+  private setAnalysisOpen: React.Dispatch<React.SetStateAction<boolean>>
   private meta: GridMeta | null = null
   private textures = new Map<FieldMode, WebGLTexture>()
   private entropyTexture: WebGLTexture | null = null
@@ -567,6 +597,9 @@ class MindVisRenderer {
   private trailBuffer: WebGLBuffer | null = null
   private regionHighlightBuffer: WebGLBuffer | null = null
   private regionHighlightCount = 0
+  private regionMeshManifest: Record<string, RegionMeshItem> = {}
+  private regionMeshCache = new Map<string, { vertex: WebGLBuffer; index: WebGLBuffer; count: number }>()
+  private activeRegionMesh: { vertex: WebGLBuffer; index: WebGLBuffer; count: number } | null = null
   private currentRegionKey: string | null = null
   private labelGrid: LabelGrid | null = null
   private regionNames = new Map<string, string>()
@@ -579,7 +612,7 @@ class MindVisRenderer {
   private azimuth = 0.72
   private elevation = 0.34
   private zoom = 2.15
-  private pointer: { id: number; x: number; y: number; drag: boolean } | null = null
+  private pointer: { id: number; x: number; y: number; drag: boolean; mode: "camera" | "probe" } | null = null
   private probes: Probe[] = []
 
   private readonly strideFloats = 10
@@ -591,6 +624,7 @@ class MindVisRenderer {
     settings: MindVisSettings,
     setStatus: React.Dispatch<React.SetStateAction<ViewerStatus>>,
     setAnalysis: React.Dispatch<React.SetStateAction<string>>,
+    setAnalysisOpen: React.Dispatch<React.SetStateAction<boolean>>,
   ) {
     const gl = canvas.getContext("webgl2", {
       alpha: false,
@@ -605,6 +639,7 @@ class MindVisRenderer {
     this.settings = settings
     this.setStatus = setStatus
     this.setAnalysis = setAnalysis
+    this.setAnalysisOpen = setAnalysisOpen
     this.onPointerDown = this.onPointerDown.bind(this)
     this.onPointerMove = this.onPointerMove.bind(this)
     this.onPointerUp = this.onPointerUp.bind(this)
@@ -655,6 +690,7 @@ class MindVisRenderer {
     this.trailBuffer = gl.createBuffer()
     this.regionHighlightBuffer = gl.createBuffer()
     await this.loadMesh(root)
+    await this.loadRegionMeshManifest(root)
     this.setParticleCount(this.settings.particleCount)
     this.bindEvents()
 
@@ -674,6 +710,10 @@ class MindVisRenderer {
     if (this.meshBuffer) this.gl.deleteBuffer(this.meshBuffer)
     if (this.meshIndexBuffer) this.gl.deleteBuffer(this.meshIndexBuffer)
     if (this.regionHighlightBuffer) this.gl.deleteBuffer(this.regionHighlightBuffer)
+    for (const mesh of this.regionMeshCache.values()) {
+      this.gl.deleteBuffer(mesh.vertex)
+      this.gl.deleteBuffer(mesh.index)
+    }
     this.canvas.removeEventListener("pointerdown", this.onPointerDown)
     this.canvas.removeEventListener("pointermove", this.onPointerMove)
     this.canvas.removeEventListener("pointerup", this.onPointerUp)
@@ -701,6 +741,7 @@ class MindVisRenderer {
     this.probes = []
     this.currentRegionKey = null
     this.regionHighlightCount = 0
+    this.activeRegionMesh = null
     this.setAnalysis("Probe trajectory analysis will appear here.")
   }
 
@@ -726,6 +767,7 @@ class MindVisRenderer {
         if (!response.ok) throw new Error(`backend returned ${response.status}`)
         const data = (await response.json()) as { text?: string; summary?: string }
         this.setAnalysis(data.text ?? data.summary ?? "Backend returned no explanation text.")
+        this.setAnalysisOpen(true)
         return
       } catch (error) {
         this.setAnalysis(
@@ -753,6 +795,53 @@ class MindVisRenderer {
         " / ",
       )}; entropy/color response is taken from the shipped grid125 MDN snapshot.`,
     )
+    this.setAnalysisOpen(true)
+  }
+
+  async startProbeFlow() {
+    const probe = this.probes[0]
+    if (!probe || !this.meta || probe.path.length === 0) {
+      this.setAnalysis("Click to place the probe first, then press Enter or Start.")
+      return
+    }
+    const api = backendUrl()
+    if (!api) {
+      this.setAnalysis("Python backend is not configured, so exact probe following is unavailable.")
+      return
+    }
+    probe.pending = true
+    this.setAnalysis("Following probe with the original Python probe logic...")
+    try {
+      const response = await fetch(`${api}/api/mindvis/trajectory`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          seed: probe.path[0],
+          fieldMode: this.settings.fieldMode,
+          steps: 700,
+          dt: this.settings.dt,
+          speedScale: this.settings.speedScale,
+        }),
+      })
+      if (!response.ok) throw new Error(`backend returned ${response.status}`)
+      const data = (await response.json()) as {
+        trajectory?: number[][]
+        transitions?: Array<{ region_key?: string; region_name?: string }>
+        regionText?: string
+        stopped?: boolean
+      }
+      if (!data.trajectory?.length) throw new Error("backend returned no trajectory")
+      probe.path = data.trajectory
+      probe.active = false
+      probe.pending = false
+      probe.regions = (data.transitions ?? []).map((item) => String(item.region_key ?? "")).filter(Boolean)
+      probe.lastRegion = probe.regions[probe.regions.length - 1] ?? probe.lastRegion
+      this.setCurrentRegion(probe.lastRegion)
+      this.setAnalysis(data.regionText ?? `Python backend returned ${probe.path.length} probe samples.`)
+    } catch (error) {
+      probe.pending = false
+      this.setAnalysis(`Python probe backend unavailable (${error instanceof Error ? error.message : "request failed"}).`)
+    }
   }
 
   private bindEvents() {
@@ -772,7 +861,13 @@ class MindVisRenderer {
 
   private onPointerDown(event: PointerEvent) {
     this.canvas.setPointerCapture(event.pointerId)
-    this.pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, drag: false }
+    this.pointer = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      drag: false,
+      mode: this.hitProbeMarker(event.clientX, event.clientY) ? "probe" : "camera",
+    }
   }
 
   private onPointerMove(event: PointerEvent) {
@@ -781,8 +876,12 @@ class MindVisRenderer {
     const dy = event.clientY - this.pointer.y
     if (Math.hypot(dx, dy) > 3) this.pointer.drag = true
     if (this.pointer.drag) {
-      this.azimuth += dx * 0.006
-      this.elevation = clamp(this.elevation + dy * 0.004, -1.1, 1.1)
+      if (this.pointer.mode === "probe") {
+        this.placeProbe(event.clientX, event.clientY, true)
+      } else {
+        this.azimuth += dx * 0.006
+        this.elevation = clamp(this.elevation + dy * 0.004, -1.1, 1.1)
+      }
       this.pointer.x = event.clientX
       this.pointer.y = event.clientY
     }
@@ -791,8 +890,9 @@ class MindVisRenderer {
   private onPointerUp(event: PointerEvent) {
     if (!this.pointer || this.pointer.id !== event.pointerId) return
     const wasDrag = this.pointer.drag
+    const mode = this.pointer.mode
     this.pointer = null
-    if (!wasDrag) this.spawnProbe(event.clientX, event.clientY)
+    if (!wasDrag || mode === "probe") this.placeProbe(event.clientX, event.clientY, false)
   }
 
   private onWheel(event: WheelEvent) {
@@ -800,10 +900,10 @@ class MindVisRenderer {
     this.zoom = clamp(this.zoom + event.deltaY * 0.0014, 1.15, 4.2)
   }
 
-  private spawnProbe(clientX: number, clientY: number) {
+  private placeProbe(clientX: number, clientY: number, quiet: boolean) {
     const picked = this.screenToFieldPosition(clientX, clientY)
     if (!picked) {
-      this.setAnalysis("Click inside the brain volume to place a probe.")
+      if (!quiet) this.setAnalysis("Click inside the brain volume to place a probe.")
       return
     }
 
@@ -817,20 +917,53 @@ class MindVisRenderer {
         clamp(picked[1] + offset[1], 0.01, 0.99),
         clamp(picked[2] + offset[2], 0.01, 0.99),
       ]
-      this.writeParticle(index, pos, 0, 1000000, pos, 0, 0)
       const region = this.lookupRegion(pos)
-      this.probes.push({ slot: index, path: [pos], regions: region ? [region.key] : [], lastRegion: region?.key ?? null })
+      this.probes.push({
+        slot: index,
+        path: [pos],
+        regions: region ? [region.key] : [],
+        lastRegion: region?.key ?? null,
+        active: false,
+      })
     })
     this.setCurrentRegion(this.probes[0]?.lastRegion ?? null)
 
     const world = this.meta
       ? picked.map((value, axis) => this.meta!.axisMin[axis] + value * this.meta!.span[axis])
       : picked
-    this.setAnalysis(
-      `${count} probe${count === 1 ? "" : "s"} placed at ${world.map((value) => value.toFixed(3)).join(", ")}${
-        this.currentRegionKey ? ` in ${this.regionLabel(this.currentRegionKey)}` : ""
-      }. Shift+G or Analyze to interpret the path.`,
-    )
+    if (!quiet) {
+      this.setAnalysis(
+        `${count} probe${count === 1 ? "" : "s"} placed at ${world.map((value) => value.toFixed(3)).join(", ")}${
+          this.currentRegionKey ? ` in ${this.regionLabel(this.currentRegionKey)}` : ""
+        }. Press Enter or Start to follow the Python probe flow.`,
+      )
+    }
+  }
+
+  private hitProbeMarker(clientX: number, clientY: number) {
+    if (!this.probes.length) return false
+    const rect = this.canvas.getBoundingClientRect()
+    const mvp = this.currentMvp()
+    for (const probe of this.probes) {
+      const point = probe.path[probe.path.length - 1]
+      if (!point) continue
+      const screen = this.projectFieldToScreen(point, mvp, rect)
+      if (screen && Math.hypot(screen[0] - clientX, screen[1] - clientY) < 22) return true
+    }
+    return false
+  }
+
+  private projectFieldToScreen(point: number[], mvp: Float32Array, rect: DOMRect): [number, number] | null {
+    const p = this.fieldToScene(point)
+    const x = p[0]
+    const y = p[1]
+    const z = p[2]
+    const w = mvp[3] * x + mvp[7] * y + mvp[11] * z + mvp[15]
+    if (Math.abs(w) < 1e-6) return null
+    const clipX = (mvp[0] * x + mvp[4] * y + mvp[8] * z + mvp[12]) / w
+    const clipY = (mvp[1] * x + mvp[5] * y + mvp[9] * z + mvp[13]) / w
+    if (clipX < -1.2 || clipX > 1.2 || clipY < -1.2 || clipY > 1.2) return null
+    return [rect.left + ((clipX + 1) * 0.5) * rect.width, rect.top + ((1 - clipY) * 0.5) * rect.height]
   }
 
   private screenToFieldPosition(clientX: number, clientY: number): [number, number, number] | null {
@@ -970,6 +1103,8 @@ class MindVisRenderer {
   private setCurrentRegion(key: string | null) {
     if (this.currentRegionKey === key) return
     this.currentRegionKey = key
+    this.activeRegionMesh = key ? this.regionMeshCache.get(key) ?? null : null
+    if (key && !this.activeRegionMesh) void this.loadRegionMesh(key)
     this.rebuildRegionHighlight(key)
   }
 
@@ -1029,6 +1164,39 @@ class MindVisRenderer {
       this.meshIndexCount = item.indexCount
     } catch (error) {
       console.warn("MindVisualizer mesh overlay unavailable", error)
+    }
+  }
+
+  private async loadRegionMeshManifest(root: string) {
+    try {
+      const manifest = (await fetchJson(`${root}/region_meshes/manifest.json`)) as { meshes: Record<string, RegionMeshItem> }
+      this.regionMeshManifest = manifest.meshes ?? {}
+    } catch (error) {
+      console.warn("MindVisualizer region mesh manifest unavailable", error)
+    }
+  }
+
+  private async loadRegionMesh(key: string) {
+    if (this.regionMeshCache.has(key)) {
+      this.activeRegionMesh = this.regionMeshCache.get(key) ?? null
+      return
+    }
+    const item = this.regionMeshManifest[key]
+    if (!item) return
+    try {
+      const root = `${basePath()}/data/mindvis/region_meshes`
+      const [positions, indices] = await Promise.all([fetchBytes(`${root}/${item.positions}`), fetchBytes(`${root}/${item.indices}`)])
+      if (this.disposed) return
+      const vertex = makeBuffer(this.gl, new Float32Array(positions), this.gl.STATIC_DRAW)
+      const index = this.gl.createBuffer()
+      if (!index) return
+      this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, index)
+      this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), this.gl.STATIC_DRAW)
+      const mesh = { vertex, index, count: item.indexCount }
+      this.regionMeshCache.set(key, mesh)
+      if (this.currentRegionKey === key) this.activeRegionMesh = mesh
+    } catch (error) {
+      console.warn(`MindVisualizer region mesh unavailable for ${key}`, error)
     }
   }
 
@@ -1176,6 +1344,7 @@ class MindVisRenderer {
     gl.bindBuffer(gl.ARRAY_BUFFER, current)
     const pos = new Float32Array(3)
     for (const probe of this.probes) {
+      if (!probe.active) continue
       gl.getBufferSubData(gl.ARRAY_BUFFER, probe.slot * this.strideBytes, pos)
       const last = probe.path[probe.path.length - 1]
       if (!last || Math.hypot(pos[0] - last[0], pos[1] - last[1], pos[2] - last[2]) > 0.0025) {
@@ -1209,8 +1378,10 @@ class MindVisRenderer {
     if (this.settings.meshVisible) this.drawMesh(mvp)
     if (this.settings.oosVisible) this.drawOos(mvp)
     this.drawParticles(mvp)
+    this.drawActiveRegionMesh(mvp)
     this.drawRegionHighlight(mvp)
     this.drawTrails(mvp)
+    this.drawProbeMarkers(mvp)
   }
 
   private stepNorm() {
@@ -1233,6 +1404,23 @@ class MindVisRenderer {
     gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.meshIndexBuffer)
     gl.drawElements(gl.TRIANGLES, this.meshIndexCount, gl.UNSIGNED_INT, 0)
+  }
+
+  private drawActiveRegionMesh(mvp: Float32Array) {
+    if (!this.meshProgram || !this.activeRegionMesh || !this.currentRegionKey) return
+    const gl = this.gl
+    const color = this.regionColors.get(this.currentRegionKey) ?? [1, 0.86, 0.25]
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+    gl.useProgram(this.meshProgram)
+    gl.uniformMatrix4fv(gl.getUniformLocation(this.meshProgram, "u_mvp"), false, mvp)
+    gl.uniform3fv(gl.getUniformLocation(this.meshProgram, "u_displayScale"), this.displayScale)
+    gl.uniform4f(gl.getUniformLocation(this.meshProgram, "u_color"), color[0], color[1], color[2], 0.42)
+    gl.bindVertexArray(null)
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.activeRegionMesh.vertex)
+    gl.enableVertexAttribArray(0)
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.activeRegionMesh.index)
+    gl.drawElements(gl.TRIANGLES, this.activeRegionMesh.count, gl.UNSIGNED_INT, 0)
   }
 
   private drawParticles(mvp: Float32Array) {
@@ -1291,6 +1479,7 @@ class MindVisRenderer {
 
   private drawRegionHighlight(mvp: Float32Array) {
     if (!this.highlightProgram || !this.regionHighlightBuffer || !this.currentRegionKey || this.regionHighlightCount <= 0) return
+    if (this.activeRegionMesh) return
     const gl = this.gl
     const color = this.regionColors.get(this.currentRegionKey) ?? [1, 0.86, 0.25]
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE)
@@ -1342,6 +1531,27 @@ class MindVisRenderer {
     mat4LookAt(view, eye, [0, 0, 0], [0, 1, 0])
     mat4Multiply(mvp, proj, view)
     return mvp
+  }
+
+  private drawProbeMarkers(mvp: Float32Array) {
+    if (!this.highlightProgram || !this.trailBuffer || !this.probes.length) return
+    const points: number[] = []
+    for (const probe of this.probes) {
+      const p = probe.path[probe.path.length - 1]
+      if (p) points.push(...this.fieldToScene(p))
+    }
+    if (!points.length) return
+    const gl = this.gl
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE)
+    gl.useProgram(this.highlightProgram)
+    gl.uniformMatrix4fv(gl.getUniformLocation(this.highlightProgram, "u_mvp"), false, mvp)
+    gl.uniform4f(gl.getUniformLocation(this.highlightProgram, "u_color"), 1, 0.92, 0.16, 1)
+    gl.bindVertexArray(null)
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.trailBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points), gl.DYNAMIC_DRAW)
+    gl.enableVertexAttribArray(0)
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
+    gl.drawArrays(gl.POINTS, 0, points.length / 3)
   }
 
   private cameraEye(): [number, number, number] {
@@ -1601,7 +1811,7 @@ void main() {
 }`
 
 function colorModeIndex(mode: ColorMode) {
-  return ["speed", "entropy", "deltaEntropy", "directionalDelta"].indexOf(mode)
+  return mode === "entropy" ? 1 : 0
 }
 
 function colorMapIndex(map: ColorMap) {

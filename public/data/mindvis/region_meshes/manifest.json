@@ -1,0 +1,773 @@
+{
+  "schemaVersion": 1,
+  "meshes": {
+    "10159": {
+      "positions": "10159.positions.f32.bin",
+      "indices": "10159.indices.u32.bin",
+      "vertexCount": 467,
+      "indexCount": 2727
+    },
+    "10292": {
+      "positions": "10292.positions.f32.bin",
+      "indices": "10292.indices.u32.bin",
+      "vertexCount": 357,
+      "indexCount": 2070
+    },
+    "10306": {
+      "positions": "10306.positions.f32.bin",
+      "indices": "10306.indices.u32.bin",
+      "vertexCount": 357,
+      "indexCount": 2070
+    },
+    "10307": {
+      "positions": "10307.positions.f32.bin",
+      "indices": "10307.indices.u32.bin",
+      "vertexCount": 67,
+      "indexCount": 378
+    },
+    "10308": {
+      "positions": "10308.positions.f32.bin",
+      "indices": "10308.indices.u32.bin",
+      "vertexCount": 98,
+      "indexCount": 564
+    },
+    "10311": {
+      "positions": "10311.positions.f32.bin",
+      "indices": "10311.indices.u32.bin",
+      "vertexCount": 191,
+      "indexCount": 1122
+    },
+    "10313": {
+      "positions": "10313.positions.f32.bin",
+      "indices": "10313.indices.u32.bin",
+      "vertexCount": 162,
+      "indexCount": 948
+    },
+    "10327": {
+      "positions": "10327.positions.f32.bin",
+      "indices": "10327.indices.u32.bin",
+      "vertexCount": 162,
+      "indexCount": 948
+    },
+    "10329": {
+      "positions": "10329.positions.f32.bin",
+      "indices": "10329.indices.u32.bin",
+      "vertexCount": 61,
+      "indexCount": 342
+    },
+    "10330": {
+      "positions": "10330.positions.f32.bin",
+      "indices": "10330.indices.u32.bin",
+      "vertexCount": 122,
+      "indexCount": 708
+    },
+    "10331": {
+      "positions": "10331.positions.f32.bin",
+      "indices": "10331.indices.u32.bin",
+      "vertexCount": 5029,
+      "indexCount": 30237
+    },
+    "10332": {
+      "positions": "10332.positions.f32.bin",
+      "indices": "10332.indices.u32.bin",
+      "vertexCount": 2900,
+      "indexCount": 17382
+    },
+    "10333": {
+      "positions": "10333.positions.f32.bin",
+      "indices": "10333.indices.u32.bin",
+      "vertexCount": 2693,
+      "indexCount": 16143
+    },
+    "10334": {
+      "positions": "10334.positions.f32.bin",
+      "indices": "10334.indices.u32.bin",
+      "vertexCount": 1469,
+      "indexCount": 8793
+    },
+    "10335": {
+      "positions": "10335.positions.f32.bin",
+      "indices": "10335.indices.u32.bin",
+      "vertexCount": 682,
+      "indexCount": 4068
+    },
+    "10336": {
+      "positions": "10336.positions.f32.bin",
+      "indices": "10336.indices.u32.bin",
+      "vertexCount": 484,
+      "indexCount": 2880
+    },
+    "10337": {
+      "positions": "10337.positions.f32.bin",
+      "indices": "10337.indices.u32.bin",
+      "vertexCount": 483,
+      "indexCount": 2880
+    },
+    "10338": {
+      "positions": "10338.positions.f32.bin",
+      "indices": "10338.indices.u32.bin",
+      "vertexCount": 1112,
+      "indexCount": 6648
+    },
+    "10339": {
+      "positions": "10339.positions.f32.bin",
+      "indices": "10339.indices.u32.bin",
+      "vertexCount": 242,
+      "indexCount": 1428
+    },
+    "10342": {
+      "positions": "10342.positions.f32.bin",
+      "indices": "10342.indices.u32.bin",
+      "vertexCount": 435,
+      "indexCount": 2586
+    },
+    "10343": {
+      "positions": "10343.positions.f32.bin",
+      "indices": "10343.indices.u32.bin",
+      "vertexCount": 373,
+      "indexCount": 2214
+    },
+    "10344": {
+      "positions": "10344.positions.f32.bin",
+      "indices": "10344.indices.u32.bin",
+      "vertexCount": 176,
+      "indexCount": 1032
+    },
+    "10346": {
+      "positions": "10346.positions.f32.bin",
+      "indices": "10346.indices.u32.bin",
+      "vertexCount": 1168,
+      "indexCount": 7038
+    },
+    "10349": {
+      "positions": "10349.positions.f32.bin",
+      "indices": "10349.indices.u32.bin",
+      "vertexCount": 331,
+      "indexCount": 1974
+    },
+    "10361": {
+      "positions": "10361.positions.f32.bin",
+      "indices": "10361.indices.u32.bin",
+      "vertexCount": 1079,
+      "indexCount": 6342
+    },
+    "10383": {
+      "positions": "10383.positions.f32.bin",
+      "indices": "10383.indices.u32.bin",
+      "vertexCount": 358,
+      "indexCount": 2139
+    },
+    "10384": {
+      "positions": "10384.positions.f32.bin",
+      "indices": "10384.indices.u32.bin",
+      "vertexCount": 358,
+      "indexCount": 2139
+    },
+    "10389": {
+      "positions": "10389.positions.f32.bin",
+      "indices": "10389.indices.u32.bin",
+      "vertexCount": 3338,
+      "indexCount": 20892
+    },
+    "10390": {
+      "positions": "10390.positions.f32.bin",
+      "indices": "10390.indices.u32.bin",
+      "vertexCount": 3179,
+      "indexCount": 19983
+    },
+    "10465": {
+      "positions": "10465.positions.f32.bin",
+      "indices": "10465.indices.u32.bin",
+      "vertexCount": 101,
+      "indexCount": 582
+    },
+    "10466": {
+      "positions": "10466.positions.f32.bin",
+      "indices": "10466.indices.u32.bin",
+      "vertexCount": 101,
+      "indexCount": 582
+    },
+    "10467": {
+      "positions": "10467.positions.f32.bin",
+      "indices": "10467.indices.u32.bin",
+      "vertexCount": 87,
+      "indexCount": 522
+    },
+    "10595": {
+      "positions": "10595.positions.f32.bin",
+      "indices": "10595.indices.u32.bin",
+      "vertexCount": 3376,
+      "indexCount": 20256
+    },
+    "10596": {
+      "positions": "10596.positions.f32.bin",
+      "indices": "10596.indices.u32.bin",
+      "vertexCount": 3186,
+      "indexCount": 19104
+    },
+    "10597": {
+      "positions": "10597.positions.f32.bin",
+      "indices": "10597.indices.u32.bin",
+      "vertexCount": 1087,
+      "indexCount": 6510
+    },
+    "10598": {
+      "positions": "10598.positions.f32.bin",
+      "indices": "10598.indices.u32.bin",
+      "vertexCount": 855,
+      "indexCount": 5106
+    },
+    "10599": {
+      "positions": "10599.positions.f32.bin",
+      "indices": "10599.indices.u32.bin",
+      "vertexCount": 207,
+      "indexCount": 1218
+    },
+    "10600": {
+      "positions": "10600.positions.f32.bin",
+      "indices": "10600.indices.u32.bin",
+      "vertexCount": 775,
+      "indexCount": 4626
+    },
+    "10602": {
+      "positions": "10602.positions.f32.bin",
+      "indices": "10602.indices.u32.bin",
+      "vertexCount": 196,
+      "indexCount": 1164
+    },
+    "10648": {
+      "positions": "10648.positions.f32.bin",
+      "indices": "10648.indices.u32.bin",
+      "vertexCount": 1132,
+      "indexCount": 6750
+    },
+    "10649": {
+      "positions": "10649.positions.f32.bin",
+      "indices": "10649.indices.u32.bin",
+      "vertexCount": 783,
+      "indexCount": 4716
+    },
+    "10650": {
+      "positions": "10650.positions.f32.bin",
+      "indices": "10650.indices.u32.bin",
+      "vertexCount": 627,
+      "indexCount": 3714
+    },
+    "10651": {
+      "positions": "10651.positions.f32.bin",
+      "indices": "10651.indices.u32.bin",
+      "vertexCount": 65,
+      "indexCount": 378
+    },
+    "10653": {
+      "positions": "10653.positions.f32.bin",
+      "indices": "10653.indices.u32.bin",
+      "vertexCount": 6373,
+      "indexCount": 38193
+    },
+    "10654": {
+      "positions": "10654.positions.f32.bin",
+      "indices": "10654.indices.u32.bin",
+      "vertexCount": 9474,
+      "indexCount": 56958
+    },
+    "10655": {
+      "positions": "10655.positions.f32.bin",
+      "indices": "10655.indices.u32.bin",
+      "vertexCount": 9253,
+      "indexCount": 55617
+    },
+    "10656": {
+      "positions": "10656.positions.f32.bin",
+      "indices": "10656.indices.u32.bin",
+      "vertexCount": 8314,
+      "indexCount": 49971
+    },
+    "10657": {
+      "positions": "10657.positions.f32.bin",
+      "indices": "10657.indices.u32.bin",
+      "vertexCount": 8092,
+      "indexCount": 48639
+    },
+    "10658": {
+      "positions": "10658.positions.f32.bin",
+      "indices": "10658.indices.u32.bin",
+      "vertexCount": 991,
+      "indexCount": 5934
+    },
+    "10659": {
+      "positions": "10659.positions.f32.bin",
+      "indices": "10659.indices.u32.bin",
+      "vertexCount": 7674,
+      "indexCount": 46146
+    },
+    "10660": {
+      "positions": "10660.positions.f32.bin",
+      "indices": "10660.indices.u32.bin",
+      "vertexCount": 266,
+      "indexCount": 1572
+    },
+    "10661": {
+      "positions": "10661.positions.f32.bin",
+      "indices": "10661.indices.u32.bin",
+      "vertexCount": 944,
+      "indexCount": 5652
+    },
+    "10662": {
+      "positions": "10662.positions.f32.bin",
+      "indices": "10662.indices.u32.bin",
+      "vertexCount": 472,
+      "indexCount": 2820
+    },
+    "10669": {
+      "positions": "10669.positions.f32.bin",
+      "indices": "10669.indices.u32.bin",
+      "vertexCount": 443,
+      "indexCount": 2643
+    },
+    "12114": {
+      "positions": "12114.positions.f32.bin",
+      "indices": "12114.indices.u32.bin",
+      "vertexCount": 5196,
+      "indexCount": 31152
+    },
+    "12115": {
+      "positions": "12115.positions.f32.bin",
+      "indices": "12115.indices.u32.bin",
+      "vertexCount": 7576,
+      "indexCount": 45522
+    },
+    "12116": {
+      "positions": "12116.positions.f32.bin",
+      "indices": "12116.indices.u32.bin",
+      "vertexCount": 6217,
+      "indexCount": 37281
+    },
+    "12117": {
+      "positions": "12117.positions.f32.bin",
+      "indices": "12117.indices.u32.bin",
+      "vertexCount": 3092,
+      "indexCount": 18528
+    },
+    "12118": {
+      "positions": "12118.positions.f32.bin",
+      "indices": "12118.indices.u32.bin",
+      "vertexCount": 2036,
+      "indexCount": 12192
+    },
+    "12119": {
+      "positions": "12119.positions.f32.bin",
+      "indices": "12119.indices.u32.bin",
+      "vertexCount": 1412,
+      "indexCount": 8448
+    },
+    "12121": {
+      "positions": "12121.positions.f32.bin",
+      "indices": "12121.indices.u32.bin",
+      "vertexCount": 1007,
+      "indexCount": 6030
+    },
+    "12122": {
+      "positions": "12122.positions.f32.bin",
+      "indices": "12122.indices.u32.bin",
+      "vertexCount": 1305,
+      "indexCount": 7806
+    },
+    "12123": {
+      "positions": "12123.positions.f32.bin",
+      "indices": "12123.indices.u32.bin",
+      "vertexCount": 752,
+      "indexCount": 4488
+    },
+    "12124": {
+      "positions": "12124.positions.f32.bin",
+      "indices": "12124.indices.u32.bin",
+      "vertexCount": 1064,
+      "indexCount": 6360
+    },
+    "12125": {
+      "positions": "12125.positions.f32.bin",
+      "indices": "12125.indices.u32.bin",
+      "vertexCount": 1636,
+      "indexCount": 9792
+    },
+    "12126": {
+      "positions": "12126.positions.f32.bin",
+      "indices": "12126.indices.u32.bin",
+      "vertexCount": 1042,
+      "indexCount": 6252
+    },
+    "12127": {
+      "positions": "12127.positions.f32.bin",
+      "indices": "12127.indices.u32.bin",
+      "vertexCount": 709,
+      "indexCount": 4230
+    },
+    "12132": {
+      "positions": "12132.positions.f32.bin",
+      "indices": "12132.indices.u32.bin",
+      "vertexCount": 4893,
+      "indexCount": 29379
+    },
+    "12133": {
+      "positions": "12133.positions.f32.bin",
+      "indices": "12133.indices.u32.bin",
+      "vertexCount": 3760,
+      "indexCount": 22512
+    },
+    "12136": {
+      "positions": "12136.positions.f32.bin",
+      "indices": "12136.indices.u32.bin",
+      "vertexCount": 3534,
+      "indexCount": 21177
+    },
+    "12137": {
+      "positions": "12137.positions.f32.bin",
+      "indices": "12137.indices.u32.bin",
+      "vertexCount": 3522,
+      "indexCount": 21144
+    },
+    "12138": {
+      "positions": "12138.positions.f32.bin",
+      "indices": "12138.indices.u32.bin",
+      "vertexCount": 786,
+      "indexCount": 4704
+    },
+    "12140": {
+      "positions": "12140.positions.f32.bin",
+      "indices": "12140.indices.u32.bin",
+      "vertexCount": 3141,
+      "indexCount": 18822
+    },
+    "12142": {
+      "positions": "12142.positions.f32.bin",
+      "indices": "12142.indices.u32.bin",
+      "vertexCount": 3653,
+      "indexCount": 21894
+    },
+    "12143": {
+      "positions": "12143.positions.f32.bin",
+      "indices": "12143.indices.u32.bin",
+      "vertexCount": 2088,
+      "indexCount": 12480
+    },
+    "12144": {
+      "positions": "12144.positions.f32.bin",
+      "indices": "12144.indices.u32.bin",
+      "vertexCount": 894,
+      "indexCount": 5340
+    },
+    "12145": {
+      "positions": "12145.positions.f32.bin",
+      "indices": "12145.indices.u32.bin",
+      "vertexCount": 871,
+      "indexCount": 5202
+    },
+    "12146": {
+      "positions": "12146.positions.f32.bin",
+      "indices": "12146.indices.u32.bin",
+      "vertexCount": 1115,
+      "indexCount": 6687
+    },
+    "12147": {
+      "positions": "12147.positions.f32.bin",
+      "indices": "12147.indices.u32.bin",
+      "vertexCount": 1258,
+      "indexCount": 7524
+    },
+    "12148": {
+      "positions": "12148.positions.f32.bin",
+      "indices": "12148.indices.u32.bin",
+      "vertexCount": 9945,
+      "indexCount": 59538
+    },
+    "12149": {
+      "positions": "12149.positions.f32.bin",
+      "indices": "12149.indices.u32.bin",
+      "vertexCount": 836,
+      "indexCount": 4989
+    },
+    "12150": {
+      "positions": "12150.positions.f32.bin",
+      "indices": "12150.indices.u32.bin",
+      "vertexCount": 2197,
+      "indexCount": 13134
+    },
+    "12151": {
+      "positions": "12151.positions.f32.bin",
+      "indices": "12151.indices.u32.bin",
+      "vertexCount": 3256,
+      "indexCount": 19452
+    },
+    "12152": {
+      "positions": "12152.positions.f32.bin",
+      "indices": "12152.indices.u32.bin",
+      "vertexCount": 826,
+      "indexCount": 4932
+    },
+    "12153": {
+      "positions": "12153.positions.f32.bin",
+      "indices": "12153.indices.u32.bin",
+      "vertexCount": 3130,
+      "indexCount": 18732
+    },
+    "12154": {
+      "positions": "12154.positions.f32.bin",
+      "indices": "12154.indices.u32.bin",
+      "vertexCount": 3098,
+      "indexCount": 18558
+    },
+    "12155": {
+      "positions": "12155.positions.f32.bin",
+      "indices": "12155.indices.u32.bin",
+      "vertexCount": 6682,
+      "indexCount": 40137
+    },
+    "12156": {
+      "positions": "12156.positions.f32.bin",
+      "indices": "12156.indices.u32.bin",
+      "vertexCount": 3869,
+      "indexCount": 23175
+    },
+    "12157": {
+      "positions": "12157.positions.f32.bin",
+      "indices": "12157.indices.u32.bin",
+      "vertexCount": 1767,
+      "indexCount": 10575
+    },
+    "12158": {
+      "positions": "12158.positions.f32.bin",
+      "indices": "12158.indices.u32.bin",
+      "vertexCount": 2149,
+      "indexCount": 12870
+    },
+    "12159": {
+      "positions": "12159.positions.f32.bin",
+      "indices": "12159.indices.u32.bin",
+      "vertexCount": 291,
+      "indexCount": 1722
+    },
+    "12160": {
+      "positions": "12160.positions.f32.bin",
+      "indices": "12160.indices.u32.bin",
+      "vertexCount": 264,
+      "indexCount": 1566
+    },
+    "12162": {
+      "positions": "12162.positions.f32.bin",
+      "indices": "12162.indices.u32.bin",
+      "vertexCount": 1644,
+      "indexCount": 9837
+    },
+    "12163": {
+      "positions": "12163.positions.f32.bin",
+      "indices": "12163.indices.u32.bin",
+      "vertexCount": 901,
+      "indexCount": 5382
+    },
+    "12164": {
+      "positions": "12164.positions.f32.bin",
+      "indices": "12164.indices.u32.bin",
+      "vertexCount": 699,
+      "indexCount": 4170
+    },
+    "12165": {
+      "positions": "12165.positions.f32.bin",
+      "indices": "12165.indices.u32.bin",
+      "vertexCount": 162,
+      "indexCount": 948
+    },
+    "12166": {
+      "positions": "12166.positions.f32.bin",
+      "indices": "12166.indices.u32.bin",
+      "vertexCount": 162,
+      "indexCount": 948
+    },
+    "12170": {
+      "positions": "12170.positions.f32.bin",
+      "indices": "12170.indices.u32.bin",
+      "vertexCount": 1235,
+      "indexCount": 7386
+    },
+    "12171": {
+      "positions": "12171.positions.f32.bin",
+      "indices": "12171.indices.u32.bin",
+      "vertexCount": 476,
+      "indexCount": 2832
+    },
+    "12173": {
+      "positions": "12173.positions.f32.bin",
+      "indices": "12173.indices.u32.bin",
+      "vertexCount": 433,
+      "indexCount": 2574
+    },
+    "12174": {
+      "positions": "12174.positions.f32.bin",
+      "indices": "12174.indices.u32.bin",
+      "vertexCount": 415,
+      "indexCount": 2466
+    },
+    "12176": {
+      "positions": "12176.positions.f32.bin",
+      "indices": "12176.indices.u32.bin",
+      "vertexCount": 2289,
+      "indexCount": 13704
+    },
+    "12177": {
+      "positions": "12177.positions.f32.bin",
+      "indices": "12177.indices.u32.bin",
+      "vertexCount": 983,
+      "indexCount": 5871
+    },
+    "12178": {
+      "positions": "12178.positions.f32.bin",
+      "indices": "12178.indices.u32.bin",
+      "vertexCount": 1570,
+      "indexCount": 9393
+    },
+    "12179": {
+      "positions": "12179.positions.f32.bin",
+      "indices": "12179.indices.u32.bin",
+      "vertexCount": 91,
+      "indexCount": 522
+    },
+    "12181": {
+      "positions": "12181.positions.f32.bin",
+      "indices": "12181.indices.u32.bin",
+      "vertexCount": 135,
+      "indexCount": 786
+    },
+    "12195": {
+      "positions": "12195.positions.f32.bin",
+      "indices": "12195.indices.u32.bin",
+      "vertexCount": 705,
+      "indexCount": 4290
+    },
+    "12291": {
+      "positions": "12291.positions.f32.bin",
+      "indices": "12291.indices.u32.bin",
+      "vertexCount": 217,
+      "indexCount": 1290
+    },
+    "12292": {
+      "positions": "12292.positions.f32.bin",
+      "indices": "12292.indices.u32.bin",
+      "vertexCount": 125,
+      "indexCount": 738
+    },
+    "12305": {
+      "positions": "12305.positions.f32.bin",
+      "indices": "12305.indices.u32.bin",
+      "vertexCount": 152,
+      "indexCount": 900
+    },
+    "12330": {
+      "positions": "12330.positions.f32.bin",
+      "indices": "12330.indices.u32.bin",
+      "vertexCount": 427,
+      "indexCount": 2538
+    },
+    "12354": {
+      "positions": "12354.positions.f32.bin",
+      "indices": "12354.indices.u32.bin",
+      "vertexCount": 198,
+      "indexCount": 1164
+    },
+    "12369": {
+      "positions": "12369.positions.f32.bin",
+      "indices": "12369.indices.u32.bin",
+      "vertexCount": 65,
+      "indexCount": 378
+    },
+    "12384": {
+      "positions": "12384.positions.f32.bin",
+      "indices": "12384.indices.u32.bin",
+      "vertexCount": 2722,
+      "indexCount": 16341
+    },
+    "12390": {
+      "positions": "12390.positions.f32.bin",
+      "indices": "12390.indices.u32.bin",
+      "vertexCount": 5815,
+      "indexCount": 34977
+    },
+    "12405": {
+      "positions": "12405.positions.f32.bin",
+      "indices": "12405.indices.u32.bin",
+      "vertexCount": 664,
+      "indexCount": 3972
+    },
+    "12416": {
+      "positions": "12416.positions.f32.bin",
+      "indices": "12416.indices.u32.bin",
+      "vertexCount": 622,
+      "indexCount": 3717
+    },
+    "12535": {
+      "positions": "12535.positions.f32.bin",
+      "indices": "12535.indices.u32.bin",
+      "vertexCount": 211,
+      "indexCount": 1242
+    },
+    "12538": {
+      "positions": "12538.positions.f32.bin",
+      "indices": "12538.indices.u32.bin",
+      "vertexCount": 464,
+      "indexCount": 2772
+    },
+    "12805": {
+      "positions": "12805.positions.f32.bin",
+      "indices": "12805.indices.u32.bin",
+      "vertexCount": 435,
+      "indexCount": 2589
+    },
+    "12826": {
+      "positions": "12826.positions.f32.bin",
+      "indices": "12826.indices.u32.bin",
+      "vertexCount": 17,
+      "indexCount": 90
+    },
+    "13229": {
+      "positions": "13229.positions.f32.bin",
+      "indices": "13229.indices.u32.bin",
+      "vertexCount": 144,
+      "indexCount": 840
+    },
+    "13230": {
+      "positions": "13230.positions.f32.bin",
+      "indices": "13230.indices.u32.bin",
+      "vertexCount": 1313,
+      "indexCount": 7854
+    },
+    "146034872": {
+      "positions": "146034872.positions.f32.bin",
+      "indices": "146034872.indices.u32.bin",
+      "vertexCount": 2730,
+      "indexCount": 16449
+    },
+    "146034876": {
+      "positions": "146034876.positions.f32.bin",
+      "indices": "146034876.indices.u32.bin",
+      "vertexCount": 576,
+      "indexCount": 3456
+    },
+    "146034884": {
+      "positions": "146034884.positions.f32.bin",
+      "indices": "146034884.indices.u32.bin",
+      "vertexCount": 967,
+      "indexCount": 5778
+    },
+    "146034888": {
+      "positions": "146034888.positions.f32.bin",
+      "indices": "146034888.indices.u32.bin",
+      "vertexCount": 1385,
+      "indexCount": 8334
+    },
+    "266441657": {
+      "positions": "266441657.positions.f32.bin",
+      "indices": "266441657.indices.u32.bin",
+      "vertexCount": 553,
+      "indexCount": 3294
+    }
+  }
+}

@@ -1,4 +1,3 @@
-import json
 import os
 import sys
 from functools import lru_cache
@@ -11,20 +10,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 
-FieldMode = Literal["mean", "gated", "mu1", "mu2"]
+FieldMode = Literal["mean", "gated", "mu1", "mu2", "mu3", "mu4", "mu5", "mu6"]
 
 
 class TrajectoryRequest(BaseModel):
     seed: list[float] = Field(default_factory=lambda: [0.5, 0.5, 0.5], min_length=3, max_length=3)
-    fieldMode: FieldMode = "gated"
-    steps: int = Field(default=220, ge=8, le=1200)
-    dt: float = Field(default=0.018, gt=0, le=0.1)
-    speedScale: float = Field(default=0.48, gt=0, le=4)
+    fieldMode: FieldMode = "mean"
+    steps: int = Field(default=700, ge=8, le=1600)
+    dt: float = Field(default=1.0, gt=0, le=8.0)
+    speedScale: float = Field(default=1.0, gt=0, le=8.0)
 
 
 class ExplainRequest(BaseModel):
     trajectory: list[list[float]] = Field(min_length=2)
-    fieldMode: FieldMode = "gated"
+    fieldMode: FieldMode = "mean"
     callLlm: bool = True
 
 
@@ -40,49 +39,80 @@ def mindvis_repo() -> Path:
 @lru_cache(maxsize=1)
 def services():
     repo = mindvis_repo()
+    data = repo / "data"
 
     from src.field_loader import TriLinearSampler, load_field
-    from src.roi_flow import ManifoldToROIKNN, ROIFlowAnalyzer
+    from src.mesh_overlay import FlowMeshOverlay
 
-    data = repo / "data"
-    flow = load_field(data / "roi_flow" / "mdn_universal_raw_grid64_meta.json")
+    flow = load_field(data / "mdn" / "mdn_particles_rdcim_teacher_edge_hq_grid125_meta.json")
     mean = flow["mean"]
-    mu1 = flow["mus"][0]
-    mu2 = flow["mus"][1]
+    mus = flow["mus"]
     pi = flow["pi"]
-    gated = np.where(np.argmax(pi, axis=-1)[..., None] == 0, mu1, mu2).astype(np.float32)
+    ent = flow["ENT"]
+    amin = flow["amin"]
+    amax = flow["amax"]
+    span = amax - amin
+    diag = float(np.linalg.norm(span))
+    target_step = 0.01 * max(diag, 1e-6)
 
-    samplers = {
-        "mean": TriLinearSampler(mean, flow["amin"], flow["amax"]),
-        "gated": TriLinearSampler(gated, flow["amin"], flow["amax"]),
-        "mu1": TriLinearSampler(mu1, flow["amin"], flow["amax"]),
-        "mu2": TriLinearSampler(mu2, flow["amin"], flow["amax"]),
-    }
+    winner = np.argmax(pi, axis=-1)
+    gated = np.zeros_like(mean, dtype=np.float32)
+    for idx, mu in enumerate(mus):
+        gated += mu * (winner[..., None] == idx).astype(np.float32)
 
-    embed = np.load(data / "roi_flow" / "probe_embed.npy").astype(np.float32)
-    roi = np.load(data / "roi_flow" / "probe_roi.npy").astype(np.float32)
-    centers = np.load(data / "roi_flow" / "probe_roi_centers.npy").astype(np.float32)
-    structures = json.loads((data / "structures.json").read_text(encoding="utf-8"))
+    fields = {"mean": mean, "gated": gated}
+    fields.update({f"mu{idx + 1}": mu for idx, mu in enumerate(mus)})
+    samplers = {name: TriLinearSampler(field, amin, amax) for name, field in fields.items()}
 
-    names = []
-    for idx in range(roi.shape[1]):
-        item = structures[idx] if idx < len(structures) else {}
-        names.append(item.get("name") or item.get("acronym") or f"ROI {idx + 1}")
+    def vmax(field):
+        mag = np.linalg.norm(field.reshape(-1, 3), axis=1)
+        nz = mag[mag > 0]
+        return float(np.percentile(nz, 100.0)) if nz.size else 1.0
 
-    mapper = ManifoldToROIKNN(embed, roi, k=256)
-    analyzer = ROIFlowAnalyzer(names, centers[: len(names)])
+    vmax_by_name = {name: vmax(field) for name, field in fields.items()}
+
+    # The original Python app uses FlowMeshOverlay + its cached label grid for
+    # probe interpretation. This API intentionally reuses that path.
+    import vtk
+
+    ren = vtk.vtkRenderer()
+    win = vtk.vtkRenderWindow()
+    win.OffScreenRenderingOn()
+    win.AddRenderer(ren)
+    mesh = FlowMeshOverlay(ren=ren, win=win, mesh_dir=data / "meshes", alignment_file=data / "brain_alignment.json")
+    cache = data / "label_grid_cache.npz"
+    if not mesh.load_label_grid(cache):
+        raise RuntimeError("Python label_grid_cache is missing; run setup_brain_data.py in mindVisualizer first.")
+
+    # Optional finer parcellation, exactly as the desktop flow mode auto-detects.
+    try:
+        from src.extra_parcellation import ExtraParcellation
+
+        atlas = data / "extra_parcellation" / "combined_atlas.nii.gz"
+        labels = data / "extra_parcellation" / "combined_atlas_labels.json"
+        if atlas.exists():
+            extra = ExtraParcellation(atlas, labels if labels.exists() else None)
+            if extra.load():
+                mesh.set_extra_parcellation(extra)
+    except Exception as exc:
+        print(f"[extra-parcellation] disabled: {exc}")
+
+    ent_sampler = TriLinearSampler(mean, amin, amax) if ent is not None else None
 
     return {
-        "amin": flow["amin"],
-        "amax": flow["amax"],
-        "span": flow["amax"] - flow["amin"],
+        "amin": amin,
+        "amax": amax,
+        "span": span,
         "samplers": samplers,
-        "mapper": mapper,
-        "analyzer": analyzer,
+        "vmax": vmax_by_name,
+        "target_step": target_step,
+        "mesh": mesh,
+        "entropy": ent,
+        "entropy_sampler": ent_sampler,
     }
 
 
-app = FastAPI(title="MindVisualizer API", version="0.1.0")
+app = FastAPI(title="MindVisualizer API", version="1.0.0")
 
 origins = [origin.strip() for origin in os.environ.get("CORS_ORIGINS", "*").split(",") if origin.strip()]
 app.add_middleware(
@@ -105,10 +135,16 @@ def health():
 @app.post("/api/mindvis/trajectory")
 def trajectory(req: TrajectoryRequest):
     svc = services()
-    path = integrate_path(req.seed, req.fieldMode, req.steps, req.dt, req.speedScale)
+    world, mags, stopped = integrate_probe(req, svc)
+    transitions = analyze_regions(world, mags, req.callLlm if hasattr(req, "callLlm") else False)
     return {
         "fieldMode": req.fieldMode,
-        "trajectory": normalized(path, svc["amin"], svc["span"]).tolist(),
+        "trajectory": normalized(world, svc["amin"], svc["span"]).tolist(),
+        "worldTrajectory": world.tolist(),
+        "fieldMagnitudes": mags.tolist(),
+        "stopped": stopped,
+        "transitions": transitions,
+        "regionText": format_transition_text(transitions),
     }
 
 
@@ -120,42 +156,82 @@ def explain(req: ExplainRequest):
         raise HTTPException(status_code=400, detail="trajectory must be an array of [x,y,z] points")
 
     world = denormalized(np.clip(traj, 0.0, 1.0), svc["amin"], svc["span"])
-    mapper = svc["mapper"]
-    analyzer = svc["analyzer"]
-    start_roi = mapper.query(world[0])
-    end_roi = mapper.query(world[-1])
-    delta = analyzer.compute_delta(start_roi, end_roi)
-    context = analyzer.build_llm_context(delta)
+    sampler = svc["samplers"].get(req.fieldMode, svc["samplers"]["mean"])
+    mags = np.linalg.norm(sampler.sample_vec(world), axis=1).astype(np.float32)
+    transitions = analyze_regions(world, mags, req.callLlm)
+    text = format_transition_text(transitions)
 
-    text = ""
-    if req.callLlm and os.environ.get("OPENAI_API_KEY"):
-        text = call_openai_interpreter(context)
+    if req.callLlm:
+        from src.region_analyzer import analyze_with_gpt
 
-    if not text:
-        analysis = analyzer.analyze_flow_pattern(delta)
-        text = (
-            f"Pattern: {analysis['pattern_type']}. "
-            f"Bulk direction: {analysis['bulk_direction']}. "
-            f"Positive ROIs: {analysis['n_significant_positive']}; "
-            f"negative ROIs: {analysis['n_significant_negative']}."
+        text = analyze_with_gpt(
+            transitions,
+            use_rag=os.environ.get("MINDVIS_USE_RAG", "0") == "1",
+            model=os.environ.get("OPENAI_MODEL", "gpt-5.4-mini"),
+            debug=os.environ.get("MINDVIS_DEBUG", "0") == "1",
         )
 
-    return {"text": text, "context": context}
+    return {"text": text, "transitions": transitions, "regionText": format_transition_text(transitions)}
 
 
-def integrate_path(seed: list[float], field_mode: FieldMode, steps: int, dt: float, speed_scale: float) -> np.ndarray:
+def integrate_probe(req: TrajectoryRequest, svc: dict) -> tuple[np.ndarray, np.ndarray, bool]:
+    p = denormalized(np.asarray(req.seed[:3], dtype=np.float32)[None, :], svc["amin"], svc["span"])
+    sampler = svc["samplers"].get(req.fieldMode, svc["samplers"]["mean"])
+    step = req.dt * req.speedScale * (svc["target_step"] / max(svc["vmax"].get(req.fieldMode, 1.0), 1e-9))
+    path = []
+    mags = []
+    stopped = False
+
+    for _ in range(req.steps):
+        path.append(p[0].copy())
+        velocity = sampler.sample_vec(p)[0]
+        mags.append(float(np.linalg.norm(velocity)))
+        new_pos = np.clip(p[0] + velocity * step, svc["amin"], svc["amax"])
+
+        # Original probe boundary behavior: if a step leaves labelled brain
+        # space, try half-step; otherwise stop instead of wrapping.
+        if not is_valid_probe_position(new_pos, svc["mesh"]):
+            half = np.clip(p[0] + velocity * step * 0.5, svc["amin"], svc["amax"])
+            if is_valid_probe_position(half, svc["mesh"]):
+                new_pos = half
+            else:
+                stopped = True
+                break
+
+        if np.linalg.norm(new_pos - p[0]) < 1e-5:
+            stopped = True
+            break
+        p[0] = new_pos.astype(np.float32)
+
+    return np.asarray(path, dtype=np.float32), np.asarray(mags, dtype=np.float32), stopped
+
+
+def is_valid_probe_position(point: np.ndarray, mesh) -> bool:
+    key = mesh.get_region_at_point(point)
+    if key is None:
+        key = mesh.find_nearest_region(point, search_radius=2, max_distance_mm=5.0)
+    return key is not None
+
+
+def analyze_regions(world: np.ndarray, mags: np.ndarray, call_llm: bool) -> list[dict]:
     svc = services()
-    p = denormalized(np.asarray(seed[:3], dtype=np.float32)[None, :], svc["amin"], svc["span"])
-    sampler = svc["samplers"][field_mode]
-    path = np.empty((steps, 3), dtype=np.float32)
+    from src.region_analyzer import analyze_probe_path
 
-    for idx in range(steps):
-        path[idx] = p[0]
-        v = sampler.sample_vec(p)
-        p = p + v * (dt * speed_scale)
-        p = ((p - svc["amin"]) % svc["span"]) + svc["amin"]
+    transitions = analyze_probe_path(
+        world,
+        svc["mesh"],
+        sample_every=5,
+        field_mags=mags,
+        entropy_sampler=svc["entropy_sampler"],
+        entropy_field=svc["entropy"],
+    )
+    return make_json_safe(transitions)
 
-    return path
+
+def format_transition_text(transitions: list[dict]) -> str:
+    from src.region_analyzer import format_transitions_text
+
+    return format_transitions_text(transitions)
 
 
 def denormalized(points: np.ndarray, amin: np.ndarray, span: np.ndarray) -> np.ndarray:
@@ -166,44 +242,15 @@ def normalized(points: np.ndarray, amin: np.ndarray, span: np.ndarray) -> np.nda
     return (points.astype(np.float32) - amin[None, :]) / span[None, :]
 
 
-def call_openai_interpreter(context: str) -> str:
-    from openai import OpenAI
-
-    model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
-    instructions = (
-        "You are a neuroscientist interpreting brain state dynamics from a "
-        "manifold flow simulation. The user traced a path through a learned "
-        "neural manifold. You are given how each ROI's contribution changed "
-        "along this path.\n\n"
-        "The delta values do not mean simple activation. They measure how each "
-        "ROI's contribution to the overall brain state shifted. Positive means "
-        "the region became a stronger contributor; negative means it became a "
-        "weaker contributor.\n\n"
-        "Do not list every ROI. Synthesize the spatial pattern, directionality, "
-        "and network shift into one coherent interpretation. Keep the response "
-        "to 2 concise paragraphs."
-    )
-
-    try:
-        client = OpenAI(timeout=60.0)
-        if hasattr(client, "responses"):
-            response = client.responses.create(
-                model=model,
-                instructions=instructions,
-                input=context,
-                max_output_tokens=900,
-            )
-            return (response.output_text or "").strip()
-
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": instructions},
-                {"role": "user", "content": context},
-            ],
-            max_tokens=900,
-            temperature=0.3,
-        )
-        return (response.choices[0].message.content or "").strip()
-    except Exception as exc:
-        return f"[GPT ERROR] {exc}"
+def make_json_safe(value):
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, dict):
+        return {str(k): make_json_safe(v) for k, v in value.items() if not str(k).startswith("_")}
+    if isinstance(value, list):
+        return [make_json_safe(v) for v in value]
+    if isinstance(value, tuple):
+        return [make_json_safe(v) for v in value]
+    return value
