@@ -652,7 +652,19 @@ class MindVisRenderer {
   private azimuth = 0.72
   private elevation = 0.34
   private zoom = 2.15
-  private pointer: { id: number; x: number; y: number; drag: boolean; mode: "camera" | "probe" } | null = null
+  private pointer: {
+    id: number
+    x: number
+    y: number
+    drag: boolean
+    mode: "camera" | "probe"
+    axis?: number
+    startClick?: [number, number]
+    startPaths?: number[][][]
+    axisScreenN?: [number, number]
+    pxPerFieldUnit?: number
+    axisSign?: number
+  } | null = null
   private probes: Probe[] = []
   private probePlayback: {
     probe: Probe
@@ -895,12 +907,13 @@ class MindVisRenderer {
 
   private onPointerDown(event: PointerEvent) {
     this.canvas.setPointerCapture(event.pointerId)
-    const canMoveProbe =
+    const axisPick =
       this.probes.length > 0 &&
       !this.probePlayback &&
-      !this.probes.some((probe) => probe.active || probe.pending) &&
-      this.hitProbeMarker(event.clientX, event.clientY)
-    if (canMoveProbe) {
+      !this.probes.some((probe) => probe.active || probe.pending)
+        ? this.pickProbeAxis(event.clientX, event.clientY)
+        : null
+    if (axisPick) {
       this.settings = { ...this.settings, probeMoveMode: true }
       this.setSettingsState((current) => ({ ...current, probeMoveMode: true }))
     }
@@ -909,7 +922,13 @@ class MindVisRenderer {
       x: event.clientX,
       y: event.clientY,
       drag: false,
-      mode: canMoveProbe ? "probe" : "camera",
+      mode: axisPick ? "probe" : "camera",
+      axis: axisPick?.axis,
+      startClick: axisPick ? [event.clientX, event.clientY] : undefined,
+      startPaths: axisPick ? this.probes.map((probe) => probe.path.map((point) => [...point])) : undefined,
+      axisScreenN: axisPick?.axisScreenN,
+      pxPerFieldUnit: axisPick?.pxPerFieldUnit,
+      axisSign: axisPick?.axisSign,
     }
   }
 
@@ -920,7 +939,7 @@ class MindVisRenderer {
     if (Math.hypot(dx, dy) > 3) this.pointer.drag = true
     if (this.pointer.drag) {
       if (this.pointer.mode === "probe") {
-        this.moveProbeByScreenDelta(dx, dy)
+        this.moveProbeAlongPickedAxis(event.clientX, event.clientY)
       } else {
         this.azimuth += dx * 0.006
         this.elevation = clamp(this.elevation + dy * 0.004, -1.1, 1.1)
@@ -936,9 +955,15 @@ class MindVisRenderer {
     const mode = this.pointer.mode
     this.pointer = null
     if (mode === "probe") {
-      this.settings = { ...this.settings, probeMoveMode: false }
-      this.setSettingsState((current) => ({ ...current, probeMoveMode: false }))
-      if (wasDrag) this.setAnalysis("Probe moved. Press Enter or Start to follow the live flow.")
+      if (wasDrag) {
+        this.settings = { ...this.settings, probeMoveMode: false }
+        this.setSettingsState((current) => ({ ...current, probeMoveMode: false }))
+        this.setAnalysis("Probe moved. Press Enter or Start to follow the live flow.")
+      } else {
+        this.settings = { ...this.settings, probeMoveMode: true }
+        this.setSettingsState((current) => ({ ...current, probeMoveMode: true }))
+        this.setAnalysis("Probe gizmo active. Drag a colored axis with a broad margin, or drag empty space to rotate.")
+      }
     } else if (!wasDrag) {
       this.placeProbe(event.clientX, event.clientY, false)
     }
@@ -992,28 +1017,31 @@ class MindVisRenderer {
     }
   }
 
-  private moveProbeByScreenDelta(dx: number, dy: number) {
-    if (!this.probes.length) return
-    const rect = this.canvas.getBoundingClientRect()
-    const eye = this.cameraEye()
-    const backward = vec3Normalize(eye)
-    const forward = vec3Scale(backward, -1)
-    const right = vec3Normalize(vec3Cross([0, 1, 0], backward))
-    const up = vec3Normalize(vec3Cross(backward, right))
-    const anchor = this.fieldToScene(this.probes[0].path[this.probes[0].path.length - 1])
-    const distance = Math.max(0.25, vec3Dot(vec3Sub(anchor, eye), forward))
-    const worldPerPixel = (2 * Math.tan(Math.PI / 6) * distance) / Math.max(rect.height, 1)
-    const sceneDelta = vec3Add(vec3Scale(right, dx * worldPerPixel), vec3Scale(up, -dy * worldPerPixel))
+  private moveProbeAlongPickedAxis(clientX: number, clientY: number) {
+    const pointer = this.pointer
+    if (
+      !pointer ||
+      pointer.mode !== "probe" ||
+      pointer.axis === undefined ||
+      !pointer.startClick ||
+      !pointer.startPaths ||
+      !pointer.axisScreenN ||
+      !pointer.pxPerFieldUnit ||
+      !pointer.axisSign
+    ) {
+      return
+    }
 
-    for (const probe of this.probes) {
-      const current = probe.path[probe.path.length - 1]
-      if (!current) continue
-      const moved = this.sceneToFieldUnclamped(vec3Add(this.fieldToScene(current), sceneDelta))
-      const next = [
-        clamp(moved[0], 0.01, 0.99),
-        clamp(moved[1], 0.01, 0.99),
-        clamp(moved[2], 0.01, 0.99),
-      ]
+    const mouseDelta: [number, number] = [clientX - pointer.startClick[0], clientY - pointer.startClick[1]]
+    const alongPx = mouseDelta[0] * pointer.axisScreenN[0] + mouseDelta[1] * pointer.axisScreenN[1]
+    const fieldDelta = (alongPx / pointer.pxPerFieldUnit) * pointer.axisSign
+
+    for (let i = 0; i < this.probes.length; i += 1) {
+      const probe = this.probes[i]
+      const start = pointer.startPaths[i]?.[pointer.startPaths[i].length - 1]
+      if (!start) continue
+      const next = [...start]
+      next[pointer.axis] = clamp(start[pointer.axis] + fieldDelta, 0.01, 0.99)
       probe.path = [next]
       const region = this.lookupRegion(next)
       probe.regions = region ? [region.key] : []
@@ -1026,40 +1054,58 @@ class MindVisRenderer {
   }
 
   private hitProbeMarker(clientX: number, clientY: number) {
-    if (!this.probes.length) return false
+    return Boolean(this.pickProbeAxis(clientX, clientY))
+  }
+
+  private pickProbeAxis(clientX: number, clientY: number) {
+    if (!this.probes.length) return null
     const rect = this.canvas.getBoundingClientRect()
     const mvp = this.currentMvp()
-    const r = this.probeGizmoRadius()
-    const hitRadius = 56
-    for (const probe of this.probes) {
-      const point = probe.path[probe.path.length - 1]
-      if (!point) continue
-      const c = this.fieldToScene(point)
-      const center = this.projectSceneToScreen(c, mvp, rect)
-      if (center && Math.hypot(center[0] - clientX, center[1] - clientY) < hitRadius) return true
-      if (!this.settings.probeMoveMode && this.pointer?.mode !== "probe") continue
+    const axisHitRadius = 150
+    const ballHitRadius = 72
+    const probe = this.probes[0]
+    const point = probe.path[probe.path.length - 1]
+    if (!point) return null
+    const center = this.projectFieldToScreen(point, mvp, rect)
+    if (!center) return null
+    const click: [number, number] = [clientX, clientY]
+    const ballDist = Math.hypot(center[0] - clientX, center[1] - clientY)
+    if (!this.settings.probeMoveMode && ballDist > ballHitRadius) return null
 
-      const axes: [number[], number[]][] = [
-        [
-          [c[0] - r, c[1], c[2]],
-          [c[0] + r, c[1], c[2]],
-        ],
-        [
-          [c[0], c[1] - r, c[2]],
-          [c[0], c[1] + r, c[2]],
-        ],
-        [
-          [c[0], c[1], c[2] - r],
-          [c[0], c[1], c[2] + r],
-        ],
-      ]
-      for (const [a3, b3] of axes) {
-        const a = this.projectSceneToScreen(a3, mvp, rect)
-        const b = this.projectSceneToScreen(b3, mvp, rect)
-        if (a && b && distanceToSegment([clientX, clientY], a, b) < hitRadius) return true
+    let best:
+      | {
+          axis: number
+          distance: number
+          axisScreenN: [number, number]
+          pxPerFieldUnit: number
+          axisSign: number
+        }
+      | null = null
+
+    for (let axis = 0; axis < 3; axis += 1) {
+      const sign = point[axis] < 0.82 ? 1 : -1
+      const delta = 0.1 * sign
+      const tip = [...point]
+      tip[axis] = clamp(tip[axis] + delta, 0.01, 0.99)
+      const tipScreen = this.projectFieldToScreen(tip, mvp, rect)
+      if (!tipScreen) continue
+      const axisVec: [number, number] = [tipScreen[0] - center[0], tipScreen[1] - center[1]]
+      const axisPixels = Math.hypot(axisVec[0], axisVec[1])
+      if (axisPixels < 1e-3) continue
+      const dist = distanceToSegment(click, center, tipScreen)
+      if (!best || dist < best.distance) {
+        best = {
+          axis,
+          distance: dist,
+          axisScreenN: [axisVec[0] / axisPixels, axisVec[1] / axisPixels],
+          pxPerFieldUnit: axisPixels / Math.abs(tip[axis] - point[axis]),
+          axisSign: sign,
+        }
       }
     }
-    return false
+    if (!best) return null
+    if (ballDist <= ballHitRadius || best.distance <= axisHitRadius) return best
+    return null
   }
 
   private projectFieldToScreen(point: number[], mvp: Float32Array, rect: DOMRect): [number, number] | null {
@@ -1133,10 +1179,6 @@ class MindVisRenderer {
       clamp(point[2] / this.displayScale[2] + 0.5, 0.01, 0.99),
       clamp(point[1] / this.displayScale[1] + 0.5, 0.01, 0.99),
     ]
-  }
-
-  private sceneToFieldUnclamped(point: number[]): [number, number, number] {
-    return [point[0] / this.displayScale[0] + 0.5, point[2] / this.displayScale[2] + 0.5, point[1] / this.displayScale[1] + 0.5]
   }
 
   private uploadFieldTexture(buffer: ArrayBuffer, grid: number, linear: boolean) {
