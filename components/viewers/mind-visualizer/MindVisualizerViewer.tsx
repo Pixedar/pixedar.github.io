@@ -120,7 +120,7 @@ export function MindVisualizerViewer() {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const renderer = new MindVisRenderer(canvas, settings, setStatus, setAnalysis, setAnalysisOpen)
+    const renderer = new MindVisRenderer(canvas, settings, setSettings, setStatus, setAnalysis, setAnalysisOpen)
     rendererRef.current = renderer
     renderer.load().catch((error) => {
       setStatus((current) => ({
@@ -597,6 +597,7 @@ class MindVisRenderer {
   private canvas: HTMLCanvasElement
   private gl: WebGL2RenderingContext
   private settings: MindVisSettings
+  private setSettingsState: React.Dispatch<React.SetStateAction<MindVisSettings>>
   private setStatus: React.Dispatch<React.SetStateAction<ViewerStatus>>
   private setAnalysis: React.Dispatch<React.SetStateAction<string>>
   private setAnalysisOpen: React.Dispatch<React.SetStateAction<boolean>>
@@ -641,6 +642,14 @@ class MindVisRenderer {
   private zoom = 2.15
   private pointer: { id: number; x: number; y: number; drag: boolean; mode: "camera" | "probe" } | null = null
   private probes: Probe[] = []
+  private probePlayback: {
+    probe: Probe
+    trajectory: number[][]
+    transitions: Array<{ region_key?: string; region_name?: string }>
+    regionText?: string
+    index: number
+    lastStep: number
+  } | null = null
 
   private readonly strideFloats = 10
   private readonly strideBytes = 10 * 4
@@ -649,6 +658,7 @@ class MindVisRenderer {
   constructor(
     canvas: HTMLCanvasElement,
     settings: MindVisSettings,
+    setSettingsState: React.Dispatch<React.SetStateAction<MindVisSettings>>,
     setStatus: React.Dispatch<React.SetStateAction<ViewerStatus>>,
     setAnalysis: React.Dispatch<React.SetStateAction<string>>,
     setAnalysisOpen: React.Dispatch<React.SetStateAction<boolean>>,
@@ -664,6 +674,7 @@ class MindVisRenderer {
     this.canvas = canvas
     this.gl = gl
     this.settings = settings
+    this.setSettingsState = setSettingsState
     this.setStatus = setStatus
     this.setAnalysis = setAnalysis
     this.setAnalysisOpen = setAnalysisOpen
@@ -766,6 +777,7 @@ class MindVisRenderer {
 
   clearProbes() {
     this.probes = []
+    this.probePlayback = null
     this.currentRegionKey = null
     this.regionHighlightCount = 0
     this.activeRegionMesh = null
@@ -858,13 +870,23 @@ class MindVisRenderer {
         stopped?: boolean
       }
       if (!data.trajectory?.length) throw new Error("backend returned no trajectory")
-      probe.path = data.trajectory
+      const trajectory = data.trajectory
+      probe.path = [trajectory[0]]
       probe.active = false
-      probe.pending = false
-      probe.regions = (data.transitions ?? []).map((item) => String(item.region_key ?? "")).filter(Boolean)
-      probe.lastRegion = probe.regions[probe.regions.length - 1] ?? probe.lastRegion
+      probe.pending = true
+      probe.regions = []
+      this.settings = { ...this.settings, probeMoveMode: false }
+      this.setSettingsState((current) => ({ ...current, probeMoveMode: false }))
+      this.probePlayback = {
+        probe,
+        trajectory,
+        transitions: data.transitions ?? [],
+        regionText: data.regionText,
+        index: 1,
+        lastStep: performance.now(),
+      }
       this.setCurrentRegion(probe.lastRegion)
-      this.setAnalysis(data.regionText ?? `Python backend returned ${probe.path.length} probe samples.`)
+      this.setAnalysis(`Playing Python probe flow (${trajectory.length} samples)...`)
     } catch (error) {
       probe.pending = false
       this.setAnalysis(`Python probe backend unavailable (${error instanceof Error ? error.message : "request failed"}).`)
@@ -888,12 +910,13 @@ class MindVisRenderer {
 
   private onPointerDown(event: PointerEvent) {
     this.canvas.setPointerCapture(event.pointerId)
+    const canMoveProbe = this.settings.probeMoveMode && this.probes.length > 0 && !this.probePlayback
     this.pointer = {
       id: event.pointerId,
       x: event.clientX,
       y: event.clientY,
       drag: false,
-      mode: this.settings.probeMoveMode && this.hitProbeMarker(event.clientX, event.clientY) ? "probe" : "camera",
+      mode: canMoveProbe ? "probe" : "camera",
     }
   }
 
@@ -941,6 +964,7 @@ class MindVisRenderer {
     const count = this.settings.probeCount
     const offsets = makeProbeOffsets(count)
     this.probes = []
+    this.probePlayback = null
 
     offsets.forEach((offset, index) => {
       const pos = [
@@ -1361,11 +1385,42 @@ class MindVisRenderer {
   private frame() {
     if (this.disposed) return
     this.fit()
+    this.advanceProbePlayback()
     this.captureProbes()
     this.render()
     if (!this.settings.paused && !document.hidden) this.updateParticles()
     this.updateFps()
     this.animationFrame = requestAnimationFrame(() => this.frame())
+  }
+
+  private advanceProbePlayback() {
+    const playback = this.probePlayback
+    if (!playback || this.settings.paused) return
+    const now = performance.now()
+    const elapsed = Math.max(16, now - playback.lastStep)
+    const samples = Math.max(1, Math.floor(elapsed / 16) * 4)
+    playback.lastStep = now
+    for (let i = 0; i < samples && playback.index < playback.trajectory.length; i += 1) {
+      const next = playback.trajectory[playback.index]
+      playback.probe.path.push(next)
+      if (playback.probe.path.length > 900) playback.probe.path.shift()
+      const region = this.lookupRegion(next)
+      if (region && region.key !== playback.probe.lastRegion) {
+        playback.probe.lastRegion = region.key
+        playback.probe.regions.push(region.key)
+        this.setCurrentRegion(region.key)
+      }
+      playback.index += 1
+    }
+    if (playback.index >= playback.trajectory.length) {
+      playback.probe.pending = false
+      playback.probe.active = false
+      playback.probe.regions = playback.transitions.map((item) => String(item.region_key ?? "")).filter(Boolean)
+      playback.probe.lastRegion = playback.probe.regions[playback.probe.regions.length - 1] ?? playback.probe.lastRegion
+      this.setCurrentRegion(playback.probe.lastRegion)
+      this.setAnalysis(playback.regionText ?? `Python backend returned ${playback.trajectory.length} probe samples.`)
+      this.probePlayback = null
+    }
   }
 
   private updateParticles() {
@@ -1633,6 +1688,7 @@ class MindVisRenderer {
 
   private drawProbeGizmo(mvp: Float32Array) {
     if (!this.lineProgram || !this.trailBuffer || !this.probes.length) return
+    if (this.probePlayback) return
     const gl = this.gl
     const r = this.probeGizmoRadius()
     const axes = [
