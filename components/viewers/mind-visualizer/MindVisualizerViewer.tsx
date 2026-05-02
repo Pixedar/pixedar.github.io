@@ -43,6 +43,7 @@ type MindVisSettings = {
   meshVisible: boolean
   meshOpacity: number
   branching: boolean
+  probeMoveMode: boolean
   probeCount: 1 | 4 | 8
 }
 
@@ -76,6 +77,7 @@ const initialSettings: MindVisSettings = {
   meshVisible: false,
   meshOpacity: 0.14,
   branching: false,
+  probeMoveMode: false,
   probeCount: 1,
 }
 
@@ -305,9 +307,12 @@ export function MindVisualizerViewer() {
               </ControlSection>
 
               <ControlSection title="Probe">
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   <IconButton label="Probe" active>
                     <Crosshair className="h-4 w-4" />
+                  </IconButton>
+                  <IconButton label="Move" active={settings.probeMoveMode} onClick={() => updateSetting("probeMoveMode", !settings.probeMoveMode)}>
+                    <Gauge className="h-4 w-4" />
                   </IconButton>
                   <IconButton label="Start" onClick={() => rendererRef.current?.startProbeFlow()}>
                     <CirclePlay className="h-4 w-4" />
@@ -339,7 +344,7 @@ export function MindVisualizerViewer() {
                 <SliderRow label="Bounds alpha" min={0.04} max={0.8} step={0.01} value={settings.boundsOpacity} onChange={(value) => updateSetting("boundsOpacity", value)} />
                 <div className="flex items-center gap-2 border border-white/10 bg-black/20 px-3 py-2 text-xs text-white/55">
                   <Gauge className="h-4 w-4 shrink-0" />
-                  <span>Click to place probe, drag the yellow marker to move it, Enter starts Python probe flow</span>
+                  <span>Click to place probe, use Move to drag the gizmo, Enter starts Python probe flow</span>
                 </div>
               </ControlSection>
             </div>
@@ -866,7 +871,7 @@ class MindVisRenderer {
       x: event.clientX,
       y: event.clientY,
       drag: false,
-      mode: this.hitProbeMarker(event.clientX, event.clientY) ? "probe" : "camera",
+      mode: this.settings.probeMoveMode && this.hitProbeMarker(event.clientX, event.clientY) ? "probe" : "camera",
     }
   }
 
@@ -892,7 +897,11 @@ class MindVisRenderer {
     const wasDrag = this.pointer.drag
     const mode = this.pointer.mode
     this.pointer = null
-    if (!wasDrag || mode === "probe") this.placeProbe(event.clientX, event.clientY, false)
+    if (mode === "probe") {
+      this.placeProbe(event.clientX, event.clientY, false)
+    } else if (!wasDrag) {
+      this.placeProbe(event.clientX, event.clientY, false)
+    }
   }
 
   private onWheel(event: WheelEvent) {
@@ -948,7 +957,7 @@ class MindVisRenderer {
       const point = probe.path[probe.path.length - 1]
       if (!point) continue
       const screen = this.projectFieldToScreen(point, mvp, rect)
-      if (screen && Math.hypot(screen[0] - clientX, screen[1] - clientY) < 22) return true
+      if (screen && Math.hypot(screen[0] - clientX, screen[1] - clientY) < 34) return true
     }
     return false
   }
@@ -1381,6 +1390,7 @@ class MindVisRenderer {
     this.drawActiveRegionMesh(mvp)
     this.drawRegionHighlight(mvp)
     this.drawTrails(mvp)
+    this.drawProbeGizmo(mvp)
     this.drawProbeMarkers(mvp)
   }
 
@@ -1485,6 +1495,7 @@ class MindVisRenderer {
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE)
     gl.useProgram(this.highlightProgram)
     gl.uniformMatrix4fv(gl.getUniformLocation(this.highlightProgram, "u_mvp"), false, mvp)
+    gl.uniform1f(gl.getUniformLocation(this.highlightProgram, "u_pointSize"), 4.5)
     gl.uniform4f(gl.getUniformLocation(this.highlightProgram, "u_color"), color[0], color[1], color[2], 0.58)
     gl.bindVertexArray(null)
     gl.bindBuffer(gl.ARRAY_BUFFER, this.regionHighlightBuffer)
@@ -1545,6 +1556,7 @@ class MindVisRenderer {
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE)
     gl.useProgram(this.highlightProgram)
     gl.uniformMatrix4fv(gl.getUniformLocation(this.highlightProgram, "u_mvp"), false, mvp)
+    gl.uniform1f(gl.getUniformLocation(this.highlightProgram, "u_pointSize"), 18)
     gl.uniform4f(gl.getUniformLocation(this.highlightProgram, "u_color"), 1, 0.92, 0.16, 1)
     gl.bindVertexArray(null)
     gl.bindBuffer(gl.ARRAY_BUFFER, this.trailBuffer)
@@ -1552,6 +1564,32 @@ class MindVisRenderer {
     gl.enableVertexAttribArray(0)
     gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
     gl.drawArrays(gl.POINTS, 0, points.length / 3)
+  }
+
+  private drawProbeGizmo(mvp: Float32Array) {
+    if (!this.lineProgram || !this.trailBuffer || !this.probes.length) return
+    const gl = this.gl
+    const segments: number[] = []
+    const r = 0.075
+    for (const probe of this.probes) {
+      const p = probe.path[probe.path.length - 1]
+      if (!p) continue
+      const c = this.fieldToScene(p)
+      segments.push(c[0] - r, c[1], c[2], c[0] + r, c[1], c[2])
+      segments.push(c[0], c[1] - r, c[2], c[0], c[1] + r, c[2])
+      segments.push(c[0], c[1], c[2] - r, c[0], c[1], c[2] + r)
+    }
+    if (!segments.length) return
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE)
+    gl.useProgram(this.lineProgram)
+    gl.uniformMatrix4fv(gl.getUniformLocation(this.lineProgram, "u_mvp"), false, mvp)
+    gl.uniform4f(gl.getUniformLocation(this.lineProgram, "u_color"), 1, 0.9, 0.16, this.settings.probeMoveMode ? 0.95 : 0.48)
+    gl.bindVertexArray(null)
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.trailBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(segments), gl.DYNAMIC_DRAW)
+    gl.enableVertexAttribArray(0)
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
+    gl.drawArrays(gl.LINES, 0, segments.length / 3)
   }
 
   private cameraEye(): [number, number, number] {
@@ -1761,9 +1799,10 @@ const highlightVertexShader = `#version 300 es
 precision highp float;
 layout(location=0) in vec3 a_pos;
 uniform mat4 u_mvp;
+uniform float u_pointSize;
 void main() {
   gl_Position = u_mvp * vec4(a_pos, 1.0);
-  gl_PointSize = 4.5;
+  gl_PointSize = u_pointSize;
 }`
 
 const highlightFragmentShader = `#version 300 es
