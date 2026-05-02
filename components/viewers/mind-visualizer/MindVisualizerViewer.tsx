@@ -110,7 +110,7 @@ export function MindVisualizerViewer() {
     fps: 0,
     particles: initialSettings.particleCount,
     loaded: false,
-    message: "Loading grid64 field",
+    message: "Loading grid125 field",
     field: initialSettings.fieldMode,
   })
   const [analysis, setAnalysis] = useState("Probe trajectory analysis will appear here.")
