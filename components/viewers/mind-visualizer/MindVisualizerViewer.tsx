@@ -56,24 +56,24 @@ type ViewerStatus = {
 
 const initialSettings: MindVisSettings = {
   paused: false,
-  fieldMode: "gated",
+  fieldMode: "mean",
   colorMode: "speed",
   colorMap: "turbo",
   particleCount: 60000,
-  speedScale: 0.48,
+  speedScale: 1,
   lifetimeScale: 1,
-  opacityScale: 0.38,
-  dt: 0.018,
-  pointSize: 3.2,
+  opacityScale: 1,
+  dt: 1,
+  pointSize: 2,
   speedFilter: false,
   filterHigh: true,
-  filterFraction: 0.35,
+  filterFraction: 1,
   velocityClip: false,
-  velocityClipValue: 0.72,
+  velocityClipValue: 1,
   oosVisible: false,
   boundsVisible: true,
   boundsOpacity: 0.28,
-  meshVisible: true,
+  meshVisible: false,
   meshOpacity: 0.14,
   branching: false,
   probeCount: 1,
@@ -161,21 +161,21 @@ export function MindVisualizerViewer() {
         else if (key.toLowerCase() === "v")
           next.colorMode = cycle(["speed", "entropy", "deltaEntropy", "directionalDelta"] as const, current.colorMode)
         else if (key.toLowerCase() === "m") next.colorMap = cycle(["turbo", "rainbow", "bipolar"] as const, current.colorMap)
-        else if (key === "[") next.dt = clamp(current.dt / 1.25, 0.002, 0.08)
-        else if (key === "]") next.dt = clamp(current.dt * 1.25, 0.002, 0.08)
+        else if (key === "[") next.dt = clamp(current.dt / 1.25, 0.05, 4)
+        else if (key === "]") next.dt = clamp(current.dt * 1.25, 0.05, 4)
         else if (key === "+" || key === "=") next.speedScale = clamp(current.speedScale * 1.25, 0.05, 2.5)
         else if (key === "-" || key === "_") next.speedScale = clamp(current.speedScale / 1.25, 0.05, 2.5)
         else if (key === "1") next.lifetimeScale = clamp(current.lifetimeScale / 1.25, 0.35, 3)
         else if (key === "2") next.lifetimeScale = clamp(current.lifetimeScale * 1.25, 0.35, 3)
-        else if (key === "7") next.opacityScale = clamp(current.opacityScale / 1.25, 0.1, 1.5)
-        else if (key === "8") next.opacityScale = clamp(current.opacityScale * 1.25, 0.1, 1.5)
+        else if (key === "7") next.opacityScale = clamp(current.opacityScale / 1.25, 0.02, 1)
+        else if (key === "8") next.opacityScale = clamp(current.opacityScale * 1.25, 0.02, 1)
         else if (key.toLowerCase() === "y") next.speedFilter = !current.speedFilter
         else if (key.toLowerCase() === "u") next.filterHigh = !current.filterHigh
-        else if (key.toLowerCase() === "z") next.filterFraction = clamp(current.filterFraction / 1.25, 0.05, 0.95)
-        else if (key.toLowerCase() === "x") next.filterFraction = clamp(current.filterFraction * 1.25, 0.05, 0.95)
+        else if (key.toLowerCase() === "z") next.filterFraction = clamp(current.filterFraction / 1.25, 0, 1)
+        else if (key.toLowerCase() === "x") next.filterFraction = clamp(current.filterFraction * 1.25, 0, 1)
         else if (key.toLowerCase() === "j") next.velocityClip = !current.velocityClip
-        else if (key.toLowerCase() === "a") next.velocityClipValue = clamp(current.velocityClipValue / 1.25, 0.08, 1.3)
-        else if (key.toLowerCase() === "d") next.velocityClipValue = clamp(current.velocityClipValue * 1.25, 0.08, 1.3)
+        else if (key.toLowerCase() === "a") next.velocityClipValue = clamp(current.velocityClipValue / 1.25, 0.02, 10)
+        else if (key.toLowerCase() === "d") next.velocityClipValue = clamp(current.velocityClipValue * 1.25, 0.02, 10)
         else if (key.toLowerCase() === "o") next.oosVisible = !current.oosVisible
         else if (key === "\\") next.boundsVisible = !current.boundsVisible
         else if (key === "9") next.boundsOpacity = clamp(current.boundsOpacity / 1.25, 0.04, 0.8)
@@ -289,17 +289,17 @@ export function MindVisualizerViewer() {
                 />
                 <SliderRow label="Speed" min={0.05} max={2.5} step={0.01} value={settings.speedScale} onChange={(value) => updateSetting("speedScale", value)} />
                 <SliderRow label="Lifetime" min={0.35} max={3} step={0.01} value={settings.lifetimeScale} onChange={(value) => updateSetting("lifetimeScale", value)} />
-                <SliderRow label="Opacity" min={0.1} max={1.5} step={0.01} value={settings.opacityScale} onChange={(value) => updateSetting("opacityScale", value)} />
-                <SliderRow label="dt" min={0.002} max={0.08} step={0.001} value={settings.dt} onChange={(value) => updateSetting("dt", value)} />
+                <SliderRow label="Opacity" min={0.02} max={1} step={0.01} value={settings.opacityScale} onChange={(value) => updateSetting("opacityScale", value)} />
+                <SliderRow label="dt" min={0.05} max={4} step={0.01} value={settings.dt} onChange={(value) => updateSetting("dt", value)} />
                 <SliderRow label="Point" min={1} max={8} step={0.1} value={settings.pointSize} onChange={(value) => updateSetting("pointSize", value)} />
               </ControlSection>
 
               <ControlSection title="Filters">
                 <ToggleRow label="Speed filter" checked={settings.speedFilter} onChange={(value) => updateSetting("speedFilter", value)} />
                 <ToggleRow label="High speeds" checked={settings.filterHigh} onChange={(value) => updateSetting("filterHigh", value)} />
-                <SliderRow label="Fraction" min={0.05} max={0.95} step={0.01} value={settings.filterFraction} onChange={(value) => updateSetting("filterFraction", value)} />
+                <SliderRow label="Fraction" min={0} max={1} step={0.01} value={settings.filterFraction} onChange={(value) => updateSetting("filterFraction", value)} />
                 <ToggleRow label="Velocity clip" checked={settings.velocityClip} onChange={(value) => updateSetting("velocityClip", value)} />
-                <SliderRow label="Clip" min={0.08} max={1.3} step={0.01} value={settings.velocityClipValue} onChange={(value) => updateSetting("velocityClipValue", value)} />
+                <SliderRow label="Clip" min={0.02} max={10} step={0.01} value={settings.velocityClipValue} onChange={(value) => updateSetting("velocityClipValue", value)} />
               </ControlSection>
 
               <ControlSection title="Probe">
@@ -541,6 +541,7 @@ class MindVisRenderer {
   private particleCount = 0
   private oosBuffer: WebGLBuffer | null = null
   private oosCount = 0
+  private seedPoints: Float32Array | null = null
   private boxBuffer: WebGLBuffer | null = null
   private meshBuffer: WebGLBuffer | null = null
   private meshIndexBuffer: WebGLBuffer | null = null
@@ -854,6 +855,7 @@ class MindVisRenderer {
     const gl = this.gl
     this.oosBuffer = gl.createBuffer()
     this.oosCount = buffer.byteLength / 2 / 3
+    if (this.meta) this.seedPoints = decodeF16WorldPoints(buffer, this.meta)
     gl.bindBuffer(gl.ARRAY_BUFFER, this.oosBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, new Uint16Array(buffer), gl.STATIC_DRAW)
   }
@@ -888,13 +890,14 @@ class MindVisRenderer {
 
     const data = new Float32Array(count * this.strideFloats)
     for (let i = 0; i < count; i += 1) {
-      const seed = randomPointInSphere()
+      const seed = this.sampleSeedPoint()
       const offset = i * this.strideFloats
       data[offset] = seed[0]
       data[offset + 1] = seed[1]
       data[offset + 2] = seed[2]
-      data[offset + 3] = Math.random() * 90
-      data[offset + 4] = 55 + Math.random() * 90
+      const ttl = 30 + Math.floor(Math.random() * 31)
+      data[offset + 3] = Math.random() * ttl
+      data[offset + 4] = ttl
       data[offset + 5] = seed[0]
       data[offset + 6] = seed[1]
       data[offset + 7] = seed[2]
@@ -908,6 +911,16 @@ class MindVisRenderer {
     this.useA = true
     this.probes = []
     this.setStatus((current) => ({ ...current, particles: count }))
+  }
+
+  private sampleSeedPoint() {
+    if (!this.seedPoints || this.seedPoints.length < 3) return randomPointInSphere()
+    const index = Math.floor(Math.random() * (this.seedPoints.length / 3)) * 3
+    return [
+      clamp(this.seedPoints[index] + gaussian01() * 0.004, 0.001, 0.999),
+      clamp(this.seedPoints[index + 1] + gaussian01() * 0.004, 0.001, 0.999),
+      clamp(this.seedPoints[index + 2] + gaussian01() * 0.004, 0.001, 0.999),
+    ]
   }
 
   private makeParticleVao(buffer: WebGLBuffer | null) {
@@ -982,6 +995,7 @@ class MindVisRenderer {
     gl.uniform1f(gl.getUniformLocation(this.updateProgram, "u_dt"), this.settings.dt)
     gl.uniform1f(gl.getUniformLocation(this.updateProgram, "u_speedScale"), this.settings.speedScale)
     gl.uniform1f(gl.getUniformLocation(this.updateProgram, "u_stepNorm"), this.stepNorm())
+    gl.uniform1f(gl.getUniformLocation(this.updateProgram, "u_stepSpeedMax"), Math.max(this.meta.speedMax, 1e-6))
     gl.uniform1f(gl.getUniformLocation(this.updateProgram, "u_ttlScale"), this.settings.lifetimeScale)
     gl.uniform1f(gl.getUniformLocation(this.updateProgram, "u_speedNorm"), Math.max(this.meta.speedP98, 0.001))
     gl.uniform1i(gl.getUniformLocation(this.updateProgram, "u_speedFilter"), this.settings.speedFilter ? 1 : 0)
@@ -1040,7 +1054,7 @@ class MindVisRenderer {
   private stepNorm() {
     if (!this.meta) return 1
     const diag = Math.hypot(this.meta.span[0], this.meta.span[1], this.meta.span[2])
-    return (0.01 * diag) / Math.max(this.meta.speedP98, 1e-6)
+    return (0.01 * diag) / Math.max(this.meta.speedMax, 1e-6)
   }
 
   private drawMesh(mvp: Float32Array) {
@@ -1194,6 +1208,7 @@ uniform vec3 u_span;
 uniform float u_dt;
 uniform float u_speedScale;
 uniform float u_stepNorm;
+uniform float u_stepSpeedMax;
 uniform float u_ttlScale;
 uniform float u_speedNorm;
 uniform int u_speedFilter;
@@ -1209,11 +1224,12 @@ out float v_entropyPrev;
 out float v_entropyEma;
 void main() {
   vec3 p = clamp(a_pos, vec3(0.001), vec3(0.999));
-  vec3 vWorld = texture(u_field, p).xyz;
+  vec3 vWorld = texture(u_field, p.zyx).xyz;
   float speed = length(vWorld);
-  if (u_velocityClip == 1 && speed > u_velocityClipValue) {
-    vWorld *= u_velocityClipValue / max(speed, 0.0001);
-    speed = u_velocityClipValue;
+  float clipSpeed = u_velocityClipValue * u_stepSpeedMax;
+  if (u_velocityClip == 1 && speed > clipSpeed) {
+    vWorld *= clipSpeed / max(speed, 0.0001);
+    speed = clipSpeed;
   }
   float speedN = clamp(speed / max(u_speedNorm, 0.0001), 0.0, 1.5);
   float filtered = 0.0;
@@ -1224,14 +1240,14 @@ void main() {
   }
   vec3 stepv = (vWorld / max(u_span, vec3(0.0001))) * (u_dt * u_speedScale * u_stepNorm);
   p = fract(p + stepv);
-  float ent = texture(u_entropy, p).r;
+  float ent = texture(u_entropy, p.zyx).r;
   float age = a_age + 1.0 + filtered * a_ttl;
   float ttl = a_ttl * u_ttlScale;
   float ema = mix(a_entropyEma, ent - a_entropyPrev, 0.2);
   if (age > ttl) {
     p = a_seed;
     age = 0.0;
-    ent = texture(u_entropy, p).r;
+    ent = texture(u_entropy, p.zyx).r;
     ema = 0.0;
   }
   v_pos = p;
@@ -1266,9 +1282,9 @@ out float v_entropy;
 out float v_deltaEntropy;
 out float v_alpha;
 void main() {
-  vec3 v = texture(u_field, a_pos).xyz;
+  vec3 v = texture(u_field, a_pos.zyx).xyz;
   v_speed = clamp(length(v) / max(u_speedNorm, 0.0001), 0.0, 1.0);
-  v_entropy = texture(u_entropy, a_pos).r;
+  v_entropy = texture(u_entropy, a_pos.zyx).r;
   v_deltaEntropy = a_entropyEma;
   float ageN = a_age / max(a_ttl, 1.0);
   v_alpha = smoothstep(0.0, 0.08, ageN) * (1.0 - smoothstep(0.82, 1.0, ageN));
@@ -1327,7 +1343,7 @@ void main() {
   if (u_colorMode == 2) metric = clamp(abs(v_deltaEntropy) * 4.0, 0.0, 1.0);
   if (u_colorMode == 3) metric = clamp(0.5 + v_deltaEntropy * 2.0, 0.0, 1.0);
   vec3 color = (u_colorMode == 2 || u_colorMode == 3) ? bipolar(signedMetric) : palette(metric, signedMetric);
-  outColor = vec4(color * sprite, sprite * v_alpha * u_alphaScale * 0.72);
+  outColor = vec4(color * sprite, sprite * v_alpha * u_alphaScale);
 }`
 
 const oosVertexShader = `#version 300 es
@@ -1453,6 +1469,34 @@ function randomPointInSphere() {
     r = Math.hypot(dx, dy, dz)
   }
   return [x, y, z]
+}
+
+function decodeF16WorldPoints(buffer: ArrayBuffer, meta: GridMeta) {
+  const src = new Uint16Array(buffer)
+  const out = new Float32Array(src.length)
+  for (let i = 0; i < src.length; i += 3) {
+    out[i] = clamp((halfToFloat(src[i]) - meta.axisMin[0]) / meta.span[0], 0.001, 0.999)
+    out[i + 1] = clamp((halfToFloat(src[i + 1]) - meta.axisMin[1]) / meta.span[1], 0.001, 0.999)
+    out[i + 2] = clamp((halfToFloat(src[i + 2]) - meta.axisMin[2]) / meta.span[2], 0.001, 0.999)
+  }
+  return out
+}
+
+function halfToFloat(value: number) {
+  const sign = (value & 0x8000) ? -1 : 1
+  const exponent = (value >> 10) & 0x1f
+  const fraction = value & 0x03ff
+  if (exponent === 0) return sign * Math.pow(2, -14) * (fraction / 1024)
+  if (exponent === 31) return fraction ? Number.NaN : sign * Number.POSITIVE_INFINITY
+  return sign * Math.pow(2, exponent - 15) * (1 + fraction / 1024)
+}
+
+function gaussian01() {
+  let u = 0
+  let v = 0
+  while (u === 0) u = Math.random()
+  while (v === 0) v = Math.random()
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v)
 }
 
 function makeProbeOffsets(count: number) {
