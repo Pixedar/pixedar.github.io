@@ -630,6 +630,7 @@ class MindVisRenderer {
   private oosBuffer: WebGLBuffer | null = null
   private oosCount = 0
   private seedPoints: Float32Array | null = null
+  private particleMask: Uint8Array | null = null
   private boxBuffer: WebGLBuffer | null = null
   private meshBuffer: WebGLBuffer | null = null
   private meshIndexBuffer: WebGLBuffer | null = null
@@ -1213,9 +1214,46 @@ class MindVisRenderer {
     const gl = this.gl
     this.oosBuffer = gl.createBuffer()
     this.oosCount = buffer.byteLength / 2 / 3
-    if (this.meta) this.seedPoints = decodeF16WorldPoints(buffer, this.meta)
+    if (this.meta) {
+      this.seedPoints = decodeF16WorldPoints(buffer, this.meta)
+      this.buildParticleMask()
+    }
     gl.bindBuffer(gl.ARRAY_BUFFER, this.oosBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, new Uint16Array(buffer), gl.STATIC_DRAW)
+  }
+
+  private buildParticleMask() {
+    if (!this.seedPoints) return
+    const n = 32
+    const mask = new Uint8Array(n * n * n)
+    const radius = 3
+    for (let i = 0; i < this.seedPoints.length; i += 3) {
+      const cx = clamp(Math.floor(this.seedPoints[i] * n), 0, n - 1)
+      const cy = clamp(Math.floor(this.seedPoints[i + 1] * n), 0, n - 1)
+      const cz = clamp(Math.floor(this.seedPoints[i + 2] * n), 0, n - 1)
+      for (let dx = -radius; dx <= radius; dx += 1) {
+        for (let dy = -radius; dy <= radius; dy += 1) {
+          for (let dz = -radius; dz <= radius; dz += 1) {
+            const x = cx + dx
+            const y = cy + dy
+            const z = cz + dz
+            if (x < 0 || y < 0 || z < 0 || x >= n || y >= n || z >= n) continue
+            mask[(x * n + y) * n + z] = 1
+          }
+        }
+      }
+    }
+    this.particleMask = mask
+  }
+
+  private isInsideParticleCloud(pos: number[]) {
+    if (!this.particleMask) return true
+    const n = 32
+    const x = Math.floor(pos[0] * n)
+    const y = Math.floor(pos[1] * n)
+    const z = Math.floor(pos[2] * n)
+    if (x < 0 || y < 0 || z < 0 || x >= n || y >= n || z >= n) return false
+    return this.particleMask[(x * n + y) * n + z] > 0
   }
 
   private async loadLabelGrid(root: string): Promise<LabelGrid | null> {
@@ -1535,10 +1573,10 @@ class MindVisRenderer {
       }
 
       let next = [last[0] + step[0], last[1] + step[1], last[2] + step[2]]
-      if (!insideUnitCube(next) || (this.labelGrid && !this.lookupRegion(next))) {
+      if (!insideUnitCube(next) || !this.isInsideParticleCloud(next)) {
         const half = [last[0] + step[0] * 0.5, last[1] + step[1] * 0.5, last[2] + step[2] * 0.5]
-        if (!insideUnitCube(half) || (this.labelGrid && !this.lookupRegion(half))) {
-          this.stopLiveProbe(probe, `Probe stopped after ${probe.path.length} samples at the edge of the brain field.`)
+        if (!insideUnitCube(half) || !this.isInsideParticleCloud(half)) {
+          this.stopLiveProbe(probe, `Probe stopped after ${probe.path.length} samples at the edge of the particle flow.`)
           continue
         }
         next = half
