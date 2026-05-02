@@ -1,13 +1,13 @@
 import type { Metadata } from "next"
 
-import { MindVisualizerViewer } from "@/components/viewers/mind-visualizer/MindVisualizerViewer"
+import { MindVisualizerLive } from "@/components/viewers/mind-visualizer/MindVisualizerLive"
 
 export const metadata: Metadata = {
-  title: "MindVisualizer Web Playground | Wiktor Tomasik",
+  title: "MindVisualizer Live | Wiktor Tomasik",
   description:
-    "Interactive WebGL2 version of MindVisualizer for exploring an MDN brain information-flow field in the browser.",
+    "Live Python/VTK MindVisualizer session for exploring brain information-flow dynamics.",
 }
 
 export default function MindVisualizerPage() {
-  return <MindVisualizerViewer />
+  return <MindVisualizerLive />
 }
