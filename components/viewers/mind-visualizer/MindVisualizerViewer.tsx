@@ -223,9 +223,31 @@ export function MindVisualizerViewer() {
         <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px]">
           <section className="relative min-h-0 overflow-hidden bg-black">
             <canvas ref={canvasRef} className="block h-full min-h-0 w-full" />
+            {!status.loaded && (
+              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/82">
+                <div className="flex max-w-md flex-col items-center gap-4 border border-[#7AF7B1]/30 bg-[#081014]/88 px-8 py-7 text-center shadow-2xl backdrop-blur">
+                  <div className="relative flex h-16 w-16 items-center justify-center">
+                    <div className="absolute inset-0 animate-spin rounded-full border-2 border-[#7AF7B1]/15 border-t-[#7AF7B1]" />
+                    <Brain className="h-8 w-8 text-[#7AF7B1]" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold text-white">Loading MindVisualizer</div>
+                    <div className="mt-1 text-sm text-white/65">{status.message}</div>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="pointer-events-none absolute left-4 top-4 border border-white/10 bg-black/35 px-3 py-2 text-xs text-white/70 backdrop-blur">
               {status.message}
             </div>
+            {status.loaded && settings.probeMoveMode && (
+              <div className="pointer-events-none absolute left-1/2 top-4 max-w-[min(40rem,calc(100%-2rem))] -translate-x-1/2 border border-[#FFE45E]/45 bg-black/65 px-5 py-3 text-center shadow-xl backdrop-blur">
+                <div className="text-base font-semibold text-[#FFE45E] md:text-lg">Move mode is on</div>
+                <div className="mt-1 text-sm text-white/78">
+                  Drag anywhere inside the large colored gizmo to move the whole probe. No axis picking. Press Enter to start flow.
+                </div>
+              </div>
+            )}
             <div className="pointer-events-none absolute bottom-4 left-4 max-h-28 max-w-[min(34rem,calc(100%-2rem))] overflow-hidden border border-[#7AF7B1]/25 bg-black/45 px-3 py-2 text-xs leading-relaxed text-white/72 backdrop-blur">
               {analysis}
             </div>
@@ -344,7 +366,7 @@ export function MindVisualizerViewer() {
                 <SliderRow label="Bounds alpha" min={0.04} max={0.8} step={0.01} value={settings.boundsOpacity} onChange={(value) => updateSetting("boundsOpacity", value)} />
                 <div className="flex items-center gap-2 border border-white/10 bg-black/20 px-3 py-2 text-xs text-white/55">
                   <Gauge className="h-4 w-4 shrink-0" />
-                  <span>Click to place probe, use Move to drag the gizmo, Enter starts Python probe flow</span>
+                  <span>Click to place probe. Turn on Move, then drag anywhere inside the large yellow gizmo. Enter starts Python probe flow.</span>
                 </div>
               </ControlSection>
             </div>
@@ -953,26 +975,56 @@ class MindVisRenderer {
     if (!this.probes.length) return false
     const rect = this.canvas.getBoundingClientRect()
     const mvp = this.currentMvp()
+    const r = this.probeGizmoRadius()
+    const hitRadius = 56
     for (const probe of this.probes) {
       const point = probe.path[probe.path.length - 1]
       if (!point) continue
-      const screen = this.projectFieldToScreen(point, mvp, rect)
-      if (screen && Math.hypot(screen[0] - clientX, screen[1] - clientY) < 34) return true
+      const c = this.fieldToScene(point)
+      const center = this.projectSceneToScreen(c, mvp, rect)
+      if (center && Math.hypot(center[0] - clientX, center[1] - clientY) < hitRadius) return true
+
+      const axes: [number[], number[]][] = [
+        [
+          [c[0] - r, c[1], c[2]],
+          [c[0] + r, c[1], c[2]],
+        ],
+        [
+          [c[0], c[1] - r, c[2]],
+          [c[0], c[1] + r, c[2]],
+        ],
+        [
+          [c[0], c[1], c[2] - r],
+          [c[0], c[1], c[2] + r],
+        ],
+      ]
+      for (const [a3, b3] of axes) {
+        const a = this.projectSceneToScreen(a3, mvp, rect)
+        const b = this.projectSceneToScreen(b3, mvp, rect)
+        if (a && b && distanceToSegment([clientX, clientY], a, b) < hitRadius) return true
+      }
     }
     return false
   }
 
   private projectFieldToScreen(point: number[], mvp: Float32Array, rect: DOMRect): [number, number] | null {
-    const p = this.fieldToScene(point)
-    const x = p[0]
-    const y = p[1]
-    const z = p[2]
+    return this.projectSceneToScreen(this.fieldToScene(point), mvp, rect)
+  }
+
+  private projectSceneToScreen(point: number[], mvp: Float32Array, rect: DOMRect): [number, number] | null {
+    const x = point[0]
+    const y = point[1]
+    const z = point[2]
     const w = mvp[3] * x + mvp[7] * y + mvp[11] * z + mvp[15]
     if (Math.abs(w) < 1e-6) return null
     const clipX = (mvp[0] * x + mvp[4] * y + mvp[8] * z + mvp[12]) / w
     const clipY = (mvp[1] * x + mvp[5] * y + mvp[9] * z + mvp[13]) / w
     if (clipX < -1.2 || clipX > 1.2 || clipY < -1.2 || clipY > 1.2) return null
     return [rect.left + ((clipX + 1) * 0.5) * rect.width, rect.top + ((1 - clipY) * 0.5) * rect.height]
+  }
+
+  private probeGizmoRadius() {
+    return 0.13
   }
 
   private screenToFieldPosition(clientX: number, clientY: number): [number, number, number] | null {
@@ -994,9 +1046,22 @@ class MindVisRenderer {
       this.displayScale[1] * 0.5,
       this.displayScale[2] * 0.5,
     ]
-    const hit = intersectBox(eye, dir, [-half[0], -half[1], -half[2]], [half[0], half[1], half[2]])
-    if (!hit) return null
-    return this.sceneToField(hit)
+    const range = intersectBoxRange(eye, dir, [-half[0], -half[1], -half[2]], [half[0], half[1], half[2]])
+    if (!range) return null
+    const [t0, t1] = range
+    const start = t0 + (t1 - t0) * 0.14
+    const end = t0 + (t1 - t0) * 0.86
+    for (let i = 0; i <= 48; i += 1) {
+      const t = start + (end - start) * (i / 48)
+      const field = this.sceneToField([eye[0] + dir[0] * t, eye[1] + dir[1] * t, eye[2] + dir[2] * t])
+      if (this.lookupRegion(field)) return field
+    }
+    const fallbackT = t0 + (t1 - t0) * 0.38
+    return this.sceneToField([
+      eye[0] + dir[0] * fallbackT,
+      eye[1] + dir[1] * fallbackT,
+      eye[2] + dir[2] * fallbackT,
+    ])
   }
 
   private fieldToScene(point: number[]): [number, number, number] {
@@ -1569,27 +1634,50 @@ class MindVisRenderer {
   private drawProbeGizmo(mvp: Float32Array) {
     if (!this.lineProgram || !this.trailBuffer || !this.probes.length) return
     const gl = this.gl
-    const segments: number[] = []
-    const r = 0.075
+    const r = this.probeGizmoRadius()
+    const axes = [
+      { offset: [r, 0, 0], color: [1, 0.2, 0.16, this.settings.probeMoveMode ? 1 : 0.62] },
+      { offset: [0, r, 0], color: [0.22, 1, 0.42, this.settings.probeMoveMode ? 1 : 0.62] },
+      { offset: [0, 0, r], color: [0.28, 0.58, 1, this.settings.probeMoveMode ? 1 : 0.62] },
+    ]
     for (const probe of this.probes) {
       const p = probe.path[probe.path.length - 1]
       if (!p) continue
       const c = this.fieldToScene(p)
-      segments.push(c[0] - r, c[1], c[2], c[0] + r, c[1], c[2])
-      segments.push(c[0], c[1] - r, c[2], c[0], c[1] + r, c[2])
-      segments.push(c[0], c[1], c[2] - r, c[0], c[1], c[2] + r)
+      for (const axis of axes) {
+        const o = axis.offset
+        const line = new Float32Array([c[0] - o[0], c[1] - o[1], c[2] - o[2], c[0] + o[0], c[1] + o[1], c[2] + o[2]])
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE)
+        gl.useProgram(this.lineProgram)
+        gl.lineWidth(4)
+        gl.uniformMatrix4fv(gl.getUniformLocation(this.lineProgram, "u_mvp"), false, mvp)
+        gl.uniform4f(gl.getUniformLocation(this.lineProgram, "u_color"), axis.color[0], axis.color[1], axis.color[2], axis.color[3])
+        gl.bindVertexArray(null)
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.trailBuffer)
+        gl.bufferData(gl.ARRAY_BUFFER, line, gl.DYNAMIC_DRAW)
+        gl.enableVertexAttribArray(0)
+        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
+        gl.drawArrays(gl.LINES, 0, 2)
+        this.drawGizmoPoints(mvp, makeAxisHandlePoints(c, o), axis.color)
+      }
     }
-    if (!segments.length) return
+    gl.lineWidth(1)
+  }
+
+  private drawGizmoPoints(mvp: Float32Array, points: number[][], color: number[]) {
+    if (!this.highlightProgram || !this.trailBuffer) return
+    const gl = this.gl
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE)
-    gl.useProgram(this.lineProgram)
-    gl.uniformMatrix4fv(gl.getUniformLocation(this.lineProgram, "u_mvp"), false, mvp)
-    gl.uniform4f(gl.getUniformLocation(this.lineProgram, "u_color"), 1, 0.9, 0.16, this.settings.probeMoveMode ? 0.95 : 0.48)
+    gl.useProgram(this.highlightProgram)
+    gl.uniformMatrix4fv(gl.getUniformLocation(this.highlightProgram, "u_mvp"), false, mvp)
+    gl.uniform1f(gl.getUniformLocation(this.highlightProgram, "u_pointSize"), this.settings.probeMoveMode ? 10 : 7)
+    gl.uniform4f(gl.getUniformLocation(this.highlightProgram, "u_color"), color[0], color[1], color[2], color[3])
     gl.bindVertexArray(null)
     gl.bindBuffer(gl.ARRAY_BUFFER, this.trailBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(segments), gl.DYNAMIC_DRAW)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points.flat()), gl.DYNAMIC_DRAW)
     gl.enableVertexAttribArray(0)
     gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
-    gl.drawArrays(gl.LINES, 0, segments.length / 3)
+    gl.drawArrays(gl.POINTS, 0, points.length)
   }
 
   private cameraEye(): [number, number, number] {
@@ -1975,6 +2063,15 @@ function makeProbeOffsets(count: number) {
   ]
 }
 
+function makeAxisHandlePoints(center: number[], offset: number[]) {
+  const points: number[][] = []
+  for (let i = -6; i <= 6; i += 1) {
+    const t = i / 6
+    points.push([center[0] + offset[0] * t, center[1] + offset[1] * t, center[2] + offset[2] * t])
+  }
+  return points
+}
+
 function makeBoxLines(scale: [number, number, number]) {
   const x = scale[0] * 0.5
   const y = scale[1] * 0.5
@@ -2028,7 +2125,25 @@ function vec3Normalize(v: number[]): [number, number, number] {
   return [v[0] / len, v[1] / len, v[2] / len]
 }
 
+function distanceToSegment(p: number[], a: number[], b: number[]) {
+  const abx = b[0] - a[0]
+  const aby = b[1] - a[1]
+  const apx = p[0] - a[0]
+  const apy = p[1] - a[1]
+  const ab2 = abx * abx + aby * aby
+  const t = ab2 <= 1e-6 ? 0 : clamp((apx * abx + apy * aby) / ab2, 0, 1)
+  return Math.hypot(apx - abx * t, apy - aby * t)
+}
+
 function intersectBox(origin: number[], dir: number[], min: number[], max: number[]): [number, number, number] | null {
+  const range = intersectBoxRange(origin, dir, min, max)
+  if (!range) return null
+  const t = range[0] >= 0 ? range[0] : range[1]
+  if (t < 0 || !Number.isFinite(t)) return null
+  return [origin[0] + dir[0] * t, origin[1] + dir[1] * t, origin[2] + dir[2] * t]
+}
+
+function intersectBoxRange(origin: number[], dir: number[], min: number[], max: number[]): [number, number] | null {
   let tMin = -Infinity
   let tMax = Infinity
   for (let axis = 0; axis < 3; axis += 1) {
@@ -2044,9 +2159,8 @@ function intersectBox(origin: number[], dir: number[], min: number[], max: numbe
     tMax = Math.min(tMax, t1)
     if (tMax < tMin) return null
   }
-  const t = tMin >= 0 ? tMin : tMax
-  if (t < 0 || !Number.isFinite(t)) return null
-  return [origin[0] + dir[0] * t, origin[1] + dir[1] * t, origin[2] + dir[2] * t]
+  if (tMax < 0 || !Number.isFinite(tMin) || !Number.isFinite(tMax)) return null
+  return [Math.max(tMin, 0), tMax]
 }
 
 function mat4Identity() {
