@@ -153,6 +153,12 @@ export function MindVisualizerViewer() {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null
       if (target && ["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName)) return
+      if (event.key === "Enter") {
+        event.preventDefault()
+        setSettings((current) => ({ ...current, probeMoveMode: false }))
+        rendererRef.current?.startProbeFlow()
+        return
+      }
 
       setSettings((current) => {
         const next = { ...current }
@@ -182,7 +188,6 @@ export function MindVisualizerViewer() {
         else if (key === "0") next.boundsOpacity = clamp(current.boundsOpacity * 1.25, 0.04, 0.8)
         else if (key.toLowerCase() === "b") next.branching = !current.branching
         else if (key.toLowerCase() === "n") next.probeCount = current.probeCount === 1 ? 4 : current.probeCount === 4 ? 8 : 1
-        else if (key === "Enter") rendererRef.current?.startProbeFlow()
         else if (key.toLowerCase() === "c") rendererRef.current?.clearProbes()
         else if (key.toLowerCase() === "g" && event.shiftKey) rendererRef.current?.explainProbe()
         else return current
@@ -336,7 +341,13 @@ export function MindVisualizerViewer() {
                   <IconButton label="Move" active={settings.probeMoveMode} onClick={() => updateSetting("probeMoveMode", !settings.probeMoveMode)}>
                     <Gauge className="h-4 w-4" />
                   </IconButton>
-                  <IconButton label="Start" onClick={() => rendererRef.current?.startProbeFlow()}>
+                  <IconButton
+                    label="Start"
+                    onClick={() => {
+                      updateSetting("probeMoveMode", false)
+                      rendererRef.current?.startProbeFlow()
+                    }}
+                  >
                     <CirclePlay className="h-4 w-4" />
                   </IconButton>
                   <IconButton label="Clear" onClick={() => rendererRef.current?.clearProbes()}>
@@ -849,6 +860,8 @@ class MindVisRenderer {
       return
     }
     probe.pending = true
+    this.settings = { ...this.settings, probeMoveMode: false }
+    this.setSettingsState((current) => ({ ...current, probeMoveMode: false }))
     this.setAnalysis("Following probe with the original Python probe logic...")
     try {
       const response = await fetch(`${api}/api/mindvis/trajectory`, {
@@ -875,8 +888,6 @@ class MindVisRenderer {
       probe.active = false
       probe.pending = true
       probe.regions = []
-      this.settings = { ...this.settings, probeMoveMode: false }
-      this.setSettingsState((current) => ({ ...current, probeMoveMode: false }))
       this.probePlayback = {
         probe,
         trajectory,
@@ -889,6 +900,7 @@ class MindVisRenderer {
       this.setAnalysis(`Playing Python probe flow (${trajectory.length} samples)...`)
     } catch (error) {
       probe.pending = false
+      this.probePlayback = null
       this.setAnalysis(`Python probe backend unavailable (${error instanceof Error ? error.message : "request failed"}).`)
     }
   }
@@ -910,7 +922,10 @@ class MindVisRenderer {
 
   private onPointerDown(event: PointerEvent) {
     this.canvas.setPointerCapture(event.pointerId)
-    const canMoveProbe = this.settings.probeMoveMode && this.probes.length > 0 && !this.probePlayback
+    const canMoveProbe =
+      this.probes.length > 0 &&
+      !this.probePlayback &&
+      (this.settings.probeMoveMode || this.hitProbeMarker(event.clientX, event.clientY))
     this.pointer = {
       id: event.pointerId,
       x: event.clientX,
@@ -1688,7 +1703,7 @@ class MindVisRenderer {
 
   private drawProbeGizmo(mvp: Float32Array) {
     if (!this.lineProgram || !this.trailBuffer || !this.probes.length) return
-    if (this.probePlayback) return
+    if (this.probePlayback || this.probes.some((probe) => probe.pending)) return
     const gl = this.gl
     const r = this.probeGizmoRadius()
     const axes = [
