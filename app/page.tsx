@@ -43,6 +43,15 @@ const projects = [
     media: "/abstract-generative-art-wallpaper.png",
     mediaType: "image" as const,
   },
+  {
+    id: 5,
+    title: "TraceScope: AI Paper Flow Demo",
+    shortDescription: "Semantic flow visualization of recent AI research papers",
+    description:
+      "A web demo for TraceScope, built from precomputed local analysis of recent AI papers and preprints. The browser loads cached clusters, attractors, paths, and a WebGL particle flow field inspired by the native Python renderer.",
+    media: "/projects/tracescope/tracescope-flow.png",
+    mediaType: "image" as const,
+  },
 ]
 
 export default function PortfolioPage() {

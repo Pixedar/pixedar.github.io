@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": 1777754043.4129457,
+  "snapshot": "smoke-ai",
+  "fingerprint": "d1c6edf08f0e77f3",
+  "paperCount": 12,
+  "gridShape": [
+    40,
+    40,
+    40
+  ],
+  "embedDim": 12,
+  "flowMode": "rbf",
+  "axisMin": [
+    -7.411700248718262,
+    -8.044766426086426,
+    9.299099922180176
+  ],
+  "axisMax": [
+    -4.3957366943359375,
+    -4.862067222595215,
+    12.127392768859863
+  ],
+  "repository": "https://github.com/Pixedar/TraceScope"
+}

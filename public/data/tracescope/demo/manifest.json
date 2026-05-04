@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": 1777753812.534893,
+  "snapshot": "demo",
+  "fingerprint": "5bf83bc757e5849f",
+  "paperCount": 4112,
+  "gridShape": [
+    40,
+    40,
+    40
+  ],
+  "embedDim": 256,
+  "flowMode": "rbf",
+  "axisMin": [
+    -5.695886135101318,
+    27.037519454956055,
+    -2.3018624782562256
+  ],
+  "axisMax": [
+    2.5504519939422607,
+    34.016536712646484,
+    3.7877197265625
+  ],
+  "repository": "https://github.com/Pixedar/TraceScope"
+}
