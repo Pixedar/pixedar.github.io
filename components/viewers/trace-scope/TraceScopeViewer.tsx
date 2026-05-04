@@ -277,7 +277,7 @@ export function TraceScopeViewer() {
       const key = event.key.toLowerCase()
       if (event.key === " ") {
         event.preventDefault()
-        updateSetting("flowActive", !settings.flowActive)
+        updateSetting("ballFollow", !settings.ballFollow)
       } else if (key === "f") updateSetting("flowActive", !settings.flowActive)
       else if (key === "b") updateSetting("ballFollow", !settings.ballFollow)
       else if (key === "p") updateSetting("showPoints", !settings.showPoints)
@@ -391,7 +391,7 @@ export function TraceScopeViewer() {
                 <ToggleRow label="Follow flow" checked={settings.ballFollow} onChange={(value) => updateSetting("ballFollow", value)} />
                 {!settings.ballFollow ? (
                   <div className="rounded px-1 py-1 text-[11px] leading-relaxed text-[#88ccff]">
-                    Hold Ctrl + drag gizmo arrows to move probe · M to mark · E to explain
+                    Drag gizmo arrows (X/Y/Z) to move probe · Click to place · Space = follow flow · M to mark · E to explain
                   </div>
                 ) : (
                   <div className="rounded px-1 py-1 text-[11px] leading-relaxed text-white/45">
@@ -692,8 +692,6 @@ class TraceScopeRenderer {
   // Probe & path state
   private marked: Vec3[] = []
   private probe: Vec3
-  private probeTrail: Vec3[] = []
-  private readonly MAX_TRAIL = 80
 
   // Pre-computed path data
   private dataPath: Vec3[] = []
@@ -725,13 +723,11 @@ class TraceScopeRenderer {
   private blobRes = 42
 
   // Gizmo state
-  private gizmoVisible = false
   private gizmoDragging: number | null = null
   private gizmoDragStartPos: Vec3 | null = null
   private gizmoDragStartClick: [number, number] | null = null
   private gizmoDragAxisScreenN: [number, number] | null = null
   private gizmoDragPxPerUnit = 1.0
-  private ctrlHeld = false
   private gizmoArrowLen = 0
 
   // Click tracking (for attractor selection)
@@ -844,7 +840,6 @@ class TraceScopeRenderer {
 
   clearPath() {
     this.marked = []
-    this.probeTrail = []
     this.highlightedAttractor = null
     this.updateProbeInfo()
   }
@@ -897,34 +892,19 @@ class TraceScopeRenderer {
   // ─────────────────────────────────────────────
 
   private installEvents() {
-    // Ctrl key shows/hides gizmo
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "Control") {
-        this.ctrlHeld = true
-        this.gizmoVisible = true
-      }
-    })
-    window.addEventListener("keyup", (e) => {
-      if (e.key === "Control" && this.gizmoDragging === null) {
-        this.ctrlHeld = false
-        this.gizmoVisible = false
-      }
-    })
-
     this.canvas.addEventListener("pointerdown", (event) => {
       this.pointerDownPos = [event.clientX, event.clientY]
       this.pointerMoved = false
 
-      // Check gizmo hit first when Ctrl held
-      if (this.ctrlHeld && this.gizmoVisible) {
-        const rect = this.canvas.getBoundingClientRect()
-        const dpr = Math.min(window.devicePixelRatio || 1, 2)
-        const sx = (event.clientX - rect.left) * dpr
-        const sy = (event.clientY - rect.top) * dpr
-        if (this.handleGizmoPress(sx, sy)) {
-          this.canvas.setPointerCapture(event.pointerId)
-          return
-        }
+      const rect = this.canvas.getBoundingClientRect()
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const sx = (event.clientX - rect.left) * dpr
+      const sy = (event.clientY - rect.top) * dpr
+
+      // Always check gizmo hit first (no Ctrl needed)
+      if (this.handleGizmoPress(sx, sy)) {
+        this.canvas.setPointerCapture(event.pointerId)
+        return
       }
 
       this.dragging = true
@@ -981,13 +961,6 @@ class TraceScopeRenderer {
       event.preventDefault()
       this.distance = clamp(this.distance + event.deltaY * 0.01, 2.5, 28)
     }, { passive: false })
-
-    this.canvas.addEventListener("dblclick", (event) => {
-      const rect = this.canvas.getBoundingClientRect()
-      const x = (event.clientX - rect.left) / rect.width
-      const y = (event.clientY - rect.top) / rect.height
-      this.pickNearestScreenPoint(x, y)
-    })
   }
 
   // ─────────────────────────────────────────────
@@ -1049,32 +1022,29 @@ class TraceScopeRenderer {
   }
 
   private handleCanvasClick(sx: number, sy: number) {
-    if (!this.settings.showAttractors) return
-    const atts = this.data.flowAnalysis.attractors ?? []
-    if (!atts.length) return
-
-    let bestIdx = -1
-    let bestDist = Infinity
-    const THRESHOLD = 100
-
-    for (let i = 0; i < atts.length; i++) {
-      const sc = this.projectToScreen(atts[i].position)
-      const d = Math.hypot(sc[0] - sx, sc[1] - sy)
-      if (d < bestDist) {
-        bestDist = d
-        bestIdx = i
+    // Check attractor click first (when visible)
+    if (this.settings.showAttractors) {
+      const atts = this.data.flowAnalysis.attractors ?? []
+      let bestIdx = -1
+      let bestDist = Infinity
+      for (let i = 0; i < atts.length; i++) {
+        const sc = this.projectToScreen(atts[i].position)
+        const d = Math.hypot(sc[0] - sx, sc[1] - sy)
+        if (d < bestDist) { bestDist = d; bestIdx = i }
       }
-    }
-
-    if (bestIdx >= 0 && bestDist < THRESHOLD) {
-      const newHighlight = bestIdx === this.highlightedAttractor ? null : bestIdx
-      this.highlightedAttractor = newHighlight
-      if (newHighlight !== null && atts[newHighlight]?.explanation) {
-        this.setProbeInfo(atts[newHighlight].explanation!)
+      if (bestIdx >= 0 && bestDist < 80) {
+        const newHighlight = bestIdx === this.highlightedAttractor ? null : bestIdx
+        this.highlightedAttractor = newHighlight
+        if (newHighlight !== null && atts[newHighlight]?.explanation) {
+          this.setProbeInfo(atts[newHighlight].explanation!)
+        }
+        return
       }
-    } else {
       this.highlightedAttractor = null
     }
+
+    // Click-to-place: move probe to nearest data point by screen distance
+    this.pickNearestScreenPoint(sx, sy)
   }
 
   // ─────────────────────────────────────────────
@@ -1383,7 +1353,6 @@ class TraceScopeRenderer {
 
   private updateProbe(_dt: number) {
     const v = this.sampleVelocity(this.probe)
-    const speed = length(v)
 
     // Slow down when outside blob (matches Python's 10% deceleration)
     let dtScale = 0.02 * this.settings.speed
@@ -1396,12 +1365,6 @@ class TraceScopeRenderer {
       clamp(this.probe[1] + v[1] * dtScale, this.axisMin[1], this.axisMax[1]),
       clamp(this.probe[2] + v[2] * dtScale, this.axisMin[2], this.axisMax[2]),
     ]
-
-    // Update trail
-    if (speed > 1e-8) {
-      this.probeTrail.push([...this.probe] as Vec3)
-      if (this.probeTrail.length > this.MAX_TRAIL) this.probeTrail.shift()
-    }
   }
 
   private updateProbeInfo() {
@@ -1477,7 +1440,6 @@ class TraceScopeRenderer {
     if (this.settings.showPath) this.drawDataPath(viewProj)
     if (this.settings.showSavedPaths) this.drawSavedPaths(viewProj)
     if (this.settings.showAttractors) this.drawAttractors(viewProj)
-    this.drawProbeTrail(viewProj)
     this.drawMarkedPath(viewProj)
     this.drawProbe(viewProj)
     this.drawGizmo(viewProj)
@@ -1506,19 +1468,6 @@ class TraceScopeRenderer {
     bindExistingAttrib(gl, this.pointProgram, this.pointBuffer, "a_position", 3)
     bindExistingAttrib(gl, this.pointProgram, this.pointColorBuffer, "a_color", 4)
     gl.drawArrays(gl.POINTS, 0, this.data.papers.length)
-  }
-
-  // Probe trail (yellow line showing recent movement)
-  private drawProbeTrail(viewProj: Float32Array) {
-    if (!this.settings.ballFollow || this.probeTrail.length < 2) return
-    const gl = this.gl
-    gl.useProgram(this.lineProgram)
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-    gl.uniformMatrix4fv(gl.getUniformLocation(this.lineProgram, "u_matrix"), false, viewProj)
-    gl.uniform4f(gl.getUniformLocation(this.lineProgram, "u_color"), 1, 1, 0, 0.35)
-    const arr = new Float32Array(this.probeTrail.flatMap((p) => scalePoint(p, this.sceneScale)))
-    bindAttrib(gl, this.lineProgram, this.lineBuffer, "a_position", arr, 3, gl.DYNAMIC_DRAW)
-    gl.drawArrays(gl.LINE_STRIP, 0, this.probeTrail.length)
   }
 
   // Marked path (static orange spline connecting marked control points)
@@ -1710,7 +1659,7 @@ class TraceScopeRenderer {
 
   // 3D probe gizmo (X/Y/Z axis arrows)
   private drawGizmo(viewProj: Float32Array) {
-    if (!this.gizmoVisible) return
+    // Gizmo is always visible around the probe
     const gl = this.gl
 
     // Arrow colors: X=red, Y=green, Z=blue
@@ -1786,16 +1735,13 @@ class TraceScopeRenderer {
     return multiply(proj, view)
   }
 
-  private pickNearestScreenPoint(x: number, y: number) {
+  private pickNearestScreenPoint(sx: number, sy: number) {
     let best = 0
     let bestD = Infinity
     for (const paper of this.data.papers) {
-      const d = Math.abs((paper.projected3d[0] - this.axisMin[0]) / (this.span[0] || 1) - x)
-        + Math.abs((paper.projected3d[1] - this.axisMin[1]) / (this.span[1] || 1) - (1 - y))
-      if (d < bestD) {
-        bestD = d
-        best = paper.id
-      }
+      const sc = this.projectToScreen(paper.projected3d)
+      const d = Math.hypot(sc[0] - sx, sc[1] - sy)
+      if (d < bestD) { bestD = d; best = paper.id }
     }
     this.focusPaper(best)
   }

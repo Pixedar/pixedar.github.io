@@ -8,8 +8,6 @@ import { ProjectDetailEmotionAttractor } from "@/components/project-detail-emoti
 import { ProjectDetailBrainInformationFlow } from "@/components/project-detail-brain-information-flow"
 import { ProjectDetailSelfAwareness } from "@/components/ProjectDetailSelfAwareness"
 import { ProjectDetailGenerativeWallpaper } from "@/components/project-detail-generative-wallpaper"
-import { ProjectDetailTraceScope } from "@/components/project-detail-trace-scope"
-
 
 interface Project {
   id: number
@@ -46,8 +44,6 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
   const isBrainInformationFlow = project.id === 2
   const isSelfAwareness = project.id === 3
   const isGenerativeWallpaper = project.id === 4
-  const isTraceScope = project.id === 5
-
 
   return (
     <div
@@ -132,7 +128,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
         {/* Bottom Section - Content */}
         <div className="relative bg-[#F2EFE9] px-8 py-12 md:px-16 md:py-16">
           <div className="max-w-4xl mx-auto">
-            {(isEmotionAttractor || isBrainInformationFlow || isSelfAwareness || isGenerativeWallpaper || isTraceScope) ? (
+            {(isEmotionAttractor || isBrainInformationFlow || isSelfAwareness || isGenerativeWallpaper) ? (
               <>
                 {/* Project Title */}
                 <h1 className="text-5xl md:text-7xl font-bold mb-8 text-balance" style={{ color: "#1a1a1a" }}>
@@ -143,7 +139,6 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
                 {isBrainInformationFlow ? <ProjectDetailBrainInformationFlow /> : null}
                 {isSelfAwareness ? <ProjectDetailSelfAwareness /> : null}
                 {isGenerativeWallpaper ? <ProjectDetailGenerativeWallpaper /> : null}
-                {isTraceScope ? <ProjectDetailTraceScope /> : null}
               </>
             ) : (
               <>
