@@ -1,3 +1,12 @@
+---
+title: TraceScope API
+emoji: 🔬
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+---
+
 # TraceScope Explain API
 
 Tiny Hugging Face Spaces backend for the TraceScope web demo.

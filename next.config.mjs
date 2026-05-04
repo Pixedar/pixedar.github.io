@@ -21,6 +21,7 @@ const nextConfig = {
   // Make basePath available to client code (useful for static exports on GitHub Pages)
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,
+    NEXT_PUBLIC_TRACESCOPE_API_URL: "https://pixedar-tracescope-api.hf.space",
   },
 
   typescript: {
