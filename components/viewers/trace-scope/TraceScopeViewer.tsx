@@ -183,7 +183,10 @@ export function TraceScopeViewer() {
       .then((data) => {
         if (cancelled) return
         dataRef.current = data
-        const renderer = new TraceScopeRenderer(canvas, data, settings, setStatus, setProbeInfo, setHintText, () => {})
+        const renderer = new TraceScopeRenderer(
+          canvas, data, settings, setStatus, setProbeInfo, setHintText,
+          () => setSettings((s) => ({ ...s, ballFollow: false })),
+        )
         rendererRef.current = renderer
         renderer.start()
         renderer.onBallFollowChanged(initialSettings.ballFollow)
@@ -347,7 +350,7 @@ export function TraceScopeViewer() {
                 <div className="pointer-events-none absolute left-4 top-4 max-w-[min(34rem,calc(100%-2rem))] rounded border border-white/10 bg-black/35 px-3 py-2 text-xs text-white/70 backdrop-blur">
                   {status.message}
                 </div>
-                <div className="pointer-events-none absolute bottom-4 left-4 max-h-32 max-w-[min(42rem,calc(100%-2rem))] overflow-hidden rounded border border-[#FF6B35]/25 bg-black/45 px-3 py-2 text-xs leading-relaxed text-white/72 backdrop-blur">
+                <div className="pointer-events-none absolute bottom-4 left-4 max-h-20 max-w-[min(34rem,calc(100%-2rem))] overflow-hidden rounded border border-white/10 bg-black/30 px-2 py-1.5 text-xs leading-relaxed text-white/40 backdrop-blur whitespace-pre">
                   {probeInfo}
                 </div>
               </>
@@ -427,7 +430,7 @@ export function TraceScopeViewer() {
                     {settings.showSavedPaths ? "Hide Saved Paths" : "Show Saved Paths"}
                   </button>
                 ) : null}
-                <div className="min-h-28 rounded border border-white/10 bg-[#1E1E1E] p-3 text-sm leading-relaxed text-white/72">
+                <div className="min-h-16 rounded border border-white/8 bg-[#1E1E1E]/60 p-2 text-xs leading-relaxed text-white/40 whitespace-pre-wrap">
                   {probeInfo}
                 </div>
               </ControlSection>
@@ -753,6 +756,7 @@ class TraceScopeRenderer {
   private pointerDownPos: [number, number] | null = null
   private pointerMoved = false
   private highlightedAttractor: number | null = null
+  private highlightedPaper: number | null = null
 
   // Cached view-projection for screen-space ops
   private currentViewProj: Float32Array = new Float32Array(16)
@@ -1082,6 +1086,28 @@ class TraceScopeRenderer {
   }
 
   private handleCanvasClick(sx: number, sy: number) {
+    // Data-point click (when points are visible): highlight paper and show its info
+    if (this.settings.showPoints) {
+      let bestPaper = -1
+      let bestPaperDist = Infinity
+      for (const paper of this.data.papers) {
+        const sc = this.projectToScreen(paper.projected3d)
+        const d = Math.hypot(sc[0] - sx, sc[1] - sy)
+        if (d < bestPaperDist) { bestPaperDist = d; bestPaper = paper.id }
+      }
+      if (bestPaper >= 0 && bestPaperDist < 24) {
+        const paper = this.data.papers[bestPaper]
+        this.highlightedPaper = this.highlightedPaper === bestPaper ? null : bestPaper
+        if (this.highlightedPaper !== null && paper) {
+          const clusterLabel = this.data.clusters[paper.cluster]?.label ?? ""
+          const snippet = paper.abstract.length > 180 ? paper.abstract.slice(0, 177) + "…" : paper.abstract
+          this.setProbeInfo(`${paper.title}\n${paper.arxivId}  ·  ${clusterLabel}\n\n${snippet}`)
+        }
+        return
+      }
+      this.highlightedPaper = null
+    }
+
     const probeSc = this.projectToScreen(this.probe)
     const probeDist = Math.hypot(probeSc[0] - sx, probeSc[1] - sy)
 
@@ -1100,7 +1126,6 @@ class TraceScopeRenderer {
     const attClose = bestAttIdx >= 0 && bestAttDist < 200
 
     if (attClose) {
-      // Probe wins only when very close AND much closer than the attractor (mirrors Python logic)
       const probeWins = probeDist < 30 && probeDist < bestAttDist * 0.5
       if (probeWins) {
         this.gizmoActive = true
@@ -1110,7 +1135,16 @@ class TraceScopeRenderer {
         this.highlightedAttractor = newHighlight
         if (newHighlight !== null) {
           const att = (this.data.flowAnalysis.attractors ?? [])[newHighlight]
-          if (att?.explanation) this.setProbeInfo(att.explanation)
+          if (att) {
+            if (att.explanation) {
+              this.setProbeInfo(att.explanation)
+            } else {
+              const pct = Math.round(att.basin_fraction * 100)
+              this.setProbeInfo(
+                `Attractor ${att.label}  ·  strength ${att.strength.toFixed(2)}  ·  basin covers ${pct}% of space\nPress E to generate an explanation with AI.`
+              )
+            }
+          }
         }
         this.updateHint()
       }
@@ -1460,11 +1494,12 @@ class TraceScopeRenderer {
   }
 
   private updateProbeInfo() {
-    const nearest = this.nearestPapers(3)
+    const nearest = this.nearestPapers(1)
     const pct = this.probe.map((v, i) => Math.round(((v - this.axisMin[i]) / (this.span[i] || 1)) * 100))
-    const axes = this.data.axes.map((axis, i) => `${axis.label}: ${pct[i]}%`).join("\n")
-    const papers = nearest.map((p) => `- ${p.title}`).join("\n")
-    this.setProbeInfo(`${axes}\n\nNearest papers:\n${papers}`)
+    const axes = this.data.axes.map((axis, i) => `${axis.label.split(" ")[0]}: ${pct[i]}%`).join("  ·  ")
+    const paper = nearest[0]
+    const title = paper ? (paper.title.length > 72 ? paper.title.slice(0, 69) + "…" : paper.title) : ""
+    this.setProbeInfo(axes + (title ? `\n${title}` : ""))
   }
 
   private sampleVelocity(p: Vec3): Vec3 {
@@ -1561,6 +1596,21 @@ class TraceScopeRenderer {
     bindExistingAttrib(gl, this.pointProgram, this.pointBuffer, "a_position", 3)
     bindExistingAttrib(gl, this.pointProgram, this.pointColorBuffer, "a_color", 4)
     gl.drawArrays(gl.POINTS, 0, this.data.papers.length)
+
+    // Highlighted paper — large white dot on top
+    if (this.highlightedPaper !== null) {
+      const paper = this.data.papers[this.highlightedPaper]
+      if (paper) {
+        gl.disable(gl.DEPTH_TEST)
+        gl.uniform1f(gl.getUniformLocation(this.pointProgram, "u_point_size"), 22)
+        const pos = new Float32Array(scalePoint(paper.projected3d, this.sceneScale))
+        const col = new Float32Array([1, 1, 1, 1])
+        bindAttrib(gl, this.pointProgram, this.scratchBuffer, "a_position", pos, 3, gl.DYNAMIC_DRAW)
+        bindAttrib(gl, this.pointProgram, this.scratchColorBuffer, "a_color", col, 4, gl.DYNAMIC_DRAW)
+        gl.drawArrays(gl.POINTS, 0, 1)
+        gl.enable(gl.DEPTH_TEST)
+      }
+    }
   }
 
   // Marked path (static orange spline connecting marked control points)
@@ -1637,27 +1687,38 @@ class TraceScopeRenderer {
     gl.drawArrays(gl.LINE_STRIP, 0, spline.length)
   }
 
-  // Attractor basins: mesh if available, else point cloud fallback
+  // Attractor basins: core dot first (always visible), then mesh/cloud as glow halo
   private drawAttractors(viewProj: Float32Array) {
     const atts = this.data.flowAnalysis.attractors ?? []
     if (!atts.length) return
     const gl = this.gl
-
-    // Hue-cycle colors: one per attractor
     const attColors: [number, number, number][] = atts.map((_, i) => hsv((0.82 + i * 0.19) % 1, 0.78, 1))
 
     for (let i = 0; i < atts.length; i++) {
       const att = atts[i]
       const isHighlighted = this.highlightedAttractor === i
       const [r, g, b] = attColors[i]
-      const meshAlpha = isHighlighted ? 0.80 : 0.55
-      const pointAlpha = isHighlighted ? 0.75 : 0.45
 
-      // Prefer mesh rendering when available
+      // 1. Core dot — depth test OFF so always visible through particles
+      gl.useProgram(this.pointProgram)
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+      gl.disable(gl.DEPTH_TEST)
+      gl.uniformMatrix4fv(gl.getUniformLocation(this.pointProgram, "u_matrix"), false, viewProj)
+      gl.uniform1f(gl.getUniformLocation(this.pointProgram, "u_point_size"), isHighlighted ? 26 : 16)
+      const corePos = new Float32Array(scalePoint(att.position, this.sceneScale))
+      const coreCol = new Float32Array([r, g, b, 0.98])
+      bindAttrib(gl, this.pointProgram, this.scratchBuffer, "a_position", corePos, 3, gl.DYNAMIC_DRAW)
+      bindAttrib(gl, this.pointProgram, this.scratchColorBuffer, "a_color", coreCol, 4, gl.DYNAMIC_DRAW)
+      gl.drawArrays(gl.POINTS, 0, 1)
+      gl.enable(gl.DEPTH_TEST)
+
+      // 2. Basin geometry as glow halo (depth test OFF, additive blend so it glows through particles)
+      const meshAlpha = isHighlighted ? 0.22 : 0.14
+      const pointAlpha = isHighlighted ? 0.70 : 0.45
+
       if (att.basin_mesh && att.basin_mesh.vertices.length > 0 && att.basin_mesh.faces.length >= 3) {
         this.drawBasinMesh(viewProj, att.basin_mesh, r, g, b, meshAlpha)
       } else if (att.basin_points && att.basin_points.length > 0) {
-        // Fallback: large semi-transparent points
         const basin = att.basin_points
         const values = att.basin_values ?? []
         const positions = new Float32Array(basin.length * 3)
@@ -1668,27 +1729,16 @@ class TraceScopeRenderer {
           colors.set([r, g, b, pointAlpha * v], j * 4)
         }
         gl.useProgram(this.particleProgram)
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE)   // additive — overlapping pts glow
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE)
+        gl.disable(gl.DEPTH_TEST)
         gl.uniformMatrix4fv(gl.getUniformLocation(this.particleProgram, "u_matrix"), false, viewProj)
         gl.uniform1f(gl.getUniformLocation(this.particleProgram, "u_base_size"), isHighlighted ? 120 : 90)
         bindAttrib(gl, this.particleProgram, this.scratchBuffer, "a_position", positions, 3, gl.DYNAMIC_DRAW)
         bindAttrib(gl, this.particleProgram, this.scratchColorBuffer, "a_color", colors, 4, gl.DYNAMIC_DRAW)
         gl.drawArrays(gl.POINTS, 0, basin.length)
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+        gl.enable(gl.DEPTH_TEST)
       }
-
-      // Draw attractor core — bright centre dot (depth-test off so it's always visible)
-      gl.useProgram(this.pointProgram)
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-      gl.disable(gl.DEPTH_TEST)
-      gl.uniformMatrix4fv(gl.getUniformLocation(this.pointProgram, "u_matrix"), false, viewProj)
-      gl.uniform1f(gl.getUniformLocation(this.pointProgram, "u_point_size"), isHighlighted ? 28 : 20)
-      const corePos = new Float32Array(scalePoint(att.position, this.sceneScale))
-      const coreCol = new Float32Array([r, g, b, 0.98])
-      bindAttrib(gl, this.pointProgram, this.scratchBuffer, "a_position", corePos, 3, gl.DYNAMIC_DRAW)
-      bindAttrib(gl, this.pointProgram, this.scratchColorBuffer, "a_color", coreCol, 4, gl.DYNAMIC_DRAW)
-      gl.drawArrays(gl.POINTS, 0, 1)
-      gl.enable(gl.DEPTH_TEST)
     }
   }
 
@@ -1701,7 +1751,6 @@ class TraceScopeRenderer {
     const gl = this.gl
     if (!mesh.vertices.length || mesh.faces.length < 3) return
 
-    // Upload vertices (scaled to scene space)
     const vertData = new Float32Array(mesh.vertices.length * 3)
     for (let i = 0; i < mesh.vertices.length; i++) {
       vertData.set(scalePoint(mesh.vertices[i], this.sceneScale), i * 3)
@@ -1709,13 +1758,14 @@ class TraceScopeRenderer {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.meshVertexBuffer)
     gl.bufferData(gl.ARRAY_BUFFER, vertData, gl.DYNAMIC_DRAW)
 
-    // Upload face indices
     const faceData = new Uint32Array(mesh.faces)
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.meshIndexBuffer)
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, faceData, gl.DYNAMIC_DRAW)
 
     gl.useProgram(this.meshProgram)
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+    // Additive blend + no depth test → glowing halo visible through all geometry
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE)
+    gl.disable(gl.DEPTH_TEST)
     gl.disable(gl.CULL_FACE)
     gl.uniformMatrix4fv(gl.getUniformLocation(this.meshProgram, "u_matrix"), false, viewProj)
     gl.uniform4f(gl.getUniformLocation(this.meshProgram, "u_color"), r, g, b, alpha)
@@ -1729,6 +1779,10 @@ class TraceScopeRenderer {
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.meshIndexBuffer)
     gl.drawElements(gl.TRIANGLES, mesh.faces.length, gl.UNSIGNED_INT, 0)
+
+    // Restore state
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+    gl.enable(gl.DEPTH_TEST)
   }
 
   private drawAxes(viewProj: Float32Array) {
@@ -1850,6 +1904,15 @@ class TraceScopeRenderer {
   }
 
   private pickNearestScreenPoint(sx: number, sy: number) {
+    // Stop ball-follow and show gizmo when manually placing probe
+    if (this.settings.ballFollow) {
+      this.settings = { ...this.settings, ballFollow: false }
+      this.onToggleBallFollow()
+    }
+    this.probeTrail = []
+    this.gizmoActive = true
+    this.updateHint()
+
     let best = 0
     let bestD = Infinity
     for (const paper of this.data.papers) {
