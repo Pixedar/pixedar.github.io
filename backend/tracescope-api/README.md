@@ -16,9 +16,16 @@ It serves:
 - `GET /health`
 - `POST /explain`
 
-`OPENAI_API_KEY` is read from Space secrets. If the key is absent or the daily
-request limit is exhausted, the API returns `429`, and the web UI asks the user
-for their own browser-session key.
+`OPENAI_API_KEY` is read from Space secrets. If the key is absent, the per-client
+free limit is exhausted, or the daily request limit is exhausted, the API returns
+`429`, and the web UI asks the user for their own browser-session key.
+
+Useful Space variables/secrets:
+
+- `OPENAI_API_KEY` — required for hosted free explanations.
+- `TRACESCOPE_FREE_EXPLAINS_PER_CLIENT` — uncached hosted explanations per browser/IP per day, default `1`.
+- `TRACESCOPE_DAILY_REQUEST_LIMIT` — total uncached hosted explanations per day, default `60`.
+- `TRACESCOPE_OPENAI_MODEL` — backend model, default `gpt-5`.
 
 Deploy from the website repo root:
 

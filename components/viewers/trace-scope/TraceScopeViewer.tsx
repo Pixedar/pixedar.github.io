@@ -155,6 +155,7 @@ const initialSettings: Settings = {
 const basePath = () => (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, "")
 const backendUrl = () => (process.env.NEXT_PUBLIC_TRACESCOPE_API_URL ?? "").replace(/\/$/, "")
 const byokKey = "tracescope_byok_openai_key"
+const freeUsedKey = "tracescope_free_explain_used"  // session-scoped 1-use backend limit
 
 export function TraceScopeViewer() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -171,6 +172,7 @@ export function TraceScopeViewer() {
   const [hintText, setHintText] = useState("")
   const [analysisOpen, setAnalysisOpen] = useState(false)
   const [keyPanelOpen, setKeyPanelOpen] = useState(false)
+  const [keyPanelFallback, setKeyPanelFallback] = useState("")
   const [apiKeyDraft, setApiKeyDraft] = useState("")
   const [query, setQuery] = useState("")
 
@@ -221,11 +223,17 @@ export function TraceScopeViewer() {
     setSettings((current) => ({ ...current, [key]: value }))
   }, [])
 
+  const openKeyPanel = useCallback((renderer: TraceScopeRenderer) => {
+    setKeyPanelFallback(renderer.getPathSummary())
+    setKeyPanelOpen(true)
+  }, [])
+
   const explain = useCallback(async () => {
     const renderer = rendererRef.current
     const data = dataRef.current
     if (!renderer || !data) return
 
+    // Always show cached/pre-computed explanations instantly, no rate limit
     const cached = renderer.findCachedExplanation()
     if (cached) {
       setProbeInfo(cached)
@@ -234,6 +242,23 @@ export function TraceScopeViewer() {
     }
 
     const trajectory = renderer.getMarkedPath()
+
+    // Check session BYOK key first
+    const key = sessionStorage.getItem(byokKey)
+    if (key) {
+      const text = await explainWithUserKey(key, data, trajectory, renderer.nearestPapers(5))
+      setProbeInfo(text)
+      setAnalysisOpen(true)
+      return
+    }
+
+    // 1 free backend call per browser session — after that ask for own key
+    const freeUsed = sessionStorage.getItem(freeUsedKey)
+    if (freeUsed) {
+      openKeyPanel(renderer)
+      return
+    }
+
     const api = backendUrl()
     if (api) {
       try {
@@ -248,30 +273,24 @@ export function TraceScopeViewer() {
           }),
         })
         if (response.status === 429) {
-          setKeyPanelOpen(true)
+          openKeyPanel(renderer)
           return
         }
         if (response.ok) {
           const body = (await response.json()) as { text?: string }
           const text = body.text || "No explanation returned."
+          sessionStorage.setItem(freeUsedKey, "1")  // mark 1 free use consumed
           setProbeInfo(text)
           setAnalysisOpen(true)
           return
         }
       } catch {
-        // Fall through to BYOK.
+        // backend unreachable → fall through to key panel
       }
     }
 
-    const key = sessionStorage.getItem(byokKey)
-    if (!key) {
-      setKeyPanelOpen(true)
-      return
-    }
-    const text = await explainWithUserKey(key, data, trajectory, renderer.nearestPapers(5))
-    setProbeInfo(text)
-    setAnalysisOpen(true)
-  }, [])
+    openKeyPanel(renderer)
+  }, [openKeyPanel])
 
   const searchResults = useMemo(() => {
     const data = dataRef.current
@@ -467,9 +486,19 @@ export function TraceScopeViewer() {
       )}
 
       {keyPanelOpen && (
-        <Modal title="Live Explanations" onClose={() => setKeyPanelOpen(false)}>
-          <p className="mb-4 text-sm leading-relaxed text-white/72">
-            Cached explanations are already included. For a new free-form path, paste your OpenAI API key; it stays in this browser session.
+        <Modal title="Path Summary" onClose={() => setKeyPanelOpen(false)}>
+          {keyPanelFallback && (
+            <div className="mb-5 rounded border border-white/10 bg-[#1a1a1a] p-3 text-xs leading-relaxed text-white/60 whitespace-pre-wrap">
+              {keyPanelFallback}
+            </div>
+          )}
+          <p className="mb-1 text-sm font-semibold text-white/80">Want a full AI explanation?</p>
+          <p className="mb-4 text-xs leading-relaxed text-white/55">
+            The free daily quota for this demo is exhausted. The best experience is the{" "}
+            <a href="https://github.com/Pixedar/TraceScope" target="_blank" rel="noreferrer" className="text-[#FF6B35] underline hover:text-[#FF8555]">
+              TraceScope Python library
+            </a>{" "}
+            — run it locally with full LLM support. Or paste your own OpenAI key below for this browser session only.
           </p>
           <input
             value={apiKeyDraft}
@@ -481,12 +510,14 @@ export function TraceScopeViewer() {
           <button
             type="button"
             onClick={() => {
+              if (!apiKeyDraft.trim()) return
               sessionStorage.setItem(byokKey, apiKeyDraft.trim())
               setKeyPanelOpen(false)
               setApiKeyDraft("")
               explain()
             }}
-            className="h-10 rounded bg-[#FF6B35] px-4 text-sm font-semibold text-white hover:bg-[#FF8555]"
+            className="h-10 rounded bg-[#FF6B35] px-4 text-sm font-semibold text-white hover:bg-[#FF8555] disabled:opacity-40"
+            disabled={!apiKeyDraft.trim()}
           >
             Use my key
           </button>
@@ -917,6 +948,17 @@ class TraceScopeRenderer {
       .sort((a, b) => a.d - b.d)
       .slice(0, k)
       .map(({ paper }) => ({ title: paper.title, arxivId: paper.arxivId, abstract: paper.abstract, cluster: paper.cluster }))
+  }
+
+  getPathSummary(): string {
+    const pct = this.probe.map((v, i) => Math.round(((v - this.axisMin[i]) / (this.span[i] || 1)) * 100))
+    const axisLine = this.data.axes.map((a, i) => `${a.label.split(" ").slice(0, 3).join(" ")}: ${pct[i]}%`).join("  ·  ")
+    const nearest = this.nearestPapers(3)
+    const clusterNames = [...new Set(nearest.map((p) => this.data.clusters[p.cluster as unknown as number]?.label ?? ""))]
+      .filter(Boolean).slice(0, 2)
+    const clusterLine = clusterNames.length ? `Region: ${clusterNames.join(" / ")}` : ""
+    const paperLines = nearest.map((p) => `• ${p.title.length > 72 ? p.title.slice(0, 69) + "…" : p.title}`).join("\n")
+    return [axisLine, clusterLine, paperLines ? `Nearby papers:\n${paperLines}` : ""].filter(Boolean).join("\n\n")
   }
 
   findCachedExplanation() {

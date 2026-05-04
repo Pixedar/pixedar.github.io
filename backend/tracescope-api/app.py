@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -97,6 +97,34 @@ def _budget_available() -> bool:
     return True
 
 
+def _client_budget_available(request: Request) -> bool:
+    """Very small abuse guard: one uncached free explanation per client/day by default.
+
+    This is intentionally crude for a public demo. It uses forwarded IP where
+    available plus User-Agent, hashes it, and counts only uncached backend LLM
+    calls. Cached responses stay free because they do not spend API tokens.
+    """
+    limit = int(os.environ.get("TRACESCOPE_FREE_EXPLAINS_PER_CLIENT", "1"))
+    if limit <= 0:
+        return False
+
+    forwarded_for = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    host = forwarded_for or (request.client.host if request.client else "unknown")
+    user_agent = request.headers.get("user-agent", "unknown")[:180]
+    client_hash = hashlib.sha256(f"{host}|{user_agent}".encode("utf-8")).hexdigest()[:16]
+
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    counter_path = CACHE_DIR / f"client-{today}-{client_hash}.txt"
+    try:
+        current = int(counter_path.read_text()) if counter_path.exists() else 0
+    except Exception:
+        current = 0
+    if current >= limit:
+        return False
+    counter_path.write_text(str(current + 1))
+    return True
+
+
 @app.get("/health")
 def health() -> dict[str, Any]:
     npz = Path(RESULT_CACHE + ".npz")
@@ -110,18 +138,22 @@ def health() -> dict[str, Any]:
 
 
 @app.post("/explain")
-async def explain(req: ExplainRequest) -> dict[str, str]:
+async def explain(req: ExplainRequest, request: Request) -> dict[str, str]:
     payload = req.model_dump()
     path = _cache_key(payload)
     if path.exists():
         return json.loads(path.read_text(encoding="utf-8"))
 
-    if not _budget_available():
-        raise HTTPException(status_code=429, detail={"error": "budget_exhausted"})
-
+    # Validate server key before consuming any client/daily quota counters.
     result = _load_result()
     explainer = _load_explainer()
     axis_labels = result.axis_info.labels
+
+    if not _client_budget_available(request):
+        raise HTTPException(status_code=429, detail={"error": "client_free_limit_exhausted"})
+
+    if not _budget_available():
+        raise HTTPException(status_code=429, detail={"error": "budget_exhausted"})
 
     control_points = []
     for point in req.trajectory:
@@ -141,18 +173,24 @@ async def explain(req: ExplainRequest) -> dict[str, str]:
     if not control_points:
         raise HTTPException(status_code=400, detail={"error": "empty_trajectory"})
 
-    if len(control_points) == 1:
-        text = explainer.explain_probe_single(
-            axis_labels=axis_labels,
-            slider_pcts=control_points[0]["axis_pcts"],
-            cluster_distances=control_points[0]["cluster_distances"],
-        )
-    else:
-        text = explainer.explain_probe_multi(
-            axis_labels=axis_labels,
-            control_points=control_points,
-            score_context=req.scoreContext,
-        )
+    try:
+        if len(control_points) == 1:
+            text = explainer.explain_probe_single(
+                axis_labels=axis_labels,
+                slider_pcts=control_points[0]["axis_pcts"],
+                cluster_distances=control_points[0]["cluster_distances"],
+            )
+        else:
+            text = explainer.explain_probe_multi(
+                axis_labels=axis_labels,
+                control_points=control_points,
+                score_context=req.scoreContext,
+            )
+    except Exception as exc:
+        msg = str(exc).lower()
+        if any(token in msg for token in ["quota", "rate limit", "429", "insufficient_quota", "billing"]):
+            raise HTTPException(status_code=429, detail={"error": "openai_budget_exhausted"}) from exc
+        raise HTTPException(status_code=502, detail={"error": "llm_explanation_failed"}) from exc
 
     result = {"text": text}
     path.write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")
