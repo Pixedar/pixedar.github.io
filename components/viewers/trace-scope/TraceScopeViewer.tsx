@@ -168,6 +168,7 @@ export function TraceScopeViewer() {
     particles: initialSettings.particleCount,
   })
   const [probeInfo, setProbeInfo] = useState("Probe analysis will appear here.")
+  const [hintText, setHintText] = useState("")
   const [analysisOpen, setAnalysisOpen] = useState(false)
   const [keyPanelOpen, setKeyPanelOpen] = useState(false)
   const [apiKeyDraft, setApiKeyDraft] = useState("")
@@ -182,9 +183,10 @@ export function TraceScopeViewer() {
       .then((data) => {
         if (cancelled) return
         dataRef.current = data
-        const renderer = new TraceScopeRenderer(canvas, data, settings, setStatus, setProbeInfo)
+        const renderer = new TraceScopeRenderer(canvas, data, settings, setStatus, setProbeInfo, setHintText, () => {})
         rendererRef.current = renderer
         renderer.start()
+        renderer.onBallFollowChanged(initialSettings.ballFollow)
       })
       .catch((error) => {
         setStatus((current) => ({
@@ -204,6 +206,13 @@ export function TraceScopeViewer() {
   useEffect(() => {
     rendererRef.current?.setSettings(settings)
   }, [settings])
+
+  const prevBallFollowRef = useRef(initialSettings.ballFollow)
+  useEffect(() => {
+    const changed = settings.ballFollow !== prevBallFollowRef.current
+    prevBallFollowRef.current = settings.ballFollow
+    if (changed) rendererRef.current?.onBallFollowChanged(settings.ballFollow)
+  }, [settings.ballFollow])
 
   const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings((current) => ({ ...current, [key]: value }))
@@ -342,6 +351,11 @@ export function TraceScopeViewer() {
                   {probeInfo}
                 </div>
               </>
+            ) : null}
+            {hintText ? (
+              <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded border border-white/20 bg-black/60 px-4 py-2 text-xs text-white/85 backdrop-blur whitespace-nowrap text-center">
+                {hintText}
+              </div>
             ) : null}
           </section>
 
@@ -661,6 +675,8 @@ class TraceScopeRenderer {
   private settings: Settings
   private setStatus: React.Dispatch<React.SetStateAction<Status>>
   private setProbeInfo: React.Dispatch<React.SetStateAction<string>>
+  private setHintText: React.Dispatch<React.SetStateAction<string>>
+  private onToggleBallFollow: () => void
 
   // WebGL programs
   private particleProgram: WebGLProgram
@@ -692,6 +708,8 @@ class TraceScopeRenderer {
   // Probe & path state
   private marked: Vec3[] = []
   private probe: Vec3
+  private probeTrail: Vec3[] = []   // yellow trail during ball flow
+  private readonly MAX_TRAIL = 400
 
   // Pre-computed path data
   private dataPath: Vec3[] = []
@@ -722,7 +740,8 @@ class TraceScopeRenderer {
   private blobCore: Uint8Array | null = null
   private blobRes = 42
 
-  // Gizmo state
+  // Gizmo state — only shown when user clicks probe sphere (persistent, like Python)
+  private gizmoActive = false        // persistent: user clicked probe
   private gizmoDragging: number | null = null
   private gizmoDragStartPos: Vec3 | null = null
   private gizmoDragStartClick: [number, number] | null = null
@@ -730,7 +749,7 @@ class TraceScopeRenderer {
   private gizmoDragPxPerUnit = 1.0
   private gizmoArrowLen = 0
 
-  // Click tracking (for attractor selection)
+  // Click tracking
   private pointerDownPos: [number, number] | null = null
   private pointerMoved = false
   private highlightedAttractor: number | null = null
@@ -744,6 +763,8 @@ class TraceScopeRenderer {
     settings: Settings,
     setStatus: React.Dispatch<React.SetStateAction<Status>>,
     setProbeInfo: React.Dispatch<React.SetStateAction<string>>,
+    setHintText: React.Dispatch<React.SetStateAction<string>>,
+    onToggleBallFollow: () => void,
   ) {
     this.canvas = canvas
     const gl = canvas.getContext("webgl2", { antialias: true, alpha: false, powerPreference: "high-performance" })
@@ -753,6 +774,8 @@ class TraceScopeRenderer {
     this.settings = settings
     this.setStatus = setStatus
     this.setProbeInfo = setProbeInfo
+    this.setHintText = setHintText
+    this.onToggleBallFollow = onToggleBallFollow
     this.axisMin = data.manifest.axisMin
     this.axisMax = data.manifest.axisMax
     this.span = sub(this.axisMax, this.axisMin)
@@ -840,8 +863,44 @@ class TraceScopeRenderer {
 
   clearPath() {
     this.marked = []
+    this.probeTrail = []
     this.highlightedAttractor = null
     this.updateProbeInfo()
+    this.updateHint()
+  }
+
+  // Called by React when ballFollow setting changes
+  onBallFollowChanged(active: boolean) {
+    if (active) {
+      // Auto-mark current probe position when starting ball follow (mirrors Python _auto_mark_start_point)
+      if (this.marked.length === 0 || length(sub(this.marked[this.marked.length - 1], this.probe)) > 1e-4) {
+        this.marked.push([...this.probe] as Vec3)
+      }
+      this.probeTrail = []
+      this.gizmoActive = false
+    } else {
+      // Stopped — keep trail frozen so user can see path, but stop growing
+    }
+    this.updateHint()
+  }
+
+  private updateHint() {
+    const atts = this.data.flowAnalysis.attractors ?? []
+    const highlighted = this.highlightedAttractor !== null ? atts[this.highlightedAttractor] : null
+
+    let text = ""
+    if (highlighted) {
+      text = highlighted.explanation
+        ? "E · show cached explanation  ·  Click elsewhere to deselect"
+        : "E · explain this attractor  ·  Click elsewhere to deselect"
+    } else if (this.settings.ballFollow) {
+      text = "M · mark point  ·  E · explain path  ·  Space · stop following"
+    } else if (this.gizmoActive) {
+      text = "Drag X/Y/Z arrows to move probe  ·  Space · follow flow  ·  M · mark  ·  E · explain"
+    } else {
+      text = "Click probe to move it  ·  Space · follow flow  ·  M · mark  ·  E · explain"
+    }
+    this.setHintText(text)
   }
 
   getMarkedPath() {
@@ -968,6 +1027,7 @@ class TraceScopeRenderer {
   // ─────────────────────────────────────────────
 
   private handleGizmoPress(sx: number, sy: number): boolean {
+    if (!this.gizmoActive) return false
     const center = this.projectToScreen(this.probe)
     let bestAxis = -1
     let bestDist = Infinity
@@ -1022,25 +1082,53 @@ class TraceScopeRenderer {
   }
 
   private handleCanvasClick(sx: number, sy: number) {
-    // Check attractor click first (when visible)
+    const probeSc = this.projectToScreen(this.probe)
+    const probeDist = Math.hypot(probeSc[0] - sx, probeSc[1] - sy)
+
+    // Find nearest attractor on screen
+    let bestAttIdx = -1
+    let bestAttDist = Infinity
     if (this.settings.showAttractors) {
       const atts = this.data.flowAnalysis.attractors ?? []
-      let bestIdx = -1
-      let bestDist = Infinity
       for (let i = 0; i < atts.length; i++) {
         const sc = this.projectToScreen(atts[i].position)
         const d = Math.hypot(sc[0] - sx, sc[1] - sy)
-        if (d < bestDist) { bestDist = d; bestIdx = i }
+        if (d < bestAttDist) { bestAttDist = d; bestAttIdx = i }
       }
-      if (bestIdx >= 0 && bestDist < 80) {
-        const newHighlight = bestIdx === this.highlightedAttractor ? null : bestIdx
+    }
+
+    const attClose = bestAttIdx >= 0 && bestAttDist < 200
+
+    if (attClose) {
+      // Probe wins only when very close AND much closer than the attractor (mirrors Python logic)
+      const probeWins = probeDist < 30 && probeDist < bestAttDist * 0.5
+      if (probeWins) {
+        this.gizmoActive = true
+        this.updateHint()
+      } else {
+        const newHighlight = bestAttIdx === this.highlightedAttractor ? null : bestAttIdx
         this.highlightedAttractor = newHighlight
-        if (newHighlight !== null && atts[newHighlight]?.explanation) {
-          this.setProbeInfo(atts[newHighlight].explanation!)
+        if (newHighlight !== null) {
+          const att = (this.data.flowAnalysis.attractors ?? [])[newHighlight]
+          if (att?.explanation) this.setProbeInfo(att.explanation)
         }
-        return
+        this.updateHint()
       }
+      return
+    }
+
+    // No attractor close — probe click shows gizmo (60px threshold)
+    if (probeDist < 60) {
+      this.gizmoActive = true
+      this.updateHint()
+      return
+    }
+
+    // Click elsewhere deselects attractor and hides gizmo
+    if (this.highlightedAttractor !== null || this.gizmoActive) {
       this.highlightedAttractor = null
+      this.gizmoActive = false
+      this.updateHint()
     }
 
     // Click-to-place: move probe to nearest data point by screen distance
@@ -1365,6 +1453,10 @@ class TraceScopeRenderer {
       clamp(this.probe[1] + v[1] * dtScale, this.axisMin[1], this.axisMax[1]),
       clamp(this.probe[2] + v[2] * dtScale, this.axisMin[2], this.axisMax[2]),
     ]
+
+    // Accumulate yellow trail while following
+    this.probeTrail.push([...this.probe] as Vec3)
+    if (this.probeTrail.length > this.MAX_TRAIL) this.probeTrail.shift()
   }
 
   private updateProbeInfo() {
@@ -1441,6 +1533,7 @@ class TraceScopeRenderer {
     if (this.settings.showSavedPaths) this.drawSavedPaths(viewProj)
     if (this.settings.showAttractors) this.drawAttractors(viewProj)
     this.drawMarkedPath(viewProj)
+    if (this.settings.ballFollow) this.drawProbeTrail(viewProj)
     this.drawProbe(viewProj)
     this.drawGizmo(viewProj)
   }
@@ -1481,7 +1574,9 @@ class TraceScopeRenderer {
     const spline = catmullRomPath(this.marked, 16)
     const arr = new Float32Array(spline.flatMap((p) => scalePoint(p, this.sceneScale)))
     bindAttrib(gl, this.lineProgram, this.lineBuffer, "a_position", arr, 3, gl.DYNAMIC_DRAW)
+    gl.lineWidth(3)
     gl.drawArrays(gl.LINE_STRIP, 0, spline.length)
+    gl.lineWidth(1)
 
     // Marked control-point dots (white)
     gl.useProgram(this.pointProgram)
@@ -1507,6 +1602,23 @@ class TraceScopeRenderer {
     bindAttrib(gl, this.pointProgram, this.scratchBuffer, "a_position", pos, 3, gl.DYNAMIC_DRAW)
     bindAttrib(gl, this.pointProgram, this.scratchColorBuffer, "a_color", col, 4, gl.DYNAMIC_DRAW)
     gl.drawArrays(gl.POINTS, 0, 1)
+    gl.enable(gl.DEPTH_TEST)
+  }
+
+  // Yellow trail drawn while probe is following the flow
+  private drawProbeTrail(viewProj: Float32Array) {
+    if (this.probeTrail.length < 2) return
+    const gl = this.gl
+    gl.useProgram(this.lineProgram)
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+    gl.disable(gl.DEPTH_TEST)
+    gl.uniformMatrix4fv(gl.getUniformLocation(this.lineProgram, "u_matrix"), false, viewProj)
+    gl.uniform4f(gl.getUniformLocation(this.lineProgram, "u_color"), 1, 1, 0, 0.8)
+    const arr = new Float32Array(this.probeTrail.flatMap((p) => scalePoint(p, this.sceneScale)))
+    bindAttrib(gl, this.lineProgram, this.lineBuffer, "a_position", arr, 3, gl.DYNAMIC_DRAW)
+    gl.lineWidth(4)
+    gl.drawArrays(gl.LINE_STRIP, 0, this.probeTrail.length)
+    gl.lineWidth(1)
     gl.enable(gl.DEPTH_TEST)
   }
 
@@ -1653,13 +1765,15 @@ class TraceScopeRenderer {
       const color = hsv(hue, 0.85, 1)
       gl.uniform4f(gl.getUniformLocation(this.lineProgram, "u_color"), color[0], color[1] * 0.65, color[2] * 0.35, 0.58)
       bindAttrib(gl, this.lineProgram, this.lineBuffer, "a_position", arr, 3, gl.DYNAMIC_DRAW)
+      gl.lineWidth(3)
       gl.drawArrays(gl.LINE_STRIP, 0, src.length)
+      gl.lineWidth(1)
     }
   }
 
-  // 3D probe gizmo (X/Y/Z axis arrows)
+  // 3D probe gizmo (X/Y/Z axis arrows) — only shown after user clicks probe
   private drawGizmo(viewProj: Float32Array) {
-    // Gizmo is always visible around the probe
+    if (!this.gizmoActive && this.gizmoDragging === null) return
     const gl = this.gl
 
     // Arrow colors: X=red, Y=green, Z=blue
