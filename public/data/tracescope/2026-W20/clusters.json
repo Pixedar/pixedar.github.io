@@ -1,0 +1,191 @@
+{
+  "clusters": [
+    {
+      "id": 0,
+      "label": "Geometry-aware scalability",
+      "centroid3d": [
+        9.801216125488281,
+        0.2798269987106323,
+        14.836516380310059
+      ],
+      "count": 27,
+      "color": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "lineageBreakdown": {
+        "Vision": 2,
+        "Learning": 12,
+        "AI systems": 2,
+        "Other / sparse categories": 2,
+        "Statistical ML": 5,
+        "math.OC": 2,
+        "stat.ME": 1,
+        "cs.GR": 1
+      }
+    },
+    {
+      "id": 1,
+      "label": "Improving ML reliability",
+      "centroid3d": [
+        10.427556037902832,
+        0.33205243945121765,
+        15.22983169555664
+      ],
+      "count": 90,
+      "color": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "lineageBreakdown": {
+        "Vision": 4,
+        "Learning": 52,
+        "AI systems": 9,
+        "Other / sparse categories": 3,
+        "Statistical ML": 6,
+        "cs.CR": 3,
+        "cs.DC": 3,
+        "cs.IT": 2,
+        "cs.MA": 1,
+        "Neural / Evolutionary": 1,
+        "math.OC": 1,
+        "stat.ME": 2,
+        "cs.NI": 1,
+        "eess.SP": 1,
+        "eess.SY": 1
+      }
+    },
+    {
+      "id": 2,
+      "label": "Deployable remote sensing AI",
+      "centroid3d": [
+        9.207494735717773,
+        1.3775848150253296,
+        14.933165550231934
+      ],
+      "count": 43,
+      "color": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "lineageBreakdown": {
+        "Vision": 30,
+        "Learning": 5,
+        "AI systems": 2,
+        "Language / NLP": 1,
+        "Robotics": 1,
+        "cs.DC": 2,
+        "cs.IT": 1,
+        "Neural / Evolutionary": 1
+      }
+    },
+    {
+      "id": 3,
+      "label": "Domain specific benchmarks",
+      "centroid3d": [
+        10.651601791381836,
+        1.622880220413208,
+        16.480594635009766
+      ],
+      "count": 55,
+      "color": [
+        1.0,
+        1.0,
+        0.0
+      ],
+      "lineageBreakdown": {
+        "Vision": 2,
+        "Learning": 4,
+        "AI systems": 6,
+        "Language / NLP": 32,
+        "cs.CR": 3,
+        "cs.SE": 2,
+        "cs.IT": 1,
+        "cs.HC": 1,
+        "cs.SD": 3,
+        "eess.SP": 1
+      }
+    },
+    {
+      "id": 4,
+      "label": "Real-time multimodal perception",
+      "centroid3d": [
+        9.175299644470215,
+        1.2057950496673584,
+        15.563912391662598
+      ],
+      "count": 55,
+      "color": [
+        1.0,
+        0.0,
+        1.0
+      ],
+      "lineageBreakdown": {
+        "Vision": 33,
+        "Learning": 8,
+        "AI systems": 2,
+        "Language / NLP": 1,
+        "Other / sparse categories": 1,
+        "Robotics": 7,
+        "cs.IT": 1,
+        "cs.GR": 1,
+        "eess.SY": 1
+      }
+    },
+    {
+      "id": 5,
+      "label": "Robust medical imaging AI",
+      "centroid3d": [
+        10.251016616821289,
+        2.0398623943328857,
+        14.918037414550781
+      ],
+      "count": 40,
+      "color": [
+        0.0,
+        1.0,
+        1.0
+      ],
+      "lineageBreakdown": {
+        "Vision": 21,
+        "Learning": 7,
+        "AI systems": 6,
+        "Language / NLP": 2,
+        "Other / sparse categories": 4
+      }
+    },
+    {
+      "id": 6,
+      "label": "Agent integrity",
+      "centroid3d": [
+        10.670446395874023,
+        0.5574114322662354,
+        16.844133377075195
+      ],
+      "count": 90,
+      "color": [
+        1.0,
+        0.5,
+        0.0
+      ],
+      "lineageBreakdown": {
+        "Vision": 2,
+        "Learning": 5,
+        "AI systems": 50,
+        "Language / NLP": 10,
+        "Other / sparse categories": 5,
+        "Statistical ML": 1,
+        "Robotics": 3,
+        "cs.CR": 3,
+        "cs.SE": 4,
+        "cs.MA": 3,
+        "cs.HC": 2,
+        "Neural / Evolutionary": 1,
+        "cs.NI": 1
+      }
+    }
+  ]
+}

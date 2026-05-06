@@ -1,0 +1,25 @@
+{
+  "axes": [
+    {
+      "index": 0,
+      "label": "Abstraction level",
+      "lengthFraction": 4.021961081565035,
+      "minIndex": 318,
+      "maxIndex": 91
+    },
+    {
+      "index": 1,
+      "label": "Perception emphasis",
+      "lengthFraction": 3.0284251810358236,
+      "minIndex": 333,
+      "maxIndex": 306
+    },
+    {
+      "index": 2,
+      "label": "Agent emphasis",
+      "lengthFraction": 2.8100418948619996,
+      "minIndex": 339,
+      "maxIndex": 330
+    }
+  ]
+}
