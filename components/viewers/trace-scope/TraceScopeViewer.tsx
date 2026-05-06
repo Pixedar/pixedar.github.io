@@ -30,6 +30,10 @@ type Manifest = {
   axisMin: Vec3
   axisMax: Vec3
   repository: string
+  viewerDefaults?: {
+    particleSpeed?: number
+    probeSpeed?: number
+  }
 }
 
 type Paper = {
@@ -122,6 +126,7 @@ type Settings = {
   particleCount: number
   particleSize: number
   speed: number
+  probeSpeed: number
   flowOpacity: number
   confidenceFade: number
   constrainToPath: boolean
@@ -145,7 +150,8 @@ const initialSettings: Settings = {
   ballFollow: true,
   particleCount: 64000,
   particleSize: 28,
-  speed: 0.95,
+  speed: 2.9,
+  probeSpeed: 1.6,
   flowOpacity: 0.8,
   confidenceFade: 0,
   constrainToPath: true,
@@ -185,6 +191,14 @@ export function TraceScopeViewer() {
       .then((data) => {
         if (cancelled) return
         dataRef.current = data
+        const viewerDefaults = data.manifest.viewerDefaults
+        if (viewerDefaults?.particleSpeed || viewerDefaults?.probeSpeed) {
+          setSettings((current) => ({
+            ...current,
+            speed: viewerDefaults.particleSpeed ?? current.speed,
+            probeSpeed: viewerDefaults.probeSpeed ?? current.probeSpeed,
+          }))
+        }
         const renderer = new TraceScopeRenderer(
           canvas, data, settings, setStatus, setProbeInfo, setHintText,
           () => setSettings((s) => ({ ...s, ballFollow: false })),
@@ -467,7 +481,8 @@ export function TraceScopeViewer() {
                   ]}
                 />
                 <SliderRow label="Opacity" min={0.05} max={1} step={0.01} value={settings.flowOpacity} onChange={(value) => updateSetting("flowOpacity", value)} />
-                <SliderRow label="Speed" min={0.05} max={2.5} step={0.01} value={settings.speed} onChange={(value) => updateSetting("speed", value)} />
+                <SliderRow label="Particle speed" min={0.05} max={4} step={0.01} value={settings.speed} onChange={(value) => updateSetting("speed", value)} />
+                <SliderRow label="Probe follow" min={0.05} max={4} step={0.01} value={settings.probeSpeed} onChange={(value) => updateSetting("probeSpeed", value)} />
                 <SliderRow label="Particle" min={6} max={64} step={1} value={settings.particleSize} onChange={(value) => updateSetting("particleSize", value)} />
                 <SliderRow label="Confidence" min={0} max={100} step={1} value={settings.confidenceFade} suffix="%" disabled={!dataRef.current?.confidence} onChange={(value) => updateSetting("confidenceFade", value)} />
                 <ToggleRow label="Constrain to paths" checked={settings.constrainToPath} onChange={(value) => updateSetting("constrainToPath", value)} />
@@ -788,6 +803,7 @@ class TraceScopeRenderer {
   private pointerMoved = false
   private highlightedAttractor: number | null = null
   private highlightedPaper: number | null = null
+  private fallbackBasinMeshes = new Map<number, BasinMesh>()
 
   // Cached view-projection for screen-space ops
   private currentViewProj: Float32Array = new Float32Array(16)
@@ -1178,12 +1194,15 @@ class TraceScopeRenderer {
         if (newHighlight !== null) {
           const att = (this.data.flowAnalysis.attractors ?? [])[newHighlight]
           if (att) {
+            const pct = Math.max(0.1, att.basin_fraction * 100).toFixed(att.basin_fraction * 100 < 1 ? 1 : 0)
             if (att.explanation) {
-              this.setProbeInfo(att.explanation)
-            } else {
-              const pct = Math.round(att.basin_fraction * 100)
+              const teaser = att.explanation.replace(/^Attractor\s+A?\d+\s+Explanation:\s*/i, "").trim().slice(0, 180)
               this.setProbeInfo(
-                `Attractor ${att.label}  ·  strength ${att.strength.toFixed(2)}  ·  basin covers ${pct}% of space\nPress E to generate an explanation with AI.`
+                `Attractor ${att.label} selected  ·  strength ${att.strength.toFixed(2)}  ·  basin ${pct}%\nCached explanation available — press E to open the full explanation.\n\n${teaser}${att.explanation.length > 180 ? "…" : ""}`
+              )
+            } else {
+              this.setProbeInfo(
+                `Attractor ${att.label} selected  ·  strength ${att.strength.toFixed(2)}  ·  basin ${pct}%\nPress E to generate or show an explanation.`
               )
             }
           }
@@ -1519,7 +1538,7 @@ class TraceScopeRenderer {
     const v = this.sampleVelocity(this.probe)
 
     // Slow down when outside blob (matches Python's 10% deceleration)
-    let dtScale = 0.02 * this.settings.speed
+    let dtScale = 0.02 * this.settings.probeSpeed
     if (this.blobOpacity && this.sampleBlobOpacity(this.probe) <= 0) {
       dtScale *= 0.1
     }
@@ -1756,32 +1775,68 @@ class TraceScopeRenderer {
 
       // 2. Basin geometry as glow halo (depth test OFF, additive blend so it glows through particles)
       const meshAlpha = isHighlighted ? 0.22 : 0.14
-      const pointAlpha = isHighlighted ? 0.70 : 0.45
 
       if (att.basin_mesh && att.basin_mesh.vertices.length > 0 && att.basin_mesh.faces.length >= 3) {
         this.drawBasinMesh(viewProj, att.basin_mesh, r, g, b, meshAlpha)
       } else if (att.basin_points && att.basin_points.length > 0) {
-        const basin = att.basin_points
-        const values = att.basin_values ?? []
-        const positions = new Float32Array(basin.length * 3)
-        const colors = new Float32Array(basin.length * 4)
-        for (let j = 0; j < basin.length; j++) {
-          positions.set(scalePoint(basin[j], this.sceneScale), j * 3)
-          const v = clamp(values[j] ?? 0.65, 0.25, 1)
-          colors.set([r, g, b, pointAlpha * v], j * 4)
-        }
-        gl.useProgram(this.particleProgram)
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE)
-        gl.disable(gl.DEPTH_TEST)
-        gl.uniformMatrix4fv(gl.getUniformLocation(this.particleProgram, "u_matrix"), false, viewProj)
-        gl.uniform1f(gl.getUniformLocation(this.particleProgram, "u_base_size"), isHighlighted ? 120 : 90)
-        bindAttrib(gl, this.particleProgram, this.scratchBuffer, "a_position", positions, 3, gl.DYNAMIC_DRAW)
-        bindAttrib(gl, this.particleProgram, this.scratchColorBuffer, "a_color", colors, 4, gl.DYNAMIC_DRAW)
-        gl.drawArrays(gl.POINTS, 0, basin.length)
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-        gl.enable(gl.DEPTH_TEST)
+        const fallbackMesh = this.getFallbackBasinMesh(i, att)
+        if (fallbackMesh) this.drawBasinMesh(viewProj, fallbackMesh, r, g, b, meshAlpha * 0.92)
       }
     }
+  }
+
+
+  private getFallbackBasinMesh(index: number, att: Attractor): BasinMesh | null {
+    const cached = this.fallbackBasinMeshes.get(index)
+    if (cached) return cached
+    const points = att.basin_points ?? []
+    if (!points.length) return null
+
+    const center = att.position
+    const diffs = points.map((p) => [Math.abs(p[0] - center[0]), Math.abs(p[1] - center[1]), Math.abs(p[2] - center[2])] as Vec3)
+    const percentile = (axis: number, q: number) => {
+      const vals = diffs.map((d) => d[axis]).sort((a, b) => a - b)
+      if (!vals.length) return 0
+      return vals[Math.min(vals.length - 1, Math.max(0, Math.floor((vals.length - 1) * q)))]
+    }
+    const scene = Math.max(this.span[0], this.span[1], this.span[2], 1e-6)
+    const minR = scene * 0.025
+    const maxR = scene * 0.22
+    const radii: Vec3 = [
+      clamp(percentile(0, 0.85) * 1.45, minR, maxR),
+      clamp(percentile(1, 0.85) * 1.45, minR, maxR),
+      clamp(percentile(2, 0.85) * 1.45, minR, maxR),
+    ]
+
+    const latSteps = 10
+    const lonSteps = 20
+    const vertices: Vec3[] = []
+    const faces: number[] = []
+    for (let lat = 0; lat <= latSteps; lat++) {
+      const theta = Math.PI * lat / latSteps
+      const sinT = Math.sin(theta)
+      const cosT = Math.cos(theta)
+      for (let lon = 0; lon < lonSteps; lon++) {
+        const phi = Math.PI * 2 * lon / lonSteps
+        vertices.push([
+          center[0] + radii[0] * sinT * Math.cos(phi),
+          center[1] + radii[1] * cosT,
+          center[2] + radii[2] * sinT * Math.sin(phi),
+        ])
+      }
+    }
+    for (let lat = 0; lat < latSteps; lat++) {
+      for (let lon = 0; lon < lonSteps; lon++) {
+        const a = lat * lonSteps + lon
+        const b = lat * lonSteps + ((lon + 1) % lonSteps)
+        const c = (lat + 1) * lonSteps + lon
+        const d = (lat + 1) * lonSteps + ((lon + 1) % lonSteps)
+        faces.push(a, c, b, b, c, d)
+      }
+    }
+    const mesh = { vertices, faces }
+    this.fallbackBasinMeshes.set(index, mesh)
+    return mesh
   }
 
   private drawBasinMesh(

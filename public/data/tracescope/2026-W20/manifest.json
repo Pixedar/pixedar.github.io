@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 2,
-  "generatedAt": 1778060876.9591854,
+  "schemaVersion": 3,
+  "generatedAt": 1778072569.3920016,
   "snapshot": "2026-W20",
   "fingerprint": "67a94975b0749de9",
   "paperCount": 400,
@@ -25,5 +25,9 @@
     3.153266429901123,
     18.524959564208984
   ],
+  "viewerDefaults": {
+    "particleSpeed": 2.9,
+    "probeFollowSpeed": 1.6
+  },
   "repository": "https://github.com/Pixedar/TraceScope"
 }
