@@ -165,6 +165,17 @@ const initialSettings: Settings = {
   flowColorMode: "speed",
 }
 
+const createInitialSettings = (): Settings => {
+  if (typeof window === "undefined") return initialSettings
+  if (!window.matchMedia("(max-width: 767px)").matches) return initialSettings
+  return {
+    ...initialSettings,
+    particleCount: 27000,
+    particleSize: 24,
+    flowOpacity: 0.72,
+  }
+}
+
 const basePath = () => (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, "")
 const backendUrl = () => (process.env.NEXT_PUBLIC_TRACESCOPE_API_URL ?? "").replace(/\/$/, "")
 const byokKey = "tracescope_byok_openai_key"
@@ -200,20 +211,19 @@ export function TraceScopeViewer() {
         if (cancelled) return
         dataRef.current = data
         const viewerDefaults = data.manifest.viewerDefaults
-        if (viewerDefaults?.particleSpeed || viewerDefaults?.probeSpeed) {
-          setSettings((current) => ({
-            ...current,
-            speed: viewerDefaults.particleSpeed ?? current.speed,
-            probeSpeed: viewerDefaults.probeSpeed ?? current.probeSpeed,
-          }))
+        const mountedSettings = {
+          ...createInitialSettings(),
+          speed: viewerDefaults?.particleSpeed ?? createInitialSettings().speed,
+          probeSpeed: viewerDefaults?.probeSpeed ?? createInitialSettings().probeSpeed,
         }
+        setSettings(mountedSettings)
         const renderer = new TraceScopeRenderer(
-          canvas, data, settings, setStatus, setProbeInfo, setAttractorPanel, setHintText,
+          canvas, data, mountedSettings, setStatus, setProbeInfo, setAttractorPanel, setHintText,
           () => setSettings((s) => ({ ...s, ballFollow: false })),
         )
         rendererRef.current = renderer
         renderer.start()
-        renderer.onBallFollowChanged(initialSettings.ballFollow)
+        renderer.onBallFollowChanged(mountedSettings.ballFollow)
       })
       .catch((error) => {
         setStatus((current) => ({
@@ -347,14 +357,14 @@ export function TraceScopeViewer() {
   }, [explain, settings, updateSetting])
 
   return (
-    <div className="h-screen overflow-hidden bg-[#1E1E1E] text-[#E8E8E8]">
-      <main className="flex h-screen flex-col">
-        <header className="flex min-h-14 flex-wrap items-center gap-3 border-b border-white/10 bg-[#252525] px-4 py-2 md:px-6">
+    <div className="min-h-svh overflow-y-auto bg-[#1E1E1E] text-[#E8E8E8] xl:h-screen xl:overflow-hidden">
+      <main className="flex min-h-svh flex-col xl:h-screen">
+        <header className="flex min-h-14 flex-wrap items-center gap-2 border-b border-white/10 bg-[#252525] px-3 py-2 md:gap-3 md:px-6">
           <a href="/" className="inline-flex h-10 w-10 items-center justify-center rounded border border-white/15 bg-white/5 hover:bg-white/10" title="Home">
             <Home className="h-5 w-5" />
           </a>
-          <div className="min-w-0">
-            <h1 className="text-xl font-semibold leading-tight md:text-2xl">TraceScope AI Paper Flow</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg font-semibold leading-tight md:text-2xl">TraceScope AI Paper Flow</h1>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/60">
               <span>{status.loaded ? "precomputed web demo" : status.message}</span>
               <span>{dataRef.current?.manifest.flowMode.toUpperCase() ?? "RBF"} flow field</span>
@@ -364,18 +374,20 @@ export function TraceScopeViewer() {
             href="https://github.com/Pixedar/TraceScope"
             target="_blank"
             rel="noreferrer"
-            className="ml-auto inline-flex h-10 items-center gap-2 rounded border border-white/15 bg-white/[0.04] px-3 text-sm text-white/78 hover:bg-white/10"
+            className="hidden h-10 items-center gap-2 rounded border border-white/15 bg-white/[0.04] px-3 text-sm text-white/78 hover:bg-white/10 sm:inline-flex xl:ml-auto"
           >
             <Github className="h-4 w-4" />
             TraceScope repo
           </a>
-          <Metric icon={<Activity className="h-4 w-4" />} value={`${status.fps.toFixed(status.fps ? 1 : 0)} FPS`} />
-          <Metric icon={<BookOpen className="h-4 w-4" />} value={`${dataRef.current?.manifest.paperCount ?? 0} papers`} />
+          <div className="hidden items-center gap-3 sm:flex">
+            <Metric icon={<Activity className="h-4 w-4" />} value={`${status.fps.toFixed(status.fps ? 1 : 0)} FPS`} />
+            <Metric icon={<BookOpen className="h-4 w-4" />} value={`${dataRef.current?.manifest.paperCount ?? 0} papers`} />
+          </div>
         </header>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <section className="relative min-h-0 overflow-hidden bg-[#1E1E1E]">
-            <canvas ref={canvasRef} className="block h-full w-full" />
+        <div className="grid flex-none grid-cols-1 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <section className="relative h-[72svh] min-h-[380px] overflow-hidden bg-[#1E1E1E] md:h-[76svh] xl:h-auto xl:min-h-0">
+            <canvas ref={canvasRef} className="block h-full w-full touch-none" />
             {!status.loaded && (
               <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[#1E1E1E]/90">
                 <div className="rounded-md border border-[#FF6B35]/35 bg-[#252525]/95 px-8 py-7 text-center shadow-2xl">
@@ -408,14 +420,14 @@ export function TraceScopeViewer() {
                 ) : null}
               </div>
             ) : hintText ? (
-              <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded border border-white/20 bg-black/60 px-4 py-2 text-xs text-white/85 backdrop-blur whitespace-nowrap text-center">
+              <div className="pointer-events-none absolute bottom-4 left-1/2 w-[min(32rem,calc(100%-2rem))] -translate-x-1/2 rounded border border-white/20 bg-black/60 px-4 py-2 text-center text-xs text-white/85 backdrop-blur">
                 {hintText}
               </div>
             ) : null}
           </section>
 
-          <aside className="min-h-0 overflow-y-auto border-l border-white/10 bg-[#2A2A2A]">
-            <div className="space-y-5 p-4">
+          <aside className="overflow-visible border-t border-white/10 bg-[#2A2A2A] xl:min-h-0 xl:overflow-y-auto xl:border-l xl:border-t-0">
+            <div className="mx-auto max-w-3xl space-y-5 p-4 pb-8 xl:max-w-none xl:pb-4">
 
               <ControlSection title="Display">
                 <ToggleRow label="Show Data Points" checked={settings.showPoints} onChange={(value) => updateSetting("showPoints", value)} />
@@ -1100,6 +1112,17 @@ class TraceScopeRenderer {
           this.handleCanvasClick(sx, sy)
         }
       }
+      this.pointerDownPos = null
+      this.pointerMoved = false
+      try { this.canvas.releasePointerCapture(event.pointerId) } catch { /* ok */ }
+    })
+
+    this.canvas.addEventListener("pointercancel", (event) => {
+      this.dragging = false
+      this.gizmoDragging = null
+      this.gizmoDragStartPos = null
+      this.gizmoDragStartClick = null
+      this.gizmoDragAxisScreenN = null
       this.pointerDownPos = null
       this.pointerMoved = false
       try { this.canvas.releasePointerCapture(event.pointerId) } catch { /* ok */ }
