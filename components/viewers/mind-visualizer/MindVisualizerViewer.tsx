@@ -701,7 +701,6 @@ class MindVisRenderer {
     startPaths?: number[][][]
     axisScreenN?: [number, number]
     pxPerFieldUnit?: number
-    axisSign?: number
   } | null = null
   private probes: Probe[] = []
   private probePlayback: {
@@ -1088,7 +1087,6 @@ class MindVisRenderer {
       startPaths: axisPick ? this.probes.map((probe) => probe.path.map((point) => [...point])) : undefined,
       axisScreenN: axisPick?.axisScreenN,
       pxPerFieldUnit: axisPick?.pxPerFieldUnit,
-      axisSign: axisPick?.axisSign,
     }
   }
 
@@ -1202,15 +1200,14 @@ class MindVisRenderer {
       !pointer.startClick ||
       !pointer.startPaths ||
       !pointer.axisScreenN ||
-      !pointer.pxPerFieldUnit ||
-      !pointer.axisSign
+      !pointer.pxPerFieldUnit
     ) {
       return
     }
 
     const mouseDelta: [number, number] = [clientX - pointer.startClick[0], clientY - pointer.startClick[1]]
     const alongPx = mouseDelta[0] * pointer.axisScreenN[0] + mouseDelta[1] * pointer.axisScreenN[1]
-    const fieldDelta = (alongPx / pointer.pxPerFieldUnit) * pointer.axisSign
+    const fieldDelta = alongPx / pointer.pxPerFieldUnit
 
     for (let i = 0; i < this.probes.length; i += 1) {
       const probe = this.probes[i]
@@ -1254,13 +1251,11 @@ class MindVisRenderer {
           distance: number
           axisScreenN: [number, number]
           pxPerFieldUnit: number
-          axisSign: number
         }
       | null = null
 
     for (let axis = 0; axis < 3; axis += 1) {
-      const sign = point[axis] < 0.82 ? 1 : -1
-      const delta = 0.1 * sign
+      const delta = this.probeGizmoRadius()
       const tip = [...point]
       tip[axis] = clamp(tip[axis] + delta, 0.01, 0.99)
       const tipScreen = this.projectFieldToScreen(tip, mvp, rect)
@@ -1275,7 +1270,6 @@ class MindVisRenderer {
           distance: dist,
           axisScreenN: [axisVec[0] / axisPixels, axisVec[1] / axisPixels],
           pxPerFieldUnit: axisPixels / Math.abs(tip[axis] - point[axis]),
-          axisSign: sign,
         }
       }
     }
@@ -1301,7 +1295,7 @@ class MindVisRenderer {
   }
 
   private probeGizmoRadius() {
-    return 0.13
+    return 0.16
   }
 
   private screenToFieldPosition(clientX: number, clientY: number): [number, number, number] | null {
@@ -1879,8 +1873,8 @@ class MindVisRenderer {
     this.drawActiveRegionMesh(mvp)
     this.drawRegionHighlight(mvp)
     this.drawTrails(mvp)
-    this.drawProbeGizmo(mvp)
     this.drawProbeMarkers(mvp)
+    this.drawProbeGizmo(mvp)
   }
 
   private stepNorm() {
@@ -2060,50 +2054,73 @@ class MindVisRenderer {
     if (this.probePlayback || this.probes.some((probe) => probe.pending || probe.active)) return
     if (!this.settings.probeMoveMode && this.pointer?.mode !== "probe") return
     const gl = this.gl
-    const r = this.probeGizmoRadius()
-    const axes = [
-      { offset: [r, 0, 0], color: [1, 0.2, 0.16, this.settings.probeMoveMode ? 1 : 0.62] },
-      { offset: [0, r, 0], color: [0.22, 1, 0.42, this.settings.probeMoveMode ? 1 : 0.62] },
-      { offset: [0, 0, r], color: [0.28, 0.58, 1, this.settings.probeMoveMode ? 1 : 0.62] },
+
+    const colors: [number, number, number][] = [
+      [1, 0.2, 0.2],
+      [0.2, 1, 0.2],
+      [0.3, 0.5, 1],
     ]
+    const perps: [number[], number[]][] = [
+      [[0, 1, 0], [0, 0, 1]],
+      [[1, 0, 0], [0, 0, 1]],
+      [[1, 0, 0], [0, 1, 0]],
+    ]
+    const arrowLen = this.probeGizmoRadius()
+    const headLen = arrowLen * 0.2
+    const spread = arrowLen * 0.11
+
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+    gl.disable(gl.DEPTH_TEST)
+    gl.useProgram(this.lineProgram)
+    gl.lineWidth(4)
+    gl.uniformMatrix4fv(gl.getUniformLocation(this.lineProgram, "u_mvp"), false, mvp)
+    gl.bindVertexArray(null)
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.trailBuffer)
+    gl.enableVertexAttribArray(0)
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
+
     for (const probe of this.probes) {
       const p = probe.path[probe.path.length - 1]
       if (!p) continue
-      const c = this.fieldToScene(p)
-      for (const axis of axes) {
-        const o = axis.offset
-        const line = new Float32Array([c[0] - o[0], c[1] - o[1], c[2] - o[2], c[0] + o[0], c[1] + o[1], c[2] + o[2]])
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE)
-        gl.useProgram(this.lineProgram)
-        gl.lineWidth(4)
-        gl.uniformMatrix4fv(gl.getUniformLocation(this.lineProgram, "u_mvp"), false, mvp)
-        gl.uniform4f(gl.getUniformLocation(this.lineProgram, "u_color"), axis.color[0], axis.color[1], axis.color[2], axis.color[3])
-        gl.bindVertexArray(null)
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.trailBuffer)
-        gl.bufferData(gl.ARRAY_BUFFER, line, gl.DYNAMIC_DRAW)
-        gl.enableVertexAttribArray(0)
-        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
+      const center = this.fieldToScene(p)
+      for (let axis = 0; axis < 3; axis += 1) {
+        const isActive = this.pointer?.mode === "probe" && this.pointer.axis === axis
+        const alpha = this.pointer?.mode === "probe" && !isActive ? 0.25 : 0.95
+        const [r, g, b] = colors[axis]
+        gl.uniform4f(gl.getUniformLocation(this.lineProgram, "u_color"), r, g, b, alpha)
+
+        const tipField = [...p]
+        tipField[axis] = clamp(tipField[axis] + arrowLen, 0.01, 0.99)
+        const tip = this.fieldToScene(tipField)
+
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([...center, ...tip]), gl.DYNAMIC_DRAW)
         gl.drawArrays(gl.LINES, 0, 2)
-        this.drawGizmoPoints(mvp, makeAxisHandlePoints(c, o), axis.color)
+
+        const backField = [...tipField]
+        backField[axis] = clamp(tipField[axis] - headLen, 0.01, 0.99)
+        const [p1, p2] = perps[axis]
+        const barbs: number[][] = [
+          [backField[0] + p1[0] * spread, backField[1] + p1[1] * spread, backField[2] + p1[2] * spread],
+          [backField[0] - p1[0] * spread, backField[1] - p1[1] * spread, backField[2] - p1[2] * spread],
+          [backField[0] + p2[0] * spread, backField[1] + p2[1] * spread, backField[2] + p2[2] * spread],
+          [backField[0] - p2[0] * spread, backField[1] - p2[1] * spread, backField[2] - p2[2] * spread],
+        ]
+        const head = new Float32Array(
+          barbs.flatMap((barb) => {
+            const clampedBarb = [
+              clamp(barb[0], 0.01, 0.99),
+              clamp(barb[1], 0.01, 0.99),
+              clamp(barb[2], 0.01, 0.99),
+            ]
+            return [...tip, ...this.fieldToScene(clampedBarb)]
+          }),
+        )
+        gl.bufferData(gl.ARRAY_BUFFER, head, gl.DYNAMIC_DRAW)
+        gl.drawArrays(gl.LINES, 0, barbs.length * 2)
       }
     }
     gl.lineWidth(1)
-  }
-
-  private drawGizmoPoints(mvp: Float32Array, points: number[][], color: number[]) {
-    if (!this.highlightProgram || !this.trailBuffer) return
-    const gl = this.gl
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE)
-    gl.useProgram(this.highlightProgram)
-    gl.uniformMatrix4fv(gl.getUniformLocation(this.highlightProgram, "u_mvp"), false, mvp)
-    gl.uniform1f(gl.getUniformLocation(this.highlightProgram, "u_pointSize"), this.settings.probeMoveMode ? 10 : 7)
-    gl.uniform4f(gl.getUniformLocation(this.highlightProgram, "u_color"), color[0], color[1], color[2], color[3])
-    gl.bindVertexArray(null)
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.trailBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points.flat()), gl.DYNAMIC_DRAW)
-    gl.enableVertexAttribArray(0)
-    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0)
-    gl.drawArrays(gl.POINTS, 0, points.length)
+    gl.enable(gl.DEPTH_TEST)
   }
 
   private cameraEye(): [number, number, number] {
@@ -2561,15 +2578,6 @@ function makeProbeOffsets(count: number) {
     [-0.03, 0.03, 0.018],
     [0.03, 0.03, 0.018],
   ]
-}
-
-function makeAxisHandlePoints(center: number[], offset: number[]) {
-  const points: number[][] = []
-  for (let i = -6; i <= 6; i += 1) {
-    const t = i / 6
-    points.push([center[0] + offset[0] * t, center[1] + offset[1] * t, center[2] + offset[2] * t])
-  }
-  return points
 }
 
 function makeBoxLines(scale: [number, number, number]) {
