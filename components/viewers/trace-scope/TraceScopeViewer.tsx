@@ -70,6 +70,7 @@ type AxisInfo = {
 type BasinMesh = {
   vertices: Vec3[]
   faces: number[]  // flat triangle indices
+  method?: string
 }
 
 type Attractor = {
@@ -1798,16 +1799,81 @@ class TraceScopeRenderer {
       gl.drawArrays(gl.POINTS, 0, 1)
       gl.enable(gl.DEPTH_TEST)
 
-      // 2. Basin geometry as glow halo (depth test OFF, additive blend so it glows through particles)
+      // 2. Basin geometry as glow halo. Sparse synthetic meshes look hollow and
+      // jagged in the browser, so render those as soft basin-cell clouds instead.
       const meshAlpha = isHighlighted ? 0.22 : 0.14
+      const meshMethod = att.basin_mesh?.method ?? ""
+      const hasTrueMesh = (
+        att.basin_mesh &&
+        att.basin_mesh.vertices.length > 0 &&
+        att.basin_mesh.faces.length >= 3 &&
+        meshMethod !== "metaball_sparse_basin"
+      )
 
-      if (att.basin_mesh && att.basin_mesh.vertices.length > 0 && att.basin_mesh.faces.length >= 3) {
+      if (hasTrueMesh && att.basin_mesh) {
         this.drawBasinMesh(viewProj, att.basin_mesh, r, g, b, meshAlpha)
       } else if (att.basin_points && att.basin_points.length > 0) {
-        const fallbackMesh = this.getFallbackBasinMesh(i, att)
-        if (fallbackMesh) this.drawBasinMesh(viewProj, fallbackMesh, r, g, b, meshAlpha * 0.92)
+        this.drawBasinCloud(viewProj, att, r, g, b, isHighlighted)
       }
     }
+  }
+
+  private drawBasinCloud(
+    viewProj: Float32Array,
+    att: Attractor,
+    r: number, g: number, b: number,
+    isHighlighted: boolean,
+  ) {
+    const points = att.basin_points ?? []
+    if (!points.length) return
+
+    const gl = this.gl
+    const scene = Math.max(this.span[0], this.span[1], this.span[2], 1e-6)
+    const cell = scene / 39
+    const samplesPerPoint = points.length < 60 ? 18 : 8
+    const count = points.length * samplesPerPoint
+    const positions = new Float32Array(count * 3)
+    const colors = new Float32Array(count * 4)
+    const values = att.basin_values ?? []
+    let offset = 0
+
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i]
+      const value = clamp(values[i] ?? 0.75, 0.25, 1)
+      for (let j = 0; j < samplesPerPoint; j++) {
+        const seed = (i + 1) * 12.9898 + (j + 1) * 78.233
+        const a = Math.sin(seed) * 43758.5453
+        const u = a - Math.floor(a)
+        const bSeed = Math.sin(seed * 1.37) * 24634.6345
+        const v = bSeed - Math.floor(bSeed)
+        const cSeed = Math.sin(seed * 1.91) * 15342.9471
+        const w = cSeed - Math.floor(cSeed)
+        const theta = Math.PI * 2 * u
+        const z = v * 2 - 1
+        const radial = Math.sqrt(Math.max(0, 1 - z * z))
+        const radius = cell * (0.35 + 0.8 * w)
+        const jitter: Vec3 = [
+          Math.cos(theta) * radial * radius,
+          z * radius,
+          Math.sin(theta) * radial * radius,
+        ]
+        const pos = scalePoint(add(p, jitter), this.sceneScale)
+        positions.set(pos, offset * 3)
+        colors.set([r, g, b, (isHighlighted ? 0.105 : 0.068) * value], offset * 4)
+        offset += 1
+      }
+    }
+
+    gl.useProgram(this.pointProgram)
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE)
+    gl.disable(gl.DEPTH_TEST)
+    gl.uniformMatrix4fv(gl.getUniformLocation(this.pointProgram, "u_matrix"), false, viewProj)
+    gl.uniform1f(gl.getUniformLocation(this.pointProgram, "u_point_size"), isHighlighted ? 34 : 28)
+    bindAttrib(gl, this.pointProgram, this.scratchBuffer, "a_position", positions, 3, gl.DYNAMIC_DRAW)
+    bindAttrib(gl, this.pointProgram, this.scratchColorBuffer, "a_color", colors, 4, gl.DYNAMIC_DRAW)
+    gl.drawArrays(gl.POINTS, 0, count)
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+    gl.enable(gl.DEPTH_TEST)
   }
 
 
