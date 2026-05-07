@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 from functools import lru_cache
@@ -7,6 +8,7 @@ from typing import Literal
 import numpy as np
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 
@@ -150,26 +152,79 @@ def trajectory(req: TrajectoryRequest):
 
 @app.post("/api/mindvis/explain")
 def explain(req: ExplainRequest):
+    return build_explanation(req)
+
+
+@app.post("/api/mindvis/explain/stream")
+def explain_stream(req: ExplainRequest):
+    def event_stream():
+        def event(payload: dict) -> str:
+            return json.dumps(payload) + "\n"
+
+        try:
+            yield event({"type": "log", "message": "Loading MindVisualizer field samplers and brain label grid."})
+            svc = services()
+            traj = np.asarray(req.trajectory, dtype=np.float32)
+            if traj.ndim != 2 or traj.shape[1] != 3:
+                raise HTTPException(status_code=400, detail="trajectory must be an array of [x,y,z] points")
+
+            yield event({"type": "log", "message": f"Received {len(traj)} normalized probe samples in {req.fieldMode} mode."})
+            world = denormalized(np.clip(traj, 0.0, 1.0), svc["amin"], svc["span"])
+            sampler = svc["samplers"].get(req.fieldMode, svc["samplers"]["mean"])
+            mags = np.linalg.norm(sampler.sample_vec(world), axis=1).astype(np.float32)
+
+            yield event({"type": "log", "message": "Sampling flow strength and entropy along the traveled path."})
+            transitions = analyze_regions(world, mags, req.callLlm)
+            yield event({"type": "log", "message": f"Detected {len(transitions)} entered or nearby anatomical regions."})
+
+            text = format_transition_text(transitions)
+            if req.callLlm:
+                from src.region_analyzer import analyze_with_gpt
+
+                yield event({"type": "log", "message": "Calling the OpenAI model for the neuroscience interpretation."})
+                text = analyze_with_gpt(
+                    transitions,
+                    use_rag=os.environ.get("MINDVIS_USE_RAG", "0") == "1",
+                    model=os.environ.get("OPENAI_MODEL", "gpt-5.4-mini"),
+                    debug=os.environ.get("MINDVIS_DEBUG", "0") == "1",
+                )
+                yield event({"type": "log", "message": "LLM interpretation finished."})
+
+            yield event({"type": "result", "text": text, "transitions": transitions, "regionText": format_transition_text(transitions)})
+        except Exception as exc:
+            yield event({"type": "error", "message": str(exc)})
+
+    return StreamingResponse(event_stream(), media_type="application/x-ndjson")
+
+
+def build_explanation(req: ExplainRequest, log=None):
+    log = log or (lambda _message: None)
+    log("Loading MindVisualizer field samplers and brain label grid.")
     svc = services()
     traj = np.asarray(req.trajectory, dtype=np.float32)
     if traj.ndim != 2 or traj.shape[1] != 3:
         raise HTTPException(status_code=400, detail="trajectory must be an array of [x,y,z] points")
 
+    log(f"Received {len(traj)} normalized probe samples in {req.fieldMode} mode.")
     world = denormalized(np.clip(traj, 0.0, 1.0), svc["amin"], svc["span"])
     sampler = svc["samplers"].get(req.fieldMode, svc["samplers"]["mean"])
     mags = np.linalg.norm(sampler.sample_vec(world), axis=1).astype(np.float32)
+    log("Sampling flow strength and entropy along the traveled path.")
     transitions = analyze_regions(world, mags, req.callLlm)
+    log(f"Detected {len(transitions)} entered or nearby anatomical regions.")
     text = format_transition_text(transitions)
 
     if req.callLlm:
         from src.region_analyzer import analyze_with_gpt
 
+        log("Calling the OpenAI model for the neuroscience interpretation.")
         text = analyze_with_gpt(
             transitions,
             use_rag=os.environ.get("MINDVIS_USE_RAG", "0") == "1",
             model=os.environ.get("OPENAI_MODEL", "gpt-5.4-mini"),
             debug=os.environ.get("MINDVIS_DEBUG", "0") == "1",
         )
+        log("LLM interpretation finished.")
 
     return {"text": text, "transitions": transitions, "regionText": format_transition_text(transitions)}
 
