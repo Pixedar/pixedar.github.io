@@ -55,13 +55,6 @@ type ViewerStatus = {
   field: FieldMode
 }
 
-type ProbeGuide = {
-  visible: boolean
-  title: string
-  detail: string
-  tone: "move" | "flow" | "processing" | "warn"
-}
-
 const initialSettings: MindVisSettings = {
   paused: false,
   fieldMode: "mean",
@@ -122,18 +115,12 @@ export function MindVisualizerViewer() {
   })
   const [analysis, setAnalysis] = useState("Probe trajectory analysis will appear here.")
   const [analysisOpen, setAnalysisOpen] = useState(false)
-  const [probeGuide, setProbeGuide] = useState<ProbeGuide>({
-    visible: false,
-    title: "",
-    detail: "",
-    tone: "move",
-  })
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const renderer = new MindVisRenderer(canvas, settings, setSettings, setStatus, setAnalysis, setAnalysisOpen, setProbeGuide)
+    const renderer = new MindVisRenderer(canvas, settings, setSettings, setStatus, setAnalysis, setAnalysisOpen)
     rendererRef.current = renderer
     renderer.load().catch((error) => {
       setStatus((current) => ({
@@ -168,6 +155,7 @@ export function MindVisualizerViewer() {
       if (target && ["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName)) return
       if (event.key === "Enter") {
         event.preventDefault()
+        setSettings((current) => ({ ...current, probeMoveMode: false }))
         rendererRef.current?.startProbeFlow()
         return
       }
@@ -257,33 +245,11 @@ export function MindVisualizerViewer() {
             <div className="pointer-events-none absolute left-4 top-4 border border-white/10 bg-black/35 px-3 py-2 text-xs text-white/70 backdrop-blur">
               {status.message}
             </div>
-            {status.loaded && probeGuide.visible && (
-              <div
-                className={`pointer-events-none absolute left-1/2 top-4 max-w-[min(44rem,calc(100%-2rem))] -translate-x-1/2 border px-5 py-3 text-center shadow-xl backdrop-blur ${
-                  probeGuide.tone === "warn"
-                    ? "border-[#FFB86B]/55 bg-[#1C1006]/78"
-                    : probeGuide.tone === "flow"
-                      ? "border-[#7AF7B1]/45 bg-[#061710]/75"
-                      : probeGuide.tone === "processing"
-                        ? "border-[#88CCFF]/45 bg-[#06111C]/75"
-                        : "border-[#FFE45E]/45 bg-black/65"
-                }`}
-              >
-                <div
-                  className={`text-base font-semibold md:text-lg ${
-                    probeGuide.tone === "warn"
-                      ? "text-[#FFB86B]"
-                      : probeGuide.tone === "flow"
-                        ? "text-[#7AF7B1]"
-                        : probeGuide.tone === "processing"
-                          ? "text-[#88CCFF]"
-                          : "text-[#FFE45E]"
-                  }`}
-                >
-                  {probeGuide.title}
-                </div>
+            {status.loaded && settings.probeMoveMode && (
+              <div className="pointer-events-none absolute left-1/2 top-4 max-w-[min(40rem,calc(100%-2rem))] -translate-x-1/2 border border-[#FFE45E]/45 bg-black/65 px-5 py-3 text-center shadow-xl backdrop-blur">
+                <div className="text-base font-semibold text-[#FFE45E] md:text-lg">Move mode is on</div>
                 <div className="mt-1 text-sm text-white/78">
-                  {probeGuide.detail}
+                  Press and drag the probe ball or colored gizmo to move it. Drag empty space to rotate. Enter starts or stops live flow.
                 </div>
               </div>
             )}
@@ -378,6 +344,7 @@ export function MindVisualizerViewer() {
                   <IconButton
                     label="Start"
                     onClick={() => {
+                      updateSetting("probeMoveMode", false)
                       rendererRef.current?.startProbeFlow()
                     }}
                   >
@@ -645,12 +612,10 @@ class MindVisRenderer {
   private setStatus: React.Dispatch<React.SetStateAction<ViewerStatus>>
   private setAnalysis: React.Dispatch<React.SetStateAction<string>>
   private setAnalysisOpen: React.Dispatch<React.SetStateAction<boolean>>
-  private setProbeGuide: React.Dispatch<React.SetStateAction<ProbeGuide>>
   private meta: GridMeta | null = null
   private textures = new Map<FieldMode, WebGLTexture>()
   private fieldData = new Map<FieldMode, Uint16Array>()
   private entropyTexture: WebGLTexture | null = null
-  private entropyData: Uint16Array | null = null
   private updateProgram: WebGLProgram | null = null
   private renderProgram: WebGLProgram | null = null
   private oosProgram: WebGLProgram | null = null
@@ -685,8 +650,6 @@ class MindVisRenderer {
   private frames = 0
   private fpsT0 = performance.now()
   private fps = 0
-  private analysisBusy = false
-  private lastLiveLogAt = 0
   private azimuth = 0.72
   private elevation = 0.34
   private zoom = 2.15
@@ -724,7 +687,6 @@ class MindVisRenderer {
     setStatus: React.Dispatch<React.SetStateAction<ViewerStatus>>,
     setAnalysis: React.Dispatch<React.SetStateAction<string>>,
     setAnalysisOpen: React.Dispatch<React.SetStateAction<boolean>>,
-    setProbeGuide: React.Dispatch<React.SetStateAction<ProbeGuide>>,
   ) {
     const gl = canvas.getContext("webgl2", {
       alpha: false,
@@ -741,7 +703,6 @@ class MindVisRenderer {
     this.setStatus = setStatus
     this.setAnalysis = setAnalysis
     this.setAnalysisOpen = setAnalysisOpen
-    this.setProbeGuide = setProbeGuide
     this.onPointerDown = this.onPointerDown.bind(this)
     this.onPointerMove = this.onPointerMove.bind(this)
     this.onPointerUp = this.onPointerUp.bind(this)
@@ -772,7 +733,6 @@ class MindVisRenderer {
       this.fieldData.set(mode, new Uint16Array(fieldBuffers[index]))
       this.textures.set(mode, this.uploadFieldTexture(fieldBuffers[index], meta.grid, Boolean(linearFloat)))
     })
-    this.entropyData = new Uint16Array(entropy)
     this.entropyTexture = this.uploadEntropyTexture(entropy, meta.grid, Boolean(linearFloat))
     this.uploadOos(oos)
     this.labelGrid = labelGrid
@@ -844,66 +804,35 @@ class MindVisRenderer {
   clearProbes() {
     this.probes = []
     this.probePlayback = null
-    this.analysisBusy = false
     this.currentRegionKey = null
     this.regionHighlightCount = 0
     this.activeRegionMesh = null
     this.setAnalysis("Probe trajectory analysis will appear here.")
-    this.setProbeGuide({ visible: false, title: "", detail: "", tone: "move" })
   }
 
-  async explainProbe(options: { auto?: boolean } = {}) {
+  async explainProbe() {
     if (!this.meta || this.probes.length === 0 || this.probes[0].path.length < 2) {
-      this.setAnalysis("No complete probe path yet. Place the probe in the flow, press Enter, let it travel, then press Enter again.")
-      this.setProbeGuide({
-        visible: true,
-        title: "Probe needs a path",
-        detail: "Click deeper inside the visible flow, let the probe move for a moment, then stop it to analyze the traveled path.",
-        tone: "warn",
-      })
+      this.setAnalysis("No complete probe path yet.")
       return
     }
 
     const probe = this.probes[0]
-    const quality = this.probePathQuality(probe)
-    if (!quality.ok) {
-      const message = `The probe barely moved (${probe.path.length} samples, ${quality.distance.toFixed(4)} field units). Place it deeper in the flow, make sure it draws a visible trail, then stop it again.`
-      this.setAnalysis(message)
-      this.setProbeGuide({
-        visible: true,
-        title: "Probe did not travel enough",
-        detail: "Move the probe to a stronger stream inside the brain volume, press Enter to follow the flow, and stop after a visible path forms.",
-        tone: "warn",
-      })
-      return
-    }
-
-    if (this.analysisBusy) return
-    this.analysisBusy = true
     const api = backendUrl()
     if (api) {
-      const logs = [
-        `Preparing ${probe.path.length} probe samples (${quality.distance.toFixed(3)} field units traveled).`,
-        "Sending trajectory to the Python backend.",
-      ]
-      this.setAnalysis(logs.join("\n"))
-      this.setProbeGuide({
-        visible: true,
-        title: "Explanation is processing",
-        detail: "The backend is identifying anatomical regions and asking the LLM for the path interpretation.",
-        tone: "processing",
-      })
+      this.setAnalysis("Asking the Python backend for probe interpretation...")
       try {
-        const text = await this.fetchExplanation(api, probe, logs)
-        this.setAnalysis(text)
-        this.setAnalysisOpen(true)
-        this.setProbeGuide({
-          visible: true,
-          title: "Analysis ready",
-          detail: "The probe path has been interpreted. Move the probe again or press Enter to collect a new path.",
-          tone: "move",
+        const response = await fetch(`${api}/api/mindvis/explain`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fieldMode: this.settings.fieldMode,
+            trajectory: probe.path,
+          }),
         })
-        this.analysisBusy = false
+        if (!response.ok) throw new Error(`backend returned ${response.status}`)
+        const data = (await response.json()) as { text?: string; summary?: string }
+        this.setAnalysis(data.text ?? data.summary ?? "Backend returned no explanation text.")
+        this.setAnalysisOpen(true)
         return
       } catch (error) {
         this.setAnalysis(
@@ -932,77 +861,16 @@ class MindVisRenderer {
       )}; entropy/color response is taken from the shipped grid125 MDN snapshot.`,
     )
     this.setAnalysisOpen(true)
-    if (options.auto) {
-      this.setProbeGuide({
-        visible: true,
-        title: "Local path summary ready",
-        detail: "The hosted backend was not available, so this uses the browser-side region and direction summary.",
-        tone: "warn",
-      })
-    }
-    this.analysisBusy = false
-  }
-
-  private async fetchExplanation(api: string, probe: Probe, logs: string[]) {
-    const body = JSON.stringify({
-      fieldMode: this.settings.fieldMode,
-      trajectory: probe.path,
-    })
-    const streamed = await fetch(`${api}/api/mindvis/explain/stream`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-    }).catch(() => null)
-
-    if (streamed?.ok && streamed.body) {
-      const reader = streamed.body.getReader()
-      const decoder = new TextDecoder()
-      let pending = ""
-      while (true) {
-        const { value, done } = await reader.read()
-        if (done) break
-        pending += decoder.decode(value, { stream: true })
-        const lines = pending.split("\n")
-        pending = lines.pop() ?? ""
-        for (const line of lines) {
-          if (!line.trim()) continue
-          const event = JSON.parse(line) as { type?: string; message?: string; text?: string; summary?: string }
-          if (event.type === "log" && event.message) {
-            logs.push(`backend: ${event.message}`)
-            this.setAnalysis(logs.join("\n"))
-          } else if (event.type === "result") {
-            return event.text ?? event.summary ?? "Backend returned no explanation text."
-          } else if (event.type === "error") {
-            throw new Error(event.message ?? "backend stream failed")
-          }
-        }
-      }
-    }
-
-    const response = await fetch(`${api}/api/mindvis/explain`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-    })
-    if (!response.ok) throw new Error(`backend returned ${response.status}`)
-    const data = (await response.json()) as { text?: string; summary?: string }
-    return data.text ?? data.summary ?? "Backend returned no explanation text."
   }
 
   startProbeFlow() {
     const probe = this.probes[0]
     if (!probe || !this.meta || probe.path.length === 0) {
       this.setAnalysis("Click to place the probe first, then press Enter or Start.")
-      this.setProbeGuide({
-        visible: true,
-        title: "Place the probe first",
-        detail: "Click inside the visible brain flow. The move gizmo will appear immediately, then Enter starts the probe following the field.",
-        tone: "warn",
-      })
       return
     }
     if (probe.active) {
-      this.stopLiveProbe(probe, `Probe stopped after ${probe.path.length} samples. Checking whether the path is long enough to explain.`, true)
+      this.stopLiveProbe(probe, `Probe stopped after ${probe.path.length} samples. Press Analyze to explain this path.`)
       return
     }
     if (!this.fieldData.get(this.settings.fieldMode)) {
@@ -1014,42 +882,13 @@ class MindVisRenderer {
     probe.active = true
     this.settings = { ...this.settings, probeMoveMode: false }
     this.setSettingsState((current) => ({ ...current, probeMoveMode: false }))
-    this.lastLiveLogAt = 0
-    this.setAnalysis("Probe is following the live MDN field.\nPress Enter to stop; the traveled path will be analyzed automatically.")
-    this.setProbeGuide({
-      visible: true,
-      title: "Probe is following the flow",
-      detail: "Watch the yellow trail grow. Press Enter to stop the probe and automatically analyze the path it traveled.",
-      tone: "flow",
-    })
+    this.setAnalysis("Probe is following the live MDN field. Press Enter or Start to stop, then Analyze to explain the path.")
   }
 
-  private stopLiveProbe(probe: Probe, message?: string, autoExplain = false) {
+  private stopLiveProbe(probe: Probe, message?: string) {
     probe.active = false
     probe.pending = false
     if (message) this.setAnalysis(message)
-    this.setProbeGuide({
-      visible: true,
-      title: "Probe stopped",
-      detail: "Checking the path length and region coverage before starting the explanation.",
-      tone: "processing",
-    })
-    if (autoExplain && probe.slot === this.probes[0]?.slot) void this.explainProbe({ auto: true })
-  }
-
-  private probePathQuality(probe: Probe) {
-    if (!this.meta || probe.path.length < 2) return { ok: false, distance: 0 }
-    let distance = 0
-    for (let i = 1; i < probe.path.length; i += 1) {
-      const a = probe.path[i - 1]
-      const b = probe.path[i]
-      distance += Math.hypot(
-        (b[0] - a[0]) * this.meta.span[0],
-        (b[1] - a[1]) * this.meta.span[1],
-        (b[2] - a[2]) * this.meta.span[2],
-      )
-    }
-    return { ok: probe.path.length >= 12 && distance >= 0.015, distance }
   }
 
   private bindEvents() {
@@ -1116,23 +955,13 @@ class MindVisRenderer {
     this.pointer = null
     if (mode === "probe") {
       if (wasDrag) {
+        this.settings = { ...this.settings, probeMoveMode: false }
+        this.setSettingsState((current) => ({ ...current, probeMoveMode: false }))
         this.setAnalysis("Probe moved. Press Enter or Start to follow the live flow.")
-        this.setProbeGuide({
-          visible: true,
-          title: "Move mode is on",
-          detail: "Keep adjusting with the colored gizmo or click a new spot in the flow. Press Enter when you want the probe to be dragged by the field.",
-          tone: "move",
-        })
       } else {
         this.settings = { ...this.settings, probeMoveMode: true }
         this.setSettingsState((current) => ({ ...current, probeMoveMode: true }))
-        this.setAnalysis("Probe gizmo active. Drag a colored axis with a broad margin, or click another point to place the probe there.")
-        this.setProbeGuide({
-          visible: true,
-          title: "Move mode is on",
-          detail: "Drag a colored gizmo axis to refine the probe position. You can also click somewhere else in the flow, then press Enter to start.",
-          tone: "move",
-        })
+        this.setAnalysis("Probe gizmo active. Drag a colored axis with a broad margin, or drag empty space to rotate.")
       }
     } else if (!wasDrag) {
       this.placeProbe(event.clientX, event.clientY, false)
@@ -1177,19 +1006,13 @@ class MindVisRenderer {
       ? picked.map((value, axis) => this.meta!.axisMin[axis] + value * this.meta!.span[axis])
       : picked
     if (!quiet) {
-      this.settings = { ...this.settings, probeMoveMode: true }
-      this.setSettingsState((current) => ({ ...current, probeMoveMode: true }))
+      this.settings = { ...this.settings, probeMoveMode: false }
+      this.setSettingsState((current) => ({ ...current, probeMoveMode: false }))
       this.setAnalysis(
         `${count} probe${count === 1 ? "" : "s"} placed at ${world.map((value) => value.toFixed(3)).join(", ")}${
           this.currentRegionKey ? ` in ${this.regionLabel(this.currentRegionKey)}` : ""
-        }.\nMove mode is on: drag the gizmo to adjust it or click another flow point. Press Enter to let the field drag the probe.`,
+        }. Drag the gizmo to adjust it, then press Enter or Start to follow the live flow.`,
       )
-      this.setProbeGuide({
-        visible: true,
-        title: "Move mode is on",
-        detail: "Set the probe anywhere in the flow with the gizmo or by clicking. When it is where you want it, press Enter to start dragging it along the MDN field.",
-        tone: "move",
-      })
     }
   }
 
@@ -1720,12 +1543,12 @@ class MindVisRenderer {
       if (!probe.active) continue
       const last = probe.path[probe.path.length - 1]
       if (!last) {
-        this.stopLiveProbe(probe, undefined, probe.slot === this.probes[0]?.slot)
+        this.stopLiveProbe(probe)
         continue
       }
       const vector = this.sampleFieldVector(last)
       if (!vector) {
-        this.stopLiveProbe(probe, "Probe stopped because the selected field sample is unavailable.", probe.slot === this.probes[0]?.slot)
+        this.stopLiveProbe(probe, "Probe stopped because the selected field sample is unavailable.")
         continue
       }
       if (this.settings.velocityClip) {
@@ -1745,7 +1568,7 @@ class MindVisRenderer {
         (vector[2] / Math.max(this.meta.span[2], 0.0001)) * stepScale,
       ]
       if (Math.hypot(step[0], step[1], step[2]) < 0.000012) {
-        this.stopLiveProbe(probe, `Probe stopped after ${probe.path.length} samples because the local flow became too weak.`, probe.slot === this.probes[0]?.slot)
+        this.stopLiveProbe(probe, `Probe stopped after ${probe.path.length} samples because the local flow became too weak.`)
         continue
       }
 
@@ -1753,7 +1576,7 @@ class MindVisRenderer {
       if (!insideUnitCube(next) || !this.isInsideParticleCloud(next)) {
         const half = [last[0] + step[0] * 0.5, last[1] + step[1] * 0.5, last[2] + step[2] * 0.5]
         if (!insideUnitCube(half) || !this.isInsideParticleCloud(half)) {
-          this.stopLiveProbe(probe, `Probe stopped after ${probe.path.length} samples at the edge of the particle flow.`, probe.slot === this.probes[0]?.slot)
+          this.stopLiveProbe(probe, `Probe stopped after ${probe.path.length} samples at the edge of the particle flow.`)
           continue
         }
         next = half
@@ -1768,45 +1591,12 @@ class MindVisRenderer {
         if (probe.regions.length > 120) probe.regions.shift()
         if (probe.slot === this.probes[0]?.slot) {
           this.setCurrentRegion(region.key)
-          this.setAnalysis(`Probe entered ${this.regionLabel(region.key)}.\nPress Enter to stop; explanation starts automatically if the path is long enough.`)
+          this.setAnalysis(`Probe entered ${this.regionLabel(region.key)}. Press Enter or Start to stop; Analyze explains the path.`)
         }
       } else if (probe.slot === this.probes[0]?.slot && region) {
         this.setCurrentRegion(region.key)
       }
-      if (probe.slot === this.probes[0]?.slot) this.updateLiveProbeLog(probe, next, vector, region)
     }
-  }
-
-  private updateLiveProbeLog(
-    probe: Probe,
-    pos: number[],
-    vector: [number, number, number],
-    region: { key: string; world: number[] } | null,
-  ) {
-    const now = performance.now()
-    if (now - this.lastLiveLogAt < 450) return
-    this.lastLiveLogAt = now
-    const world = this.meta
-      ? [
-          this.meta.axisMin[0] + pos[0] * this.meta.span[0],
-          this.meta.axisMin[1] + pos[1] * this.meta.span[1],
-          this.meta.axisMin[2] + pos[2] * this.meta.span[2],
-        ]
-      : pos
-    const speed = Math.hypot(vector[0], vector[1], vector[2])
-    const entropy = this.sampleEntropy(pos)
-    const quality = this.probePathQuality(probe)
-    const regionName = region ? this.regionLabel(region.key) : "unlabeled flow / near boundary"
-    this.setAnalysis(
-      [
-        `Probe following field | samples ${probe.path.length} | traveled ${quality.distance.toFixed(3)} field units`,
-        `Current region: ${regionName}`,
-        `World position: ${world.map((value) => value.toFixed(2)).join(", ")}`,
-        `Flow vector: ${vector.map((value) => value.toFixed(4)).join(", ")} | strength ${speed.toFixed(4)}`,
-        `Model entropy: ${entropy === null ? "unavailable" : entropy.toFixed(3)} | field ${fieldLabels[this.settings.fieldMode]} | dt ${this.settings.dt.toFixed(2)}`,
-        "Press Enter to stop and analyze the path automatically.",
-      ].join("\n"),
-    )
   }
 
   private sampleFieldVector(pos: number[]): [number, number, number] | null {
@@ -1814,11 +1604,6 @@ class MindVisRenderer {
     const data = this.fieldData.get(this.settings.fieldMode) ?? this.fieldData.get("mean")
     if (!data) return null
     return sampleVectorFieldF16(data, this.meta.grid, [pos[2], pos[1], pos[0]])
-  }
-
-  private sampleEntropy(pos: number[]) {
-    if (!this.meta || !this.entropyData) return null
-    return sampleScalarFieldF16(this.entropyData, this.meta.grid, [pos[2], pos[1], pos[0]])
   }
 
   private updateParticles() {
@@ -2495,39 +2280,6 @@ function sampleVectorFieldF16(data: Uint16Array, n: number, coord: number[]): [n
 
   if (!Number.isFinite(out[0]) || !Number.isFinite(out[1]) || !Number.isFinite(out[2])) return null
   return out
-}
-
-function sampleScalarFieldF16(data: Uint16Array, n: number, coord: number[]) {
-  if (!data.length || n <= 1) return null
-  const x = clamp(coord[0], 0, 0.999999) * (n - 1)
-  const y = clamp(coord[1], 0, 0.999999) * (n - 1)
-  const z = clamp(coord[2], 0, 0.999999) * (n - 1)
-  const x0 = Math.floor(x)
-  const y0 = Math.floor(y)
-  const z0 = Math.floor(z)
-  const x1 = Math.min(x0 + 1, n - 1)
-  const y1 = Math.min(y0 + 1, n - 1)
-  const z1 = Math.min(z0 + 1, n - 1)
-  const tx = x - x0
-  const ty = y - y0
-  const tz = z - z0
-  let out = 0
-
-  for (let dz = 0; dz <= 1; dz += 1) {
-    const iz = dz ? z1 : z0
-    const wz = dz ? tz : 1 - tz
-    for (let dy = 0; dy <= 1; dy += 1) {
-      const iy = dy ? y1 : y0
-      const wy = dy ? ty : 1 - ty
-      for (let dx = 0; dx <= 1; dx += 1) {
-        const ix = dx ? x1 : x0
-        const weight = (dx ? tx : 1 - tx) * wy * wz
-        out += halfToFloat(data[(iz * n + iy) * n + ix]) * weight
-      }
-    }
-  }
-
-  return Number.isFinite(out) ? out : null
 }
 
 function insideUnitCube(pos: number[]) {
