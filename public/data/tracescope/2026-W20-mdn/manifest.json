@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 3,
+  "generatedAt": 1778166856.8847477,
+  "snapshot": "2026-W20-mdn",
+  "fingerprint": "d979a065f3b44585",
+  "paperCount": 400,
+  "lineageCount": 21,
+  "lineageMode": "primary_arxiv_category_independent_paths",
+  "entryType": "llm_paper_summary_180_260_words_with_research_pivot_and_mechanical_shift",
+  "summaryPromptVersion": "ai-paper-tracescope-summary-v5-research-pivot",
+  "gridShape": [
+    40,
+    40,
+    40
+  ],
+  "embedDim": 256,
+  "flowMode": "mdn",
+  "axisMin": [
+    8.200350761413574,
+    -0.9811011552810669,
+    13.828217506408691
+  ],
+  "axisMax": [
+    11.822551727294922,
+    2.7774147987365723,
+    18.09798240661621
+  ],
+  "viewerDefaults": {
+    "particleSpeed": 2.9,
+    "probeFollowSpeed": 1.6
+  },
+  "repository": "https://github.com/Pixedar/TraceScope"
+}

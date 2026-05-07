@@ -104,6 +104,12 @@ type FlowAnalysis = {
   score_channels?: string[]
 }
 
+type AttractorPanel = {
+  title: string
+  instruction: string
+  teaser: string
+}
+
 type TraceScopeData = {
   latest: string
   manifest: Manifest
@@ -175,6 +181,7 @@ export function TraceScopeViewer() {
     particles: initialSettings.particleCount,
   })
   const [probeInfo, setProbeInfo] = useState("Probe analysis will appear here.")
+  const [attractorPanel, setAttractorPanel] = useState<AttractorPanel | null>(null)
   const [hintText, setHintText] = useState("")
   const [analysisOpen, setAnalysisOpen] = useState(false)
   const [keyPanelOpen, setKeyPanelOpen] = useState(false)
@@ -200,7 +207,7 @@ export function TraceScopeViewer() {
           }))
         }
         const renderer = new TraceScopeRenderer(
-          canvas, data, settings, setStatus, setProbeInfo, setHintText,
+          canvas, data, settings, setStatus, setProbeInfo, setAttractorPanel, setHintText,
           () => setSettings((s) => ({ ...s, ballFollow: false })),
         )
         rendererRef.current = renderer
@@ -224,6 +231,7 @@ export function TraceScopeViewer() {
 
   useEffect(() => {
     rendererRef.current?.setSettings(settings)
+    if (!settings.showAttractors) setAttractorPanel(null)
   }, [settings])
 
   const prevBallFollowRef = useRef(initialSettings.ballFollow)
@@ -383,12 +391,22 @@ export function TraceScopeViewer() {
                 <div className="pointer-events-none absolute left-4 top-4 max-w-[min(34rem,calc(100%-2rem))] rounded border border-white/10 bg-black/35 px-3 py-2 text-xs text-white/70 backdrop-blur">
                   {status.message}
                 </div>
-                <div className="pointer-events-none absolute bottom-4 left-4 max-h-20 max-w-[min(34rem,calc(100%-2rem))] overflow-hidden rounded border border-white/10 bg-black/30 px-2 py-1.5 text-xs leading-relaxed text-white/40 backdrop-blur whitespace-pre">
-                  {probeInfo}
-                </div>
+                {!attractorPanel ? (
+                  <div className="pointer-events-none absolute bottom-4 left-4 max-h-20 max-w-[min(34rem,calc(100%-2rem))] overflow-hidden rounded border border-white/10 bg-black/30 px-2 py-1.5 text-xs leading-relaxed text-white/40 backdrop-blur whitespace-pre">
+                    {probeInfo}
+                  </div>
+                ) : null}
               </>
             ) : null}
-            {hintText ? (
+            {attractorPanel ? (
+              <div className="pointer-events-none absolute bottom-4 left-1/2 w-[min(34rem,calc(100%-2rem))] -translate-x-1/2 rounded border border-[#FF6B35]/35 bg-black/70 px-4 py-3 text-center shadow-2xl backdrop-blur">
+                <div className="mb-1 text-xs font-mono uppercase tracking-wide text-[#FF6B35]/80">{attractorPanel.title}</div>
+                <div className="text-sm font-semibold leading-snug text-white">{attractorPanel.instruction}</div>
+                {attractorPanel.teaser ? (
+                  <div className="mt-2 text-xs leading-relaxed text-white/55">{attractorPanel.teaser}</div>
+                ) : null}
+              </div>
+            ) : hintText ? (
               <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded border border-white/20 bg-black/60 px-4 py-2 text-xs text-white/85 backdrop-blur whitespace-nowrap text-center">
                 {hintText}
               </div>
@@ -724,6 +742,7 @@ class TraceScopeRenderer {
   private settings: Settings
   private setStatus: React.Dispatch<React.SetStateAction<Status>>
   private setProbeInfo: React.Dispatch<React.SetStateAction<string>>
+  private setAttractorPanel: React.Dispatch<React.SetStateAction<AttractorPanel | null>>
   private setHintText: React.Dispatch<React.SetStateAction<string>>
   private onToggleBallFollow: () => void
 
@@ -814,6 +833,7 @@ class TraceScopeRenderer {
     settings: Settings,
     setStatus: React.Dispatch<React.SetStateAction<Status>>,
     setProbeInfo: React.Dispatch<React.SetStateAction<string>>,
+    setAttractorPanel: React.Dispatch<React.SetStateAction<AttractorPanel | null>>,
     setHintText: React.Dispatch<React.SetStateAction<string>>,
     onToggleBallFollow: () => void,
   ) {
@@ -825,6 +845,7 @@ class TraceScopeRenderer {
     this.settings = settings
     this.setStatus = setStatus
     this.setProbeInfo = setProbeInfo
+    this.setAttractorPanel = setAttractorPanel
     this.setHintText = setHintText
     this.onToggleBallFollow = onToggleBallFollow
     this.axisMin = data.manifest.axisMin
@@ -886,6 +907,10 @@ class TraceScopeRenderer {
     const countChanged = settings.particleCount !== this.settings.particleCount
     const pathConstraintChanged = settings.constrainToPath !== this.settings.constrainToPath
     this.settings = settings
+    if (!settings.showAttractors && this.highlightedAttractor !== null) {
+      this.highlightedAttractor = null
+      this.setAttractorPanel(null)
+    }
     if (countChanged || pathConstraintChanged) this.initParticles(settings.particleCount)
   }
 
@@ -916,6 +941,7 @@ class TraceScopeRenderer {
     this.marked = []
     this.probeTrail = []
     this.highlightedAttractor = null
+    this.setAttractorPanel(null)
     this.updateProbeInfo()
     this.updateHint()
   }
@@ -942,7 +968,7 @@ class TraceScopeRenderer {
     let text = ""
     if (highlighted) {
       text = highlighted.explanation
-        ? "E · show cached explanation  ·  Click elsewhere to deselect"
+        ? "Click E to show full explanation and click elsewhere to deselect"
         : "E · explain this attractor  ·  Click elsewhere to deselect"
     } else if (this.settings.ballFollow) {
       text = "M · mark point  ·  E · explain path  ·  Space · stop following"
@@ -1195,17 +1221,15 @@ class TraceScopeRenderer {
           const att = (this.data.flowAnalysis.attractors ?? [])[newHighlight]
           if (att) {
             const pct = Math.max(0.1, att.basin_fraction * 100).toFixed(att.basin_fraction * 100 < 1 ? 1 : 0)
-            if (att.explanation) {
-              const teaser = att.explanation.replace(/^Attractor\s+A?\d+\s+Explanation:\s*/i, "").trim().slice(0, 180)
-              this.setProbeInfo(
-                `Attractor ${att.label} selected  ·  strength ${att.strength.toFixed(2)}  ·  basin ${pct}%\nCached explanation available — press E to open the full explanation.\n\n${teaser}${att.explanation.length > 180 ? "…" : ""}`
-              )
-            } else {
-              this.setProbeInfo(
-                `Attractor ${att.label} selected  ·  strength ${att.strength.toFixed(2)}  ·  basin ${pct}%\nPress E to generate or show an explanation.`
-              )
-            }
+            const teaser = firstSentences(cleanAttractorExplanation(att.explanation), 2)
+            this.setAttractorPanel({
+              title: `Attractor ${att.label} selected | strength ${att.strength.toFixed(2)} | basin ${pct}%`,
+              instruction: "Click E to show full explanation and click elsewhere to deselect",
+              teaser: teaser || "No cached explanation is bundled for this attractor yet.",
+            })
           }
+        } else {
+          this.setAttractorPanel(null)
         }
         this.updateHint()
       }
@@ -1223,6 +1247,7 @@ class TraceScopeRenderer {
     if (this.highlightedAttractor !== null || this.gizmoActive) {
       this.highlightedAttractor = null
       this.gizmoActive = false
+      this.setAttractorPanel(null)
       this.updateHint()
     }
 
@@ -2218,6 +2243,21 @@ function meanPathDistance(a: Vec3[], b: Vec3[]) {
   let sum = 0
   for (let i = 0; i < n; i++) sum += length(sub(a[i], b[Math.floor((i / Math.max(1, n - 1)) * (b.length - 1))]))
   return sum / n
+}
+
+function cleanAttractorExplanation(text?: string) {
+  return (text ?? "")
+    .replace(/^Attractor\s+A?\d+\s+Explanation\s*:\s*/i, "")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function firstSentences(text: string, count: number) {
+  const cleaned = text.trim()
+  if (!cleaned) return ""
+  const matches = cleaned.match(/[^.!?]+[.!?]+(?:["')\]]+)?/g)
+  if (matches?.length) return matches.slice(0, count).join(" ").replace(/\s+/g, " ").trim()
+  return cleaned.length > 240 ? `${cleaned.slice(0, 237).trim()}...` : cleaned
 }
 
 function clamp(v: number, lo: number, hi: number) {
