@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   BookOpen,
   Activity,
+  ChevronDown,
   Crosshair,
   Eraser,
   Github,
@@ -12,6 +13,7 @@ import {
   LocateFixed,
   Route,
   Search,
+  SlidersHorizontal,
   Sparkles,
   X,
 } from "lucide-react"
@@ -183,6 +185,7 @@ const freeUsedKey = "tracescope_free_explain_used"  // session-scoped 1-use back
 
 export function TraceScopeViewer() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const controlsRef = useRef<HTMLElement | null>(null)
   const rendererRef = useRef<TraceScopeRenderer | null>(null)
   const dataRef = useRef<TraceScopeData | null>(null)
   const [settings, setSettings] = useState<Settings>(initialSettings)
@@ -254,6 +257,14 @@ export function TraceScopeViewer() {
 
   const updateSetting = useCallback(<K extends keyof Settings>(key: K, value: Settings[K]) => {
     setSettings((current) => ({ ...current, [key]: value }))
+  }, [])
+
+  const scrollToControls = useCallback(() => {
+    controlsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }, [])
+
+  const scrollToFlow = useCallback(() => {
+    canvasRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }, [])
 
   const openKeyPanel = useCallback((renderer: TraceScopeRenderer) => {
@@ -386,8 +397,18 @@ export function TraceScopeViewer() {
         </header>
 
         <div className="grid flex-none grid-cols-1 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <section className="relative h-[72svh] min-h-[380px] overflow-hidden bg-[#1E1E1E] md:h-[76svh] xl:h-auto xl:min-h-0">
+          <section className="relative h-[calc(100svh-3.5rem)] min-h-[500px] overflow-hidden bg-[#1E1E1E] md:h-[76svh] xl:h-auto xl:min-h-0">
             <canvas ref={canvasRef} className="block h-full w-full touch-none" />
+            <button
+              type="button"
+              aria-label="Scroll to TraceScope controls"
+              onClick={scrollToControls}
+              className="absolute right-3 top-3 z-20 inline-flex h-11 items-center gap-2 rounded border border-white/15 bg-black/65 px-3 text-sm font-medium text-white/85 backdrop-blur hover:bg-black/80 xl:hidden"
+            >
+              <SlidersHorizontal className="h-4 w-4 text-[#FF6B35]" />
+              Controls
+              <ChevronDown className="h-4 w-4 text-white/55" />
+            </button>
             {!status.loaded && (
               <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-[#1E1E1E]/90">
                 <div className="rounded-md border border-[#FF6B35]/35 bg-[#252525]/95 px-8 py-7 text-center shadow-2xl">
@@ -426,8 +447,17 @@ export function TraceScopeViewer() {
             ) : null}
           </section>
 
-          <aside className="overflow-visible border-t border-white/10 bg-[#2A2A2A] xl:min-h-0 xl:overflow-y-auto xl:border-l xl:border-t-0">
+          <aside ref={controlsRef} className="scroll-mt-2 overflow-visible border-t border-white/10 bg-[#2A2A2A] xl:min-h-0 xl:overflow-y-auto xl:border-l xl:border-t-0">
             <div className="mx-auto max-w-3xl space-y-5 p-4 pb-8 xl:max-w-none xl:pb-4">
+              <button
+                type="button"
+                aria-label="Scroll back to TraceScope flow"
+                onClick={scrollToFlow}
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded border border-white/10 bg-[#1E1E1E] px-3 text-sm font-medium text-white/75 hover:bg-white/10 xl:hidden"
+              >
+                <Crosshair className="h-4 w-4 text-[#FF6B35]" />
+                Back to flow
+              </button>
 
               <ControlSection title="Display">
                 <ToggleRow label="Show Data Points" checked={settings.showPoints} onChange={(value) => updateSetting("showPoints", value)} />
@@ -449,9 +479,9 @@ export function TraceScopeViewer() {
               </ControlSection>
 
               <ControlSection title="Search">
-                <label className="flex h-10 items-center gap-2 rounded border border-white/10 bg-[#1E1E1E] px-3 text-sm">
+                <label className="flex h-11 items-center gap-2 rounded border border-white/10 bg-[#1E1E1E] px-3 text-sm md:h-10">
                   <Search className="h-4 w-4 text-white/45" />
-                  <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search papers" className="min-w-0 flex-1 bg-transparent text-white outline-none placeholder:text-white/35" />
+                  <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search papers" className="min-w-0 flex-1 bg-transparent py-2 text-white outline-none placeholder:text-white/35" />
                 </label>
                 <div className="space-y-2">
                   {searchResults.map((paper) => (
@@ -2162,7 +2192,7 @@ function TextButton({ label, secondary, onClick }: { label: string; secondary?: 
     <button
       type="button"
       onClick={onClick}
-      className={`h-10 w-full rounded px-3 text-sm transition-colors ${
+      className={`h-11 w-full rounded px-3 text-sm transition-colors md:h-10 ${
         secondary ? "bg-[#555] text-white hover:bg-[#777]" : "bg-[#FF6B35] text-white hover:bg-[#FF8555]"
       }`}
     >
@@ -2173,7 +2203,7 @@ function TextButton({ label, secondary, onClick }: { label: string; secondary?: 
 
 function ToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return (
-    <label className="flex h-9 items-center justify-between gap-3 rounded border border-white/10 bg-white/[0.035] px-3 text-sm text-white/70">
+    <label className="flex min-h-11 items-center justify-between gap-3 rounded border border-white/10 bg-white/[0.035] px-3 text-sm text-white/70 md:min-h-9">
       <span>{label}</span>
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 accent-[#FF6B35]" />
     </label>
@@ -2182,9 +2212,9 @@ function ToggleRow({ label, checked, onChange }: { label: string; checked: boole
 
 function SliderRow({ label, min, max, step, value, suffix = "", disabled = false, onChange }: { label: string; min: number; max: number; step: number; value: number; suffix?: string; disabled?: boolean; onChange: (value: number) => void }) {
   return (
-    <label className={`grid grid-cols-[112px_minmax(0,1fr)_52px] items-center gap-3 text-sm ${disabled ? "text-white/35" : "text-white/65"}`}>
+    <label className={`grid grid-cols-[96px_minmax(0,1fr)_52px] items-center gap-3 text-sm md:grid-cols-[112px_minmax(0,1fr)_52px] ${disabled ? "text-white/35" : "text-white/65"}`}>
       <span className="truncate" title={label}>{label}</span>
-      <input type="range" min={min} max={max} step={step} value={value} disabled={disabled} onChange={(event) => onChange(Number(event.target.value))} className="h-2 accent-[#FF6B35] disabled:opacity-35" />
+      <input type="range" min={min} max={max} step={step} value={value} disabled={disabled} onChange={(event) => onChange(Number(event.target.value))} className="h-8 accent-[#FF6B35] disabled:opacity-35 md:h-2" />
       <span className="text-right font-mono text-xs text-white/50">{value.toFixed(value < 1 ? 2 : 0)}{suffix}</span>
     </label>
   )
@@ -2194,7 +2224,7 @@ function SelectRow({ label, value, options, onChange }: { label: string; value: 
   return (
     <label className="grid grid-cols-[74px_minmax(0,1fr)] items-center gap-3 text-sm text-white/65">
       <span>{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="h-9 rounded border border-white/10 bg-[#1E1E1E] px-2 text-white outline-none">
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="h-11 rounded border border-white/10 bg-[#1E1E1E] px-2 text-white outline-none md:h-9">
         {options.map(([optionValue, optionLabel]) => (
           <option key={optionValue} value={optionValue}>{optionLabel}</option>
         ))}
