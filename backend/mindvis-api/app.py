@@ -1,12 +1,14 @@
 import json
 import os
 import sys
+import hashlib
+from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
 import numpy as np
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -27,6 +29,10 @@ class ExplainRequest(BaseModel):
     trajectory: list[list[float]] = Field(min_length=2)
     fieldMode: FieldMode = "mean"
     callLlm: bool = True
+
+
+CACHE_DIR = Path(os.environ.get("MINDVIS_CACHE_DIR", "/tmp/mindvis-api-cache"))
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def mindvis_repo() -> Path:
@@ -151,17 +157,23 @@ def trajectory(req: TrajectoryRequest):
 
 
 @app.post("/api/mindvis/explain")
-def explain(req: ExplainRequest):
-    return build_explanation(req)
+def explain(req: ExplainRequest, request: Request):
+    return build_explanation(req, request=request)
 
 
 @app.post("/api/mindvis/explain/stream")
-def explain_stream(req: ExplainRequest):
+def explain_stream(req: ExplainRequest, request: Request):
     def event_stream():
         def event(payload: dict) -> str:
             return json.dumps(payload) + "\n"
 
         try:
+            cached = cached_explanation(req)
+            if cached is not None:
+                yield event({"type": "log", "message": "Returning a cached path explanation."})
+                yield event({"type": "result", **cached})
+                return
+
             yield event({"type": "log", "message": "Loading MindVisualizer field samplers and brain label grid."})
             svc = services()
             traj = np.asarray(req.trajectory, dtype=np.float32)
@@ -179,6 +191,7 @@ def explain_stream(req: ExplainRequest):
 
             text = format_transition_text(transitions)
             if req.callLlm:
+                ensure_free_budget(request)
                 from src.region_analyzer import analyze_with_gpt
 
                 yield event({"type": "log", "message": "Calling the OpenAI model for the neuroscience interpretation."})
@@ -188,16 +201,26 @@ def explain_stream(req: ExplainRequest):
                     model=os.environ.get("OPENAI_MODEL", "gpt-5.4-mini"),
                     debug=os.environ.get("MINDVIS_DEBUG", "0") == "1",
                 )
+                ensure_not_budget_error(text)
                 yield event({"type": "log", "message": "LLM interpretation finished."})
 
-            yield event({"type": "result", "text": text, "transitions": transitions, "regionText": format_transition_text(transitions)})
+            result = {"text": text, "transitions": transitions, "regionText": format_transition_text(transitions)}
+            write_explanation_cache(req, result)
+            yield event({"type": "result", **result})
+        except HTTPException as exc:
+            detail = exc.detail if isinstance(exc.detail, dict) else {"error": str(exc.detail)}
+            yield event({"type": "error", "status": exc.status_code, **detail})
         except Exception as exc:
             yield event({"type": "error", "message": str(exc)})
 
     return StreamingResponse(event_stream(), media_type="application/x-ndjson")
 
 
-def build_explanation(req: ExplainRequest, log=None):
+def build_explanation(req: ExplainRequest, log=None, request: Request | None = None):
+    cached = cached_explanation(req)
+    if cached is not None:
+        return cached
+
     log = log or (lambda _message: None)
     log("Loading MindVisualizer field samplers and brain label grid.")
     svc = services()
@@ -215,6 +238,8 @@ def build_explanation(req: ExplainRequest, log=None):
     text = format_transition_text(transitions)
 
     if req.callLlm:
+        if request is not None:
+            ensure_free_budget(request)
         from src.region_analyzer import analyze_with_gpt
 
         log("Calling the OpenAI model for the neuroscience interpretation.")
@@ -224,9 +249,87 @@ def build_explanation(req: ExplainRequest, log=None):
             model=os.environ.get("OPENAI_MODEL", "gpt-5.4-mini"),
             debug=os.environ.get("MINDVIS_DEBUG", "0") == "1",
         )
+        ensure_not_budget_error(text)
         log("LLM interpretation finished.")
 
-    return {"text": text, "transitions": transitions, "regionText": format_transition_text(transitions)}
+    result = {"text": text, "transitions": transitions, "regionText": format_transition_text(transitions)}
+    write_explanation_cache(req, result)
+    return result
+
+
+def cache_key(req: ExplainRequest) -> Path:
+    payload = req.model_dump()
+    digest = hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
+    return CACHE_DIR / f"mindvis-{digest}.json"
+
+
+def cached_explanation(req: ExplainRequest) -> dict | None:
+    path = cache_key(req)
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def write_explanation_cache(req: ExplainRequest, result: dict) -> None:
+    if not req.callLlm:
+        return
+    try:
+        cache_key(req).write_text(json.dumps(result, ensure_ascii=False), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def ensure_free_budget(request: Request) -> None:
+    if not client_budget_available(request):
+        raise HTTPException(status_code=429, detail={"error": "client_free_limit_exhausted"})
+    if not daily_budget_available():
+        raise HTTPException(status_code=429, detail={"error": "budget_exhausted"})
+
+
+def daily_budget_available() -> bool:
+    limit = int(os.environ.get("MINDVIS_DAILY_REQUEST_LIMIT", "80"))
+    if limit <= 0:
+        return False
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    counter_path = CACHE_DIR / f"counter-{today}.txt"
+    try:
+        current = int(counter_path.read_text()) if counter_path.exists() else 0
+    except Exception:
+        current = 0
+    if current >= limit:
+        return False
+    counter_path.write_text(str(current + 1))
+    return True
+
+
+def client_budget_available(request: Request) -> bool:
+    limit = int(os.environ.get("MINDVIS_FREE_EXPLAINS_PER_CLIENT", "2"))
+    if limit <= 0:
+        return False
+    forwarded_for = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    host = forwarded_for or (request.client.host if request.client else "unknown")
+    user_agent = request.headers.get("user-agent", "unknown")[:180]
+    client_id = request.headers.get("x-mindvis-client-id", "unknown")[:120]
+    client_hash = hashlib.sha256(f"{host}|{user_agent}|{client_id}".encode("utf-8")).hexdigest()[:16]
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    counter_path = CACHE_DIR / f"client-{today}-{client_hash}.txt"
+    try:
+        current = int(counter_path.read_text()) if counter_path.exists() else 0
+    except Exception:
+        current = 0
+    if current >= limit:
+        return False
+    counter_path.write_text(str(current + 1))
+    return True
+
+
+def ensure_not_budget_error(text: str) -> None:
+    msg = (text or "").lower()
+    if any(token in msg for token in ["insufficient_quota", "quota", "billing", "rate limit", "[gpt error]"]):
+        raise HTTPException(status_code=429, detail={"error": "openai_budget_exhausted"})
 
 
 def integrate_probe(req: TrajectoryRequest, svc: dict) -> tuple[np.ndarray, np.ndarray, bool]:

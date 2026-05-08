@@ -108,6 +108,10 @@ const colorLabels: Record<ColorMode, string> = {
 
 const basePath = () => (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/$/, "")
 const backendUrl = () => (process.env.NEXT_PUBLIC_MINDVIS_API_URL ?? "").replace(/\/$/, "")
+const byokKey = "mindvis_byok_openai_key"
+const clientIdKey = "mindvis_client_id"
+const freeUsageKey = "mindvis_free_explain_usage"
+const freeExplainsPerDay = 2
 
 export function MindVisualizerViewer() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -122,6 +126,12 @@ export function MindVisualizerViewer() {
   })
   const [analysis, setAnalysis] = useState("Probe trajectory analysis will appear here.")
   const [analysisOpen, setAnalysisOpen] = useState(false)
+  const [quotaPanel, setQuotaPanel] = useState<{ open: boolean; fallback: string; reason: string }>({
+    open: false,
+    fallback: "",
+    reason: "quota",
+  })
+  const [apiKeyDraft, setApiKeyDraft] = useState("")
   const [probeGuide, setProbeGuide] = useState<ProbeGuide>({
     visible: false,
     title: "",
@@ -133,7 +143,16 @@ export function MindVisualizerViewer() {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const renderer = new MindVisRenderer(canvas, settings, setSettings, setStatus, setAnalysis, setAnalysisOpen, setProbeGuide)
+    const renderer = new MindVisRenderer(
+      canvas,
+      settings,
+      setSettings,
+      setStatus,
+      setAnalysis,
+      setAnalysisOpen,
+      setProbeGuide,
+      (fallback, reason) => setQuotaPanel({ open: true, fallback, reason: reason ?? "quota" }),
+    )
     rendererRef.current = renderer
     renderer.load().catch((error) => {
       setStatus((current) => ({
@@ -435,6 +454,68 @@ export function MindVisualizerViewer() {
           </section>
         </div>
       )}
+      {quotaPanel.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
+          <section className="max-h-[82vh] w-full max-w-2xl overflow-auto border border-[#7AF7B1]/35 bg-[#0B1115] p-5 shadow-2xl">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">Free Explanation Limit</h2>
+              <button
+                type="button"
+                onClick={() => setQuotaPanel((current) => ({ ...current, open: false }))}
+                className="inline-flex h-9 w-9 items-center justify-center border border-white/15 bg-white/5 text-white hover:bg-white/10"
+                title="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-sm leading-relaxed text-white/70">
+              The public demo has a tiny free explanation budget that I pay for. This browser gets up to two backend
+              explanations per day, and the shared demo tokens may also run out. For unlimited testing, use the{" "}
+              <a
+                href="https://github.com/Pixedar/MindVisualizer"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[#7AF7B1] underline hover:text-[#BFFFD8]"
+              >
+                original MindVisualizer repo
+              </a>{" "}
+              locally, or paste your own OpenAI API key for this browser session only.
+            </p>
+            {quotaPanel.fallback ? (
+              <div className="mt-4 border border-white/10 bg-black/25 p-3 text-xs leading-relaxed text-white/55 whitespace-pre-wrap">
+                {quotaPanel.fallback}
+              </div>
+            ) : null}
+            <div className="mt-4 border border-[#7AF7B1]/20 bg-[#06140E] p-3">
+              <div className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#7AF7B1]/75">Example output</div>
+              <p className="whitespace-pre-wrap text-xs leading-relaxed text-white/65">{mindvisSampleExplanation}</p>
+            </div>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+              <input
+                value={apiKeyDraft}
+                onChange={(event) => setApiKeyDraft(event.target.value)}
+                type="password"
+                placeholder="sk-..."
+                className="h-10 min-w-0 flex-1 border border-white/10 bg-[#111A20] px-3 text-sm text-white outline-none placeholder:text-white/35"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!apiKeyDraft.trim()) return
+                  sessionStorage.setItem(byokKey, apiKeyDraft.trim())
+                  setQuotaPanel((current) => ({ ...current, open: false }))
+                  setApiKeyDraft("")
+                  rendererRef.current?.explainProbe({ forceUserKey: true })
+                }}
+                className="h-10 border border-[#7AF7B1]/60 bg-[#0D2A1B] px-4 text-sm font-semibold text-[#BFFFD8] hover:bg-[#123B26] disabled:opacity-40"
+                disabled={!apiKeyDraft.trim()}
+              >
+                Use my key
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   )
 }
@@ -646,6 +727,7 @@ class MindVisRenderer {
   private setAnalysis: React.Dispatch<React.SetStateAction<string>>
   private setAnalysisOpen: React.Dispatch<React.SetStateAction<boolean>>
   private setProbeGuide: React.Dispatch<React.SetStateAction<ProbeGuide>>
+  private openQuotaPanel: (fallback: string, reason?: string) => void
   private meta: GridMeta | null = null
   private textures = new Map<FieldMode, WebGLTexture>()
   private fieldData = new Map<FieldMode, Uint16Array>()
@@ -724,6 +806,7 @@ class MindVisRenderer {
     setAnalysis: React.Dispatch<React.SetStateAction<string>>,
     setAnalysisOpen: React.Dispatch<React.SetStateAction<boolean>>,
     setProbeGuide: React.Dispatch<React.SetStateAction<ProbeGuide>>,
+    openQuotaPanel: (fallback: string, reason?: string) => void,
   ) {
     const gl = canvas.getContext("webgl2", {
       alpha: false,
@@ -741,6 +824,7 @@ class MindVisRenderer {
     this.setAnalysis = setAnalysis
     this.setAnalysisOpen = setAnalysisOpen
     this.setProbeGuide = setProbeGuide
+    this.openQuotaPanel = openQuotaPanel
     this.onPointerDown = this.onPointerDown.bind(this)
     this.onPointerMove = this.onPointerMove.bind(this)
     this.onPointerUp = this.onPointerUp.bind(this)
@@ -851,7 +935,7 @@ class MindVisRenderer {
     this.setProbeGuide({ visible: false, title: "", detail: "", tone: "move" })
   }
 
-  async explainProbe(options: { auto?: boolean } = {}) {
+  async explainProbe(options: { auto?: boolean; forceUserKey?: boolean } = {}) {
     if (!this.meta || this.probes.length === 0 || this.probes[0].path.length < 2) {
       this.setAnalysis("No complete probe path yet. Place the probe in the flow, press Enter, let it travel, then press Enter again.")
       this.setProbeGuide({
@@ -880,6 +964,15 @@ class MindVisRenderer {
     if (this.analysisBusy) return
     this.analysisBusy = true
     const api = backendUrl()
+    const sessionKey = getSessionOpenAIKey()
+    const pathSummary = this.localTrajectorySummary(probe)
+
+    if (!sessionKey && getFreeUsageToday() >= freeExplainsPerDay) {
+      this.analysisBusy = false
+      this.openQuotaPanel(pathSummary, "client_free_limit_exhausted")
+      return
+    }
+
     if (api) {
       const logs = [
         `Preparing ${probe.path.length} probe samples (${quality.distance.toFixed(3)} field units traveled).`,
@@ -893,7 +986,11 @@ class MindVisRenderer {
         tone: "processing",
       })
       try {
-        const text = await this.fetchExplanation(api, probe, logs)
+        const text =
+          sessionKey || options.forceUserKey
+            ? await this.fetchUserKeyExplanation(api, sessionKey, probe, logs, pathSummary)
+            : await this.fetchExplanation(api, probe, logs)
+        if (!sessionKey) incrementFreeUsageToday()
         this.setAnalysis(text)
         this.setAnalysisOpen(true)
         this.setProbeGuide({
@@ -905,6 +1002,15 @@ class MindVisRenderer {
         this.analysisBusy = false
         return
       } catch (error) {
+        const quotaReason = quotaErrorReason(error)
+        if (quotaReason) {
+          this.analysisBusy = false
+          this.openQuotaPanel(pathSummary, quotaReason)
+          this.setAnalysis(
+            "The free explanation budget is not available right now. You can run the original repo locally or use your own OpenAI key for this browser session.",
+          )
+          return
+        }
         this.setAnalysis(
           `Python backend unavailable (${error instanceof Error ? error.message : "request failed"}). Showing local trajectory summary instead.`,
         )
@@ -942,6 +1048,21 @@ class MindVisRenderer {
     this.analysisBusy = false
   }
 
+  private localTrajectorySummary(probe: Probe) {
+    if (!this.meta || probe.path.length < 2) return "No complete probe path yet."
+    const first = probe.path[0]
+    const last = probe.path[probe.path.length - 1]
+    const delta = [last[0] - first[0], last[1] - first[1], last[2] - first[2]]
+    const worldDelta = delta.map((value, index) => value * this.meta!.span[index])
+    const distance = Math.hypot(worldDelta[0], worldDelta[1], worldDelta[2])
+    const regions = uniqueConsecutive(probe.regions).map((key) => this.regionLabel(key))
+    return [
+      `Probe path: ${probe.path.length} samples, ${distance.toFixed(3)} field units traveled.`,
+      regions.length ? `Browser-detected region path: ${regions.join(" -> ")}.` : "No stable browser-side region sequence was detected.",
+      "A full explanation normally adds neuroscience interpretation of what information may be transformed along this trajectory.",
+    ].join("\n")
+  }
+
   private async fetchExplanation(api: string, probe: Probe, logs: string[]) {
     const body = JSON.stringify({
       fieldMode: this.settings.fieldMode,
@@ -949,7 +1070,7 @@ class MindVisRenderer {
     })
     const streamed = await fetch(`${api}/api/mindvis/explain/stream`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: mindvisRequestHeaders(),
       body,
     }).catch(() => null)
 
@@ -965,14 +1086,14 @@ class MindVisRenderer {
         pending = lines.pop() ?? ""
         for (const line of lines) {
           if (!line.trim()) continue
-          const event = JSON.parse(line) as { type?: string; message?: string; text?: string; summary?: string }
+          const event = JSON.parse(line) as { type?: string; message?: string; text?: string; summary?: string; error?: string; status?: number }
           if (event.type === "log" && event.message) {
             logs.push(`backend: ${event.message}`)
             this.setAnalysis(logs.join("\n"))
           } else if (event.type === "result") {
             return event.text ?? event.summary ?? "Backend returned no explanation text."
           } else if (event.type === "error") {
-            throw new Error(event.message ?? "backend stream failed")
+            throw new Error(event.error ? `quota:${event.error}` : event.message ?? "backend stream failed")
           }
         }
       }
@@ -980,12 +1101,41 @@ class MindVisRenderer {
 
     const response = await fetch(`${api}/api/mindvis/explain`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: mindvisRequestHeaders(),
       body,
     })
+    if (response.status === 429) {
+      const data = await response.json().catch(() => null)
+      throw new Error(`quota:${data?.detail?.error ?? "budget_exhausted"}`)
+    }
     if (!response.ok) throw new Error(`backend returned ${response.status}`)
     const data = (await response.json()) as { text?: string; summary?: string }
     return data.text ?? data.summary ?? "Backend returned no explanation text."
+  }
+
+  private async fetchUserKeyExplanation(api: string, key: string | null, probe: Probe, logs: string[], fallback: string) {
+    if (!key) throw new Error("quota:client_free_limit_exhausted")
+    logs.push("Using your session OpenAI key; the public demo key will not be charged.")
+    this.setAnalysis(logs.join("\n"))
+    let regionText = fallback
+    try {
+      const response = await fetch(`${api}/api/mindvis/explain`, {
+        method: "POST",
+        headers: mindvisRequestHeaders(),
+        body: JSON.stringify({
+          fieldMode: this.settings.fieldMode,
+          trajectory: probe.path,
+          callLlm: false,
+        }),
+      })
+      if (response.ok) {
+        const data = (await response.json()) as { regionText?: string }
+        regionText = data.regionText || regionText
+      }
+    } catch {
+      // Browser summary is still enough to produce a useful BYOK explanation.
+    }
+    return explainMindVisWithUserKey(key, regionText)
   }
 
   startProbeFlow() {
@@ -2394,6 +2544,93 @@ function uniqueConsecutive(items: string[]) {
     if (item && out[out.length - 1] !== item) out.push(item)
   }
   return out
+}
+
+const mindvisSampleExplanation = [
+  "Example: this probe starts in a sensory-integration pocket, then bends toward a higher association region where the field becomes slower and more coherent. That usually means the trajectory is moving from local feature flow into a more stable representational basin.",
+  "Along the path, the dominant change is not just position; it is a change in local flow confidence. The probe crosses a boundary where nearby vectors begin to agree, so the explanation would focus on a transition from mixed evidence to a clearer attractor-like interpretation.",
+].join("\n\n")
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function getSessionOpenAIKey() {
+  try {
+    return sessionStorage.getItem(byokKey)
+  } catch {
+    return null
+  }
+}
+
+function getMindvisClientId() {
+  try {
+    let id = localStorage.getItem(clientIdKey)
+    if (!id) {
+      id = globalThis.crypto?.randomUUID?.() ?? `mindvis-${Date.now()}-${Math.random().toString(36).slice(2)}`
+      localStorage.setItem(clientIdKey, id)
+    }
+    return id
+  } catch {
+    return "mindvis-storage-unavailable"
+  }
+}
+
+function getFreeUsageToday() {
+  try {
+    const raw = localStorage.getItem(freeUsageKey)
+    if (!raw) return 0
+    const parsed = JSON.parse(raw) as { date?: string; count?: number }
+    return parsed.date === todayKey() ? Math.max(0, Number(parsed.count) || 0) : 0
+  } catch {
+    return 0
+  }
+}
+
+function incrementFreeUsageToday() {
+  try {
+    localStorage.setItem(freeUsageKey, JSON.stringify({ date: todayKey(), count: getFreeUsageToday() + 1 }))
+  } catch {
+    // Storage can be unavailable in private contexts; the backend still enforces the public limit.
+  }
+}
+
+function mindvisRequestHeaders(): HeadersInit {
+  return {
+    "Content-Type": "application/json",
+    "X-MindVis-Client-Id": getMindvisClientId(),
+  }
+}
+
+function quotaErrorReason(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  const match = message.match(/quota:([a-z0-9_]+)/i)
+  return match?.[1] ?? ""
+}
+
+async function explainMindVisWithUserKey(key: string, regionText: string) {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You explain MindVisualizer probe paths through a learned 3D brain flow field. Be concrete, concise, and describe what the path suggests about regional transitions and local field dynamics.",
+        },
+        {
+          role: "user",
+          content: regionText,
+        },
+      ],
+      max_tokens: 700,
+    }),
+  })
+  if (!response.ok) return `OpenAI request failed: ${response.status}. Check the session key and try again.`
+  const body = await response.json()
+  return body?.choices?.[0]?.message?.content ?? "No explanation returned."
 }
 
 async function fetchJson(url: string) {
