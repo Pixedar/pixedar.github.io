@@ -154,14 +154,14 @@ const initialSettings: Settings = {
   showPoints: false,
   showPath: false,
   showAttractors: false,
-  showSavedPaths: true,
+  showSavedPaths: false,
   showInfoOverlay: true,
   ballFollow: true,
   particleCount: 64000,
   particleSize: 28,
   speed: 2.9,
   probeSpeed: 1.6,
-  flowOpacity: 0.8,
+  flowOpacity: 0.9,
   confidenceFade: 0,
   constrainToPath: true,
   flowColorMode: "speed",
@@ -174,7 +174,7 @@ const createInitialSettings = (): Settings => {
     ...initialSettings,
     particleCount: 27000,
     particleSize: 24,
-    flowOpacity: 0.72,
+    flowOpacity: 0.86,
   }
 }
 
@@ -515,15 +515,6 @@ export function TraceScopeViewer() {
                   <TextButton label="Clear" secondary onClick={() => rendererRef.current?.clearPath()} />
                 </div>
                 <TextButton label="Explain Path" onClick={explain} />
-                {(dataRef.current?.flowAnalysis.saved_paths?.length ?? 0) > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => updateSetting("showSavedPaths", !settings.showSavedPaths)}
-                    className="h-10 w-full rounded border border-white/10 bg-[#555] px-3 text-sm text-white hover:bg-[#777]"
-                  >
-                    {settings.showSavedPaths ? "Hide Saved Paths" : "Show Saved Paths"}
-                  </button>
-                ) : null}
                 <div className="min-h-16 rounded border border-white/8 bg-[#1E1E1E]/60 p-2 text-xs leading-relaxed text-white/40 whitespace-pre-wrap">
                   {probeInfo}
                 </div>
@@ -699,7 +690,9 @@ void main() {
   float r2 = dot(d, d);
   if (r2 > 0.25) discard;
   float alpha = pow(clamp((0.5 - sqrt(r2)) * 2.0, 0.0, 1.0), 1.6);
-  vec3 rgb = mix(v_color.rgb * 0.65, v_color.rgb, alpha);
+  vec3 core = clamp(v_color.rgb * 1.35 + vec3(0.08), vec3(0.0), vec3(1.0));
+  vec3 edge = clamp(v_color.rgb * 0.95 + vec3(0.035), vec3(0.0), vec3(1.0));
+  vec3 rgb = mix(edge, core, alpha);
   o = vec4(rgb, alpha * v_color.a);
 }`
 
@@ -1608,7 +1601,7 @@ class TraceScopeRenderer {
       }
       const c = this.settings.flowColorMode === "cluster"
         ? nearestClusterColor(this.data, [this.particles[i * 3], this.particles[i * 3 + 1], this.particles[i * 3 + 2]])
-        : turbo(clamp(speeds[i] / maxSpeed, 0, 1))
+        : vividSpeedColor(clamp(speeds[i] / (maxSpeed * 0.62), 0, 1))
       this.particleColors.set([c[0], c[1], c[2], alpha], i * 4)
     }
   }
@@ -2454,6 +2447,17 @@ function turbo(t: number): Vec3 {
   const g = (23.31 + t * (557.33 + t * (1225.33 + t * (-3574.96 + t * 2199.29)))) / 255
   const b = (27.2 + t * (3211.1 + t * (-15327.97 + t * (34592.87 + t * (-30538.66 + 9347.97 * t))))) / 255
   return [clamp(r, 0, 1), clamp(g, 0, 1), clamp(b, 0, 1)]
+}
+
+function vividSpeedColor(t: number): Vec3 {
+  const mapped = 0.08 + Math.pow(clamp(t, 0, 1), 0.52) * 0.9
+  const [r, g, b] = turbo(clamp(mapped, 0, 1))
+  const luma = r * 0.2126 + g * 0.7152 + b * 0.0722
+  return [
+    clamp(luma + (r - luma) * 1.45 + 0.06, 0, 1),
+    clamp(luma + (g - luma) * 1.45 + 0.06, 0, 1),
+    clamp(luma + (b - luma) * 1.45 + 0.06, 0, 1),
+  ]
 }
 
 function rgb(color: Vec3) {
