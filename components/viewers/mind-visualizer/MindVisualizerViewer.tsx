@@ -72,7 +72,7 @@ const initialSettings: MindVisSettings = {
   lifetimeScale: 1,
   opacityScale: 1,
   dt: 1,
-  pointSize: 5,
+  pointSize: 6.45,
   speedFilter: false,
   filterHigh: true,
   filterFraction: 1,
