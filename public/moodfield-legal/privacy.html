@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="robots" content="noindex"/>
+<title>MoodField — Privacy Policy</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 20px; color: #1e1e1e; line-height: 1.6; }
+  h1 { font-size: 1.6rem; border-bottom: 1px solid #d2bca0; padding-bottom: 8px; }
+  h2 { font-size: 1.05rem; margin-top: 32px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 8px 0; }
+  th, td { border: 1px solid #d2bca0; padding: 6px; text-align: left; }
+  th { background: #f7f1e7; }
+  a { color: #8a5a1f; }
+  ul, ol { padding-left: 22px; }
+  .muted { color: #666; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<h1>Privacy Policy — MoodField</h1>
+<p class="muted">Last updated: 2026-05-09</p>
+
+<h2>Controller</h2>
+<p><strong>Wiktor Tomasik</strong> (sole proprietor), ul. Poznańska 10, Kraków, Poland.<br/>
+Contact: <a href="mailto:pixedar@gmail.com">pixedar@gmail.com</a>.<br/>
+A separate Data Protection Officer is not required under GDPR Art. 37(1) for an individual controller of this scale and is not appointed.</p>
+
+<h2>1. What we collect</h2>
+<table>
+<tr><th>Category</th><th>Examples</th><th>Why</th><th>Storage</th></tr>
+<tr><td>Account identifiers</td><td>email, display name, Firebase UID</td><td>Sign-in, subscription, support</td><td>Firebase Auth + Firestore (Europe multi-region)</td></tr>
+<tr><td>Mood / dream / journal entries</td><td>text you type, optional audio you choose to record</td><td>Producing your dashboards and visualisations</td><td>Local Room DB + Amazon S3 (eu-north-1, Stockholm)</td></tr>
+<tr><td>Embeddings derived from entries</td><td>high-dimensional vector representations of your text</td><td>Clustering, dimension reduction, flow field</td><td>Same as entries above</td></tr>
+<tr><td>Usage statistics</td><td>daily API call counts, tier history</td><td>Quota enforcement, fraud prevention</td><td>Firestore (Europe)</td></tr>
+<tr><td>Subscription state</td><td>tier, Play purchase token, expiry timestamp</td><td>Granting paid features</td><td>Firestore + Google Play</td></tr>
+<tr><td>Diagnostic logs (opt-in)</td><td>crash stack traces, never entry text</td><td>Debugging</td><td>Firebase Crashlytics</td></tr>
+</table>
+<p>We do <strong>not</strong> collect: contacts, location, calendar, photos, microphone audio outside of recordings you explicitly start, or device identifiers beyond what Firebase requires.</p>
+<p>We do <strong>not</strong> sell your data and we do <strong>not</strong> use it for advertising.</p>
+
+<h2>2. Special categories of personal data — explicit consent (Art. 9 GDPR)</h2>
+<p>Mood, dream and journal entries may reveal information about your mental well-being and therefore qualify as <strong>special-category data</strong> under Article 9(1) GDPR. Our lawful basis for processing this data is your <strong>explicit consent</strong> under Article 9(2)(a) GDPR, given on the consent screen shown before any entry can be created.</p>
+<p>You can withdraw your consent at any time via <em>Settings → Withdraw consent &amp; delete my data</em>. Withdrawal does not affect the lawfulness of processing carried out before withdrawal.</p>
+<p><strong>MoodField is a wellness and self-reflection tool. It is not a medical device, does not diagnose, treat, cure or prevent any condition, and is not a substitute for professional medical, therapeutic or psychiatric care.</strong></p>
+
+<h2>3. Legal bases (Article 6 GDPR)</h2>
+<ul>
+<li><strong>Performance of contract</strong> (Art. 6(1)(b)) — operating your account and subscription.</li>
+<li><strong>Explicit consent</strong> (Art. 6(1)(a) and Art. 9(2)(a)) — processing of mood/journal/dream content.</li>
+<li><strong>Legitimate interests</strong> (Art. 6(1)(f)) — service security, abuse prevention, quota enforcement.</li>
+<li><strong>Legal obligation</strong> (Art. 6(1)(c)) — tax records of paid subscriptions.</li>
+</ul>
+
+<h2>4. Third-party processors</h2>
+<table>
+<tr><th>Processor</th><th>What they receive</th><th>Region</th></tr>
+<tr><td>Google (Firebase Auth, Firestore, Cloud Functions, Crashlytics)</td><td>Account ID, entries when synced, crash logs</td><td>Europe multi-region (eur3)</td></tr>
+<tr><td>OpenAI</td><td>Entry text submitted for embedding/chat</td><td>United States (under SCC)</td></tr>
+<tr><td>Google AI Studio (Gemini)</td><td>Entry text submitted for embedding</td><td>Google data centres (under SCC where applicable)</td></tr>
+<tr><td>Hugging Face / Scaleway</td><td><em>Development comparison only.</em> Not used in the production app.</td><td>EU</td></tr>
+<tr><td>Amazon Web Services (S3)</td><td>Encrypted entries, embeddings, render exports</td><td>eu-north-1 (Stockholm)</td></tr>
+<tr><td>Google Play (billing)</td><td>Purchase token, product ID, subscription state</td><td>Per Google Play</td></tr>
+</table>
+
+<h2>5. International transfers</h2>
+<p>Some processors (notably OpenAI and Google Gemini) operate from outside the European Economic Area, including the United States. Transfers rely on the European Commission's Standard Contractual Clauses (SCC) per Commission Implementing Decision (EU) 2021/914 and on each processor's supplementary measures. By using MoodField you acknowledge that, when an embedding or chat call is made, the text you submitted may be processed by these providers under those safeguards.</p>
+
+<h2>6. Your rights (GDPR Articles 15–22)</h2>
+<ul>
+<li><strong>Access / portability.</strong> Settings → "Export my data" returns a JSON file containing every entry, embedding, preference and subscription record we hold for you.</li>
+<li><strong>Erasure.</strong> Settings → "Delete my account &amp; data" wipes the device, the Firestore record, the S3 folder and the Firebase Auth account.</li>
+<li><strong>Rectification.</strong> Edit any entry inline.</li>
+<li><strong>Object / restrict.</strong> Email <a href="mailto:pixedar@gmail.com">pixedar@gmail.com</a>.</li>
+<li><strong>Withdraw consent.</strong> Same as erasure — also available as a one-tap action in Settings.</li>
+<li><strong>Lodge a complaint.</strong> With your local supervisory authority. In Poland: Prezes Urzędu Ochrony Danych Osobowych (UODO), ul. Stawki 2, 00-193 Warszawa, <a href="https://uodo.gov.pl">uodo.gov.pl</a>.</li>
+</ul>
+
+<h2>7. Data retention</h2>
+<ul>
+<li>Mood / journal / dream entries: until you delete them or the account.</li>
+<li>Crash logs (opt-in): 90 days.</li>
+<li>Subscription / billing records: 6 years (Polish tax-law retention).</li>
+<li>Daily usage counters: rolling 90-day window, then aggregated.</li>
+</ul>
+
+<h2>8. Security</h2>
+<ul>
+<li>All transit over TLS 1.2+.</li>
+<li>S3 objects encrypted at rest (AES-256, SSE-S3).</li>
+<li>Firebase ID tokens validated server-side on every API request.</li>
+<li>Subscription tier and quotas enforced server-side, in addition to in-app checks.</li>
+<li>The release APK does <strong>not</strong> ship long-term provider keys; AI calls are routed through a Firebase Cloud Functions proxy that injects keys held as Cloud Functions secrets.</li>
+</ul>
+
+<h2>9. Children</h2>
+<p>The Service is not directed at children under 13 and we do not knowingly collect their data. If you believe a child has submitted data, email <a href="mailto:pixedar@gmail.com">pixedar@gmail.com</a> for immediate deletion.</p>
+
+<h2>10. Changes to this policy</h2>
+<p>Material changes are announced via an in-app notice at least 14 days before they take effect. Continued use after that date constitutes acceptance of the updated policy.</p>
+
+<h2>11. Contact</h2>
+<p><strong>Wiktor Tomasik</strong><br/>
+ul. Poznańska 10, Kraków, Poland<br/>
+<a href="mailto:pixedar@gmail.com">pixedar@gmail.com</a></p>
+
+</body>
+</html>
