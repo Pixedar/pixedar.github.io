@@ -183,7 +183,13 @@ export default function ProposalPage() {
               in a way that applies a minimal amount of steering that will steer the model away from bad situations; because this is proactive, we can minimize the amount of steering needed.
             </p>
 
-            <p>Another advantage is that current LLMs are shaped by a reward signal to behave safely. But human judgment is not a one dimensional scalar reward. It contains truthfulness, helpfulness, harmlessness, social context, uncertainty, moral consequences, user intent, and manipulation risk all at once. Compressing this into a single reward score teaches the model to optimize the proxy—making the surface text look safe—without giving it a <strong className="font-semibold text-[#171A16]">stable causal model</strong> of ownership, evidence, commitment, pressure, and permissible action.</p>
+            <p>
+              Another advantage is that current LLMs are shaped by a reward signal to behave safely. But human judgment is not a one dimensional scalar reward. It might contain thing like truthfulness, helpfulness, harmlessness, social context, uncertainty, moral consequences, user intent, and manipulation risk all at once. Compressing this into a{" "}
+              <a href="https://arxiv.org/abs/2210.10760" target="_blank" rel="noopener noreferrer" className="text-[#8E4A25] underline decoration-[#C58A65]/60 underline-offset-4 hover:text-[#5F3018]">
+                single reward score
+              </a>{" "}
+              teaches the model to optimize the proxy—making the surface text look safe—without giving it a <strong className="font-semibold text-[#171A16]">stable causal model</strong> of ownership, evidence, commitment, pressure, and permissible action.
+            </p>
           </div>
         </section>
 
@@ -266,6 +272,22 @@ export default function ProposalPage() {
             <p>The dangerous moment is when a trusted context, user pressure, and a hidden state jointly move the model toward a state where an impermissible continuation becomes likely. That movement can happen before the final text looks obviously unsafe.</p>
 
             <p>So the best path forward is a semantic world model over action coupled coordinates. Its job is to learn which hidden variables matter in which context, what happens if we move them, and how to apply the <strong className="font-semibold text-[#171A16]">smallest steering needed</strong> to avoid the bad transition. This is different from reward model safety: it is not just asking whether the text looks acceptable, but predicting the consequences of producing that text from that internal state.</p>
+          </div>
+
+          <div className="mx-auto mt-16 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-3xl">
+            <h3 className="text-2xl font-semibold tracking-normal text-[#1F2420] md:text-3xl">4. Testing selective steering without damaging unrelated behavior</h3>
+          </div>
+
+          <div className="mx-auto mt-7 w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
+            <p>I also tested a more practical controller question: can steering change the risky pressure case without making the model worse on unrelated behavior?</p>
+
+            <p>The best version was not high gain steering. It separated the monitor from the actuator. A small hidden state reader decided whether the current case belonged to the target failure mode, and only then a small internal wire was applied. The wire was trained with a neutral retention loss, meaning it was punished when it changed ordinary neutral answers.</p>
+
+            <p>The evaluation used Qwen2.5 1.5B Instruct, three seeds, and an LLM judge. The target score here is strict success rate: 1.000 means every judged item passed. With gated steering, persona pressure improved from 0.000 in the corrupt baseline to 0.267, while neutral retention stayed 1.000 and truth pressure stayed 1.000. The wrong state control means I used the same wire but fed it a state vector from the wrong task; on persona pressure it collapsed back to 0.000, which is the important sign that the effect was tied to the private state and not only to steering magnitude.</p>
+
+            <p>This was still not a full repair. A normal benign realignment finetune was slightly stronger on persona pressure, 0.300 instead of 0.233 in the head to head run, but it damaged unrelated behavior: neutral retention fell from 1.000 to 0.500 and truth pressure fell from 1.000 to 0.500. The internal wire was weaker, but it kept those unrelated scores at 1.000.</p>
+
+            <p>The lesson for the world model controller is very concrete. The controller should not just learn <strong className="font-semibold text-[#171A16]">what direction</strong> to push. It should learn when to fire, how much to fire, and when to leave the model alone. When I made the intervention broader, for example by spreading it across more layers, the target behavior sometimes improved but neutral retention dropped to 0.500. So the right object is not maximum steering strength. The right object is a small action that moves the risky transition while preserving the states that should not move.</p>
           </div>
         </section>
       </article>
