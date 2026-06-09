@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Safety Flow Steering — live flow</title>
+  <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+  <style>
+    :root{
+      --bg:#0d0e10; --text:#f0f3f2; --muted:#aeb7b4; --line:#2c3138;
+      --good:#30d174; --bad:#ff5c5c; --amber:#ffd166; --blue:#7db0ff;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:var(--bg);overflow:hidden}
+    body{color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+    #app{position:absolute;inset:0}
+    canvas{display:block}
+    .overlay{position:absolute;z-index:5}
+    .chip{
+      left:14px;top:14px;max-width:min(360px,62vw);padding:11px 14px;
+      border:1px solid var(--line);border-radius:10px;background:rgba(13,14,16,.72);
+      backdrop-filter:blur(6px);font-size:12.5px;line-height:1.5;color:var(--muted)
+    }
+    .chip b{color:var(--text);font-weight:600}
+    .chip .delta{color:var(--good);font-weight:700}
+    .legend{
+      left:14px;bottom:14px;display:flex;flex-direction:column;gap:7px;padding:11px 13px;
+      border:1px solid var(--line);border-radius:10px;background:rgba(13,14,16,.72);
+      backdrop-filter:blur(6px);font-size:12px;color:var(--muted)
+    }
+    .key{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+    .swatch{width:22px;height:3px;border-radius:2px;display:inline-block}
+    .dot{width:9px;height:9px;border-radius:50%;display:inline-block;border:1px solid #fff}
+    .hint{right:14px;bottom:14px;font-size:11.5px;color:#7f8682;opacity:.85}
+    .err{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+      text-align:center;padding:24px;color:var(--muted);font-size:14px;line-height:1.6}
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div class="overlay chip" id="chip">Loading live flow…</div>
+  <div class="overlay legend">
+    <span class="key"><span class="swatch" style="background:linear-gradient(90deg,var(--bad),var(--amber),var(--good))"></span>particle flow colored by safety</span>
+    <span class="key"><span class="swatch" style="background:var(--amber)"></span>unsteered probe → dangerous basin</span>
+    <span class="key"><span class="swatch" style="background:var(--blue)"></span>steered probe → safe basin</span>
+    <span class="key"><span class="dot" style="background:var(--good)"></span>attractor (basin the flow pulls toward)</span>
+  </div>
+  <div class="overlay hint">drag to rotate · scroll to zoom</div>
+  <div class="err" id="err">This view needs WebGL. The fallback panel still works.</div>
+
+  <script>
+  const P = new URLSearchParams(location.search);
+  const FLOW = (P.get("flow") === "mdn") ? "flow-mdn/" : "flow/";
+  const DEFAULT_N = window.matchMedia("(max-width: 767px)").matches ? 27000 : 64000;
+  const N = parseInt(P.get("n") || String(DEFAULT_N), 10);
+  const PSIZE = parseFloat(P.get("size") || "0.0032");
+  const PSPEED = parseFloat(P.get("speed") || "0.62");
+  const $ = (id) => document.getElementById(id);
+
+  function scoreColor(t, c){ t=Math.max(0,Math.min(1,t));
+    c.r = t<=0.5 ? 1.0 : 2.0*(1.0-t);
+    c.g = t<=0.5 ? 2.0*t : 1.0; c.b = 0.05; return c; }
+
+  function niceTicks(min, max, count){
+    const range = max-min; if(range<=1e-9) return [min];
+    const raw = range/count, mag = Math.pow(10, Math.floor(Math.log10(raw))), norm = raw/mag;
+    let step = (norm<1.5?1:norm<3?2:norm<7?5:10)*mag;
+    const start = Math.ceil(min/step)*step, out=[];
+    for(let v=start; v<=max+1e-9; v+=step) out.push(Math.round(v*1000)/1000);
+    return out;
+  }
+
+  async function main(){
+    let meta, velBuf, scoreBuf;
+    try{
+      const [m,v,s] = await Promise.all([
+        fetch(FLOW+"meta.json").then(r=>r.json()),
+        fetch(FLOW+"velocity.bin").then(r=>r.arrayBuffer()),
+        fetch(FLOW+"score.bin").then(r=>r.arrayBuffer()),
+      ]);
+      meta=m; velBuf=new Float32Array(v); scoreBuf=new Float32Array(s);
+    }catch(e){ $("err").style.display="flex"; $("chip").style.display="none"; console.error(e); return; }
+    if(!window.THREE){ $("err").style.display="flex"; return; }
+
+    const G = meta.gridShape[0];
+    const aMin = meta.axisMin, aMax = meta.axisMax;
+    const span = [aMax[0]-aMin[0], aMax[1]-aMin[1], aMax[2]-aMin[2]];
+    const DT = meta.dt || 0.02, LIFE = meta.lifespan || 57;
+    const diag = Math.hypot(span[0],span[1],span[2]);
+    const center = [(aMin[0]+aMax[0])/2,(aMin[1]+aMax[1])/2,(aMin[2]+aMax[2])/2];
+
+    function sampleVel(x,y,z,out){
+      let nx=span[0]>0?(x-aMin[0])/span[0]*(G-1):0, ny=span[1]>0?(y-aMin[1])/span[1]*(G-1):0, nz=span[2]>0?(z-aMin[2])/span[2]*(G-1):0;
+      let ixf=Math.floor(nx),iyf=Math.floor(ny),izf=Math.floor(nz);
+      const tx=nx-ixf,ty=ny-iyf,tz=nz-izf;
+      const ix=Math.min(Math.max(ixf,0),G-2),iy=Math.min(Math.max(iyf,0),G-2),iz=Math.min(Math.max(izf,0),G-2);
+      let ox=0,oy=0,oz=0;
+      for(let dx=0;dx<2;dx++)for(let dy=0;dy<2;dy++)for(let dz=0;dz<2;dz++){
+        const w=(dx?tx:1-tx)*(dy?ty:1-ty)*(dz?tz:1-tz);
+        const b=(((ix+dx)*G+(iy+dy))*G+(iz+dz))*3;
+        ox+=w*velBuf[b]; oy+=w*velBuf[b+1]; oz+=w*velBuf[b+2];
+      }
+      out[0]=ox;out[1]=oy;out[2]=oz;
+    }
+    function sampleScore(x,y,z){
+      let nx=span[0]>0?(x-aMin[0])/span[0]*(G-1):0, ny=span[1]>0?(y-aMin[1])/span[1]*(G-1):0, nz=span[2]>0?(z-aMin[2])/span[2]*(G-1):0;
+      let ixf=Math.floor(nx),iyf=Math.floor(ny),izf=Math.floor(nz);
+      const tx=nx-ixf,ty=ny-iyf,tz=nz-izf;
+      const ix=Math.min(Math.max(ixf,0),G-2),iy=Math.min(Math.max(iyf,0),G-2),iz=Math.min(Math.max(izf,0),G-2);
+      let val=0;
+      for(let dx=0;dx<2;dx++)for(let dy=0;dy<2;dy++)for(let dz=0;dz<2;dz++){
+        const w=(dx?tx:1-tx)*(dy?ty:1-ty)*(dz?tz:1-tz);
+        val+=w*scoreBuf[((ix+dx)*G+(iy+dy))*G+(iz+dz)];
+      }
+      return val;
+    }
+
+    // ── blob occupancy from the data cloud (keeps particles on the manifold) ──
+    const cloud = meta.cloud || [];
+    const B = 36;
+    const blob = new Float32Array(B*B*B);
+    const bIdx = (i,j,k)=>(i*B+j)*B+k;
+    const toCell = (p,a)=> span[a]>0 ? Math.min(B-1,Math.max(0,Math.round((p-aMin[a])/span[a]*(B-1)))) : 0;
+    const rCells = 2;
+    for(const cp of cloud){
+      const ci=toCell(cp[0],0), cj=toCell(cp[1],1), ck=toCell(cp[2],2);
+      for(let di=-rCells;di<=rCells;di++)for(let dj=-rCells;dj<=rCells;dj++)for(let dk=-rCells;dk<=rCells;dk++){
+        const i=ci+di,j=cj+dj,k=ck+dk;
+        if(i<0||j<0||k<0||i>=B||j>=B||k>=B) continue;
+        const d=Math.sqrt(di*di+dj*dj+dk*dk);
+        const o=Math.max(0, 1-(d/(rCells+1)));
+        if(o>blob[bIdx(i,j,k)]) blob[bIdx(i,j,k)]=o;
+      }
+    }
+    function sampleBlob(x,y,z){
+      const i=toCell(x,0), j=toCell(y,1), k=toCell(z,2);
+      return blob[bIdx(i,j,k)];
+    }
+
+    // ── three.js ──
+    const app=$("app");
+    const renderer=new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    renderer.setSize(app.clientWidth,app.clientHeight);
+    renderer.setClearColor(0x0d0e10,1);
+    app.appendChild(renderer.domElement);
+    const scene=new THREE.Scene();
+    const camera=new THREE.PerspectiveCamera(45, app.clientWidth/app.clientHeight, 0.01, 1000);
+
+    const root=new THREE.Group();
+    const sc=6.0/diag;
+    root.matrixAutoUpdate=false;
+    // Plotly's original safety panel renders the third data axis vertically.
+    // Three.js is Y-up, so this display transform maps data (x,y,z) -> world (x,z,y).
+    root.matrix.set(
+      sc,0,0,-center[0]*sc,
+      0,0,sc,-center[2]*sc,
+      0,sc,0,-center[1]*sc,
+      0,0,0,1
+    );
+    root.matrixWorldNeedsUpdate=true;
+    scene.add(root);
+
+    // ── text sprite helper ──
+    function textSprite(text, color, px, scaleData){
+      const pad=8, c=document.createElement("canvas"), g=c.getContext("2d");
+      g.font=`${px}px Inter, sans-serif`;
+      const w=Math.ceil(g.measureText(text).width)+pad*2, h=px+pad*2;
+      c.width=w; c.height=h;
+      g.font=`${px}px Inter, sans-serif`; g.textAlign="center"; g.textBaseline="middle";
+      g.fillStyle=color; g.fillText(text,w/2,h/2);
+      const t=new THREE.CanvasTexture(c); t.minFilter=THREE.LinearFilter;
+      const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false,depthWrite:false}));
+      sp.scale.set(scaleData*(w/h), scaleData, 1);
+      return sp;
+    }
+
+    // ── Plotly-style axes: box edges + grid + numbered ticks + titles ──
+    const gridMat=new THREE.LineBasicMaterial({color:0x30343b,transparent:true,opacity:0.55});
+    const boxMat=new THREE.LineBasicMaterial({color:0x474d56,transparent:true,opacity:0.8});
+    const axLabels = meta.axisLabels || ["axis 1","axis 2","axis 3"];
+    const ticks=[niceTicks(aMin[0],aMax[0],5),niceTicks(aMin[1],aMax[1],5),niceTicks(aMin[2],aMax[2],5)];
+
+    function addLine(p0,p1,mat){
+      const geo=new THREE.BufferGeometry().setAttribute("position",
+        new THREE.BufferAttribute(new Float32Array([p0[0],p0[1],p0[2],p1[0],p1[1],p1[2]]),3));
+      root.add(new THREE.Line(geo,mat));
+    }
+    // box edges
+    const X0=aMin[0],X1=aMax[0],Y0=aMin[1],Y1=aMax[1],Z0=aMin[2],Z1=aMax[2];
+    const corners=[[X0,Y0,Z0],[X1,Y0,Z0],[X1,Y0,Z1],[X0,Y0,Z1],[X0,Y1,Z0],[X1,Y1,Z0],[X1,Y1,Z1],[X0,Y1,Z1]];
+    const eIdx=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+    eIdx.forEach(([a,b])=>addLine(corners[a],corners[b],boxMat));
+    // grid on floor (y=Y0), back wall (z=Z0), side wall (x=X0)
+    ticks[0].forEach(tx=>{ addLine([tx,Y0,Z0],[tx,Y0,Z1],gridMat); addLine([tx,Y0,Z0],[tx,Y1,Z0],gridMat); });
+    ticks[2].forEach(tz=>{ addLine([X0,Y0,tz],[X1,Y0,tz],gridMat); addLine([X0,Y0,tz],[X0,Y1,tz],gridMat); });
+    ticks[1].forEach(ty=>{ addLine([X0,ty,Z0],[X1,ty,Z0],gridMat); addLine([X0,ty,Z0],[X0,ty,Z1],gridMat); });
+    // numeric tick labels
+    const tnum=diag*0.030, tcol="#9aa29d";
+    ticks[0].forEach(tx=>{ const s=textSprite(String(tx),tcol,28,tnum); s.position.set(tx,Y0-diag*0.03,Z1+diag*0.02); root.add(s); });
+    ticks[1].forEach(ty=>{ const s=textSprite(String(ty),tcol,28,tnum); s.position.set(X0-diag*0.03,ty,Z1+diag*0.02); root.add(s); });
+    ticks[2].forEach(tz=>{ const s=textSprite(String(tz),tcol,28,tnum); s.position.set(X1+diag*0.03,Y0-diag*0.03,tz); root.add(s); });
+    // axis titles
+    const ttl=diag*0.045, tcCol="#c2c9c4";
+    (function(){
+      const a=textSprite(axLabels[0],tcCol,30,ttl); a.position.set((X0+X1)/2,Y0-diag*0.09,Z1+diag*0.04); root.add(a);
+      const b=textSprite(axLabels[1],tcCol,30,ttl); b.position.set(X0-diag*0.10,(Y0+Y1)/2,Z1+diag*0.04); root.add(b);
+      const c=textSprite(axLabels[2],tcCol,30,ttl); c.position.set(X1+diag*0.10,Y0-diag*0.06,(Z0+Z1)/2); root.add(c);
+    })();
+
+    // ── particles (dense, blob-constrained) ──
+    const pos=new Float32Array(N*3), col=new Float32Array(N*3), origin=new Float32Array(N*3), age=new Int16Array(N);
+    function seed(i){
+      const cp = cloud.length ? cloud[(Math.random()*cloud.length)|0] : [center[0],center[1],center[2]];
+      origin[i*3]=cp[0]+(Math.random()-0.5)*0.04*span[0];
+      origin[i*3+1]=cp[1]+(Math.random()-0.5)*0.04*span[1];
+      origin[i*3+2]=cp[2]+(Math.random()-0.5)*0.04*span[2];
+    }
+    for(let i=0;i<N;i++){ seed(i); pos[i*3]=origin[i*3];pos[i*3+1]=origin[i*3+1];pos[i*3+2]=origin[i*3+2]; age[i]=(Math.random()*LIFE)|0; }
+    const pGeo=new THREE.BufferGeometry();
+    pGeo.setAttribute("position",new THREE.BufferAttribute(pos,3));
+    pGeo.setAttribute("color",new THREE.BufferAttribute(col,3));
+    const sprite=(()=>{ const c=document.createElement("canvas");c.width=c.height=64;const g=c.getContext("2d");
+      const gr=g.createRadialGradient(32,32,0,32,32,32); gr.addColorStop(0,"rgba(255,255,255,1)");gr.addColorStop(0.5,"rgba(255,255,255,0.5)");gr.addColorStop(1,"rgba(255,255,255,0)");
+      g.fillStyle=gr;g.fillRect(0,0,64,64); return new THREE.CanvasTexture(c); })();
+    const pMat=new THREE.PointsMaterial({size:diag*PSIZE,map:sprite,vertexColors:true,transparent:true,opacity:0.82,depthWrite:false,blending:THREE.NormalBlending,sizeAttenuation:true});
+    root.add(new THREE.Points(pGeo,pMat));
+
+    // ── thin probe paths ──
+    function pathLine(path, hex){
+      const v=path.map(p=>new THREE.Vector3(p.p[0],p.p[1],p.p[2]));
+      const curve=new THREE.CatmullRomCurve3(v);
+      const stroke=new THREE.Mesh(
+        new THREE.TubeGeometry(curve, Math.max(72,v.length*2), diag*0.003, 6, false),
+        new THREE.MeshBasicMaterial({color:hex,transparent:true,opacity:1,depthTest:false})
+      );
+      stroke.renderOrder=25; root.add(stroke);
+    }
+    const paths=meta.paths||{};
+    if(paths.unsteered) pathLine(paths.unsteered,0xffd166);
+    if(paths.steered) pathLine(paths.steered,0x7db0ff);
+    if(paths.steered&&paths.steered.length){
+      const st=paths.steered[0].p;
+      const m=new THREE.Mesh(new THREE.SphereGeometry(diag*0.012,16,16),new THREE.MeshBasicMaterial({color:0xffffff,depthTest:false,transparent:true}));
+      m.position.set(st[0],st[1],st[2]); m.renderOrder=22; root.add(m);
+    }
+
+    // ── attractors as flat billboard markers + labels ──
+    function ringSprite(hex){
+      const c=document.createElement("canvas");c.width=c.height=64;const g=c.getContext("2d");
+      g.beginPath();g.arc(32,32,15,0,7); g.fillStyle=hex; g.fill();
+      g.lineWidth=4;g.strokeStyle="#ffffff";g.stroke();
+      const t=new THREE.CanvasTexture(c);
+      const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false,depthWrite:false}));
+      return sp;
+    }
+    const tmpc={r:0,g:0,b:0};
+    (meta.attractors||[]).forEach((a,i)=>{
+      const s=a.s==null?0.5:a.s; scoreColor(s,tmpc);
+      const hex="#"+[tmpc.r,tmpc.g,tmpc.b].map(x=>("0"+Math.round(x*255).toString(16)).slice(-2)).join("");
+      const mk=ringSprite(hex); mk.scale.set(diag*0.05,diag*0.05,1); mk.position.set(a.p[0],a.p[1],a.p[2]); mk.renderOrder=24; root.add(mk);
+      const isBad=(meta.badAttractorIndices||[]).includes(i);
+      const lab=textSprite("A"+(i+1)+"  safety "+(a.s==null?"?":a.s.toFixed(2)), isBad?"#ff9a9a":"#bdeccb", 26, diag*0.034);
+      lab.position.set(a.p[0],a.p[1]+diag*0.06,a.p[2]); lab.renderOrder=25; root.add(lab);
+    });
+
+    // faint data cloud
+    if(cloud.length){
+      const cp=new Float32Array(cloud.length*3), cc=new Float32Array(cloud.length*3), t={r:0,g:0,b:0};
+      for(let i=0;i<cloud.length;i++){ cp[i*3]=cloud[i][0];cp[i*3+1]=cloud[i][1];cp[i*3+2]=cloud[i][2];
+        scoreColor(cloud[i][3],t); cc[i*3]=t.r*0.45;cc[i*3+1]=t.g*0.45;cc[i*3+2]=t.b*0.45; }
+      const cGeo=new THREE.BufferGeometry();
+      cGeo.setAttribute("position",new THREE.BufferAttribute(cp,3));
+      cGeo.setAttribute("color",new THREE.BufferAttribute(cc,3));
+      root.add(new THREE.Points(cGeo,new THREE.PointsMaterial({size:diag*0.006,vertexColors:true,transparent:true,opacity:0.5,depthWrite:false,sizeAttenuation:true})));
+    }
+
+    // ── orbit ──
+    let dist=diag*sc*2.0, az=0.9, pol=1.12, dragging=false, lx=0, ly=0, autorot=true;
+    function applyCam(){ const s=Math.sin(pol),c=Math.cos(pol);
+      camera.position.set(Math.sin(az)*s*dist, c*dist, Math.cos(az)*s*dist); camera.lookAt(0,0,0); }
+    renderer.domElement.addEventListener("pointerdown",e=>{dragging=true;autorot=false;lx=e.clientX;ly=e.clientY;});
+    window.addEventListener("pointerup",()=>dragging=false);
+    window.addEventListener("pointermove",e=>{ if(!dragging)return;
+      az-=(e.clientX-lx)*0.006; pol+=(e.clientY-ly)*0.006; pol=Math.max(0.2,Math.min(Math.PI-0.2,pol)); lx=e.clientX; ly=e.clientY; });
+    renderer.domElement.addEventListener("wheel",e=>{ e.preventDefault();
+      dist*=(1+Math.sign(e.deltaY)*0.08); dist=Math.max(diag*sc*0.7,Math.min(diag*sc*5,dist)); },{passive:false});
+    function resize(){ const w=app.clientWidth,h=app.clientHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+    window.addEventListener("resize",resize);
+
+    const sm=meta.summary||{};
+    if(sm.unsteered_final_safety!=null){
+      $("chip").innerHTML=`Unsteered settles at safety <b style="color:var(--bad)">${sm.unsteered_final_safety.toFixed(2)}</b>, `+
+        `steered crosses into <b style="color:var(--good)">${sm.steered_final_safety.toFixed(2)}</b> `+
+        `(<span class="delta">${sm.safety_delta_final>=0?"+":""}${sm.safety_delta_final.toFixed(2)}</span>) using only `+
+        `<b>${Math.round(sm.steering_fraction*100)}%</b> added motion.`;
+    } else { $("chip").style.display="none"; }
+
+    // ── advection (blob-constrained, like FlowFieldSystem) ──
+    const v=[0,0,0];
+    function advance(steps,scale){
+      for(let s=0;s<steps;s++){
+        for(let i=0;i<N;i++){ const i3=i*3;
+          let x=pos[i3],y=pos[i3+1],z=pos[i3+2];
+          const bo=sampleBlob(x,y,z);
+          if(bo<=0){ x=origin[i3];y=origin[i3+1];z=origin[i3+2]; age[i]=0; pos[i3]=x;pos[i3+1]=y;pos[i3+2]=z; continue; }
+          sampleVel(x,y,z,v);
+          const vs=DT*PSPEED*scale*(0.35+0.65*bo);   // slow near blob edge
+          x+=v[0]*vs; y+=v[1]*vs; z+=v[2]*vs;
+          age[i]++;
+          if(age[i]>=LIFE){ x=origin[i3];y=origin[i3+1];z=origin[i3+2]; age[i]=0; if(Math.random()<0.03) seed(i); }
+          pos[i3]=x;pos[i3+1]=y;pos[i3+2]=z;
+        }
+      }
+    }
+    advance(34,1.0);
+
+    const tmp={r:0,g:0,b:0};
+    function colorize(){
+      for(let i=0;i<N;i++){ const i3=i*3; const af=age[i]/LIFE;
+        let a=1.0; if(af<0.14)a=af/0.14; else if(af>0.8)a=(1.0-af)/0.2; a=Math.max(0,Math.min(1,a));
+        const bo=sampleBlob(pos[i3],pos[i3+1],pos[i3+2]); a*=Math.min(1,bo+0.08);
+        scoreColor(sampleScore(pos[i3],pos[i3+1],pos[i3+2]),tmp);
+        col[i3]=tmp.r*a; col[i3+1]=tmp.g*a; col[i3+2]=tmp.b*a;
+      }
+      pGeo.attributes.position.needsUpdate=true; pGeo.attributes.color.needsUpdate=true;
+    }
+    function renderFrame(scale){ advance(1,scale); colorize(); if(autorot) az+=0.0015*scale; applyCam(); renderer.render(scene,camera); }
+    // debug hook so a hidden/headless tab can be driven + captured manually
+    window.__dbg={ renderFrame, render:()=>{applyCam();renderer.render(scene,camera);}, setAutorot:(b)=>{autorot=b;}, setAz:(a)=>{az=a;} };
+    let last=performance.now();
+    function frame(now){ const dtMs=now-last; last=now; renderFrame(Math.max(0.4,Math.min(2.5,dtMs/16.67))); requestAnimationFrame(frame); }
+    applyCam(); resize(); requestAnimationFrame(frame);
+  }
+  main();
+  </script>
+</body>
+</html>

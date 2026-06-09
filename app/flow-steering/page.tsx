@@ -5,7 +5,7 @@ import { Github, Linkedin, Mail, Youtube } from "lucide-react"
 export const metadata: Metadata = {
   title: "Flow steering — Wiktor Tomasik",
   description:
-    "Using a learned semantic flow to detect when a conversation is dragged toward a dangerous attractor, and steering the model away with a minimal, proactive nudge.",
+    "Using a learned semantic flow to detect when a conversation is dragged toward a dangerous attractor, and steering the model away with a minimal, proactive activation-space nudge.",
 }
 
 const socialLinks: Array<{
@@ -53,25 +53,6 @@ function SectionTitle({ eyebrow, children }: { eyebrow?: string; children: React
       ) : null}
       <h2 className="text-3xl font-semibold tracking-normal text-[#1F2420] md:text-4xl">{children}</h2>
     </div>
-  )
-}
-
-function Figure({
-  src,
-  alt,
-  children,
-}: {
-  src: string
-  alt: string
-  children: ReactNode
-}) {
-  return (
-    <figure className="mx-auto my-12 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-4xl">
-      <div className="overflow-hidden rounded-lg border border-[#20251F]/10 bg-white p-3 shadow-[0_22px_70px_rgba(31,36,32,0.11)]">
-        <img src={src} alt={alt} loading="lazy" className="mx-auto block h-auto max-w-full rounded-md" />
-      </div>
-      <figcaption className="mx-auto mt-5 w-full max-w-[calc(100vw_-_2.5rem)] text-sm leading-7 text-[#5F635D] md:max-w-3xl">{children}</figcaption>
-    </figure>
   )
 }
 
@@ -133,9 +114,9 @@ export default function FlowSteeringPage() {
             </p>
 
             <p>
-              This page builds that world model from data and uses it as a controller. The recipe is short. Take many
-              real conversations. Lay each one out as a <strong className="font-semibold text-[#171A16]">trajectory</strong>{" "}
-              through a learned semantic space. From the cloud of these trajectories, learn the{" "}
+              This page builds that world model from data and uses it as a controller. Take many real conversations. Lay
+              each one out as a <strong className="font-semibold text-[#171A16]">trajectory</strong> through a learned
+              semantic space. From the cloud of these trajectories, learn the{" "}
               <strong className="font-semibold text-[#171A16]">flow</strong>: at any region, which way do conversations
               there tend to move next? Find the <strong className="font-semibold text-[#171A16]">attractors</strong> — the
               basins the flow keeps pulling toward — and mark which of them are dangerous, in the sense that conversations
@@ -158,69 +139,63 @@ export default function FlowSteeringPage() {
           <SectionTitle eyebrow="Interactive">The two trajectories</SectionTitle>
 
           <figure className="mx-auto my-8 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-5xl">
-            <div className="overflow-hidden rounded-lg border border-[#20251F]/12 bg-[#0e0f11] shadow-[0_28px_80px_rgba(31,36,32,0.16)]">
-              <div className="relative aspect-[16/11] w-full min-h-[440px] md:aspect-[16/9]">
+            <div className="overflow-hidden rounded-lg border border-[#20251F]/12 bg-[#0d0e10] shadow-[0_28px_80px_rgba(31,36,32,0.16)]">
+              <div className="relative aspect-[16/12] w-full min-h-[460px] md:aspect-[16/9]">
                 <iframe
-                  src="/flow-steering/steering-flow.html"
-                  title="Interactive AI-safety flow steering"
+                  src="/flow-steering/steering-flow-webgl.html"
+                  title="Live AI-safety particle flow with steering"
                   className="absolute inset-0 h-full w-full border-0"
                   loading="lazy"
                 />
               </div>
             </div>
             <figcaption className="mx-auto mt-5 w-full max-w-[calc(100vw_-_2.5rem)] text-sm leading-7 text-[#5F635D] md:max-w-3xl">
-              Drag to rotate; press <em>Play flow</em> to release the safety-colored particle field (red = low safety,
-              green = high safety). Both probes start from the same red-team conversation. The{" "}
-              <span className="font-medium text-[#9A7A2A]">amber</span> probe is unsteered — it slides into the dangerous
-              basin. The <span className="font-medium text-[#3F6493]">blue</span> probe gets a handful of small early
-              nudges, crosses the separatrix, and settles in the high-safety basin. White-ringed markers are the
-              attractors found in the flow.
+              The live particle field is the <em>real</em> flow learned from the red-team conversations, advected through
+              the trained velocity grid and colored by safety (red = low, green = high). Drag to rotate, scroll to zoom.
+              Both probes start from the same conversation; the <span className="font-medium text-[#9A7A2A]">amber</span>{" "}
+              path is unsteered and slides into the dangerous basin, while the{" "}
+              <span className="font-medium text-[#3F6493]">blue</span> path gets a few small early nudges and settles in
+              the green, high-safety basin. White-ringed markers are the attractors the flow converges to.
             </figcaption>
           </figure>
-        </section>
-
-        {/* ── How the flow is built ── */}
-        <section className="mx-auto mt-16 w-full border-t border-[#1F2420]/10 pt-16">
-          <SectionTitle eyebrow="Mechanics">How the flow is built — and why from semantic paths</SectionTitle>
 
           <div className={bodyText}>
-            <p>
-              Every conversation is a sequence of turns, and every turn is embedded and projected down to a 3D point. The
-              ordered points of one conversation form a path. In this run the three emergent axes came out as{" "}
-              <em>assistant prevalence</em>, <em>informativeness level</em>, and <em>violation domain</em>, and the turns
-              clustered into regions like <em>refusing harmful requests</em>, <em>dangerous predatory content</em>, and{" "}
-              <em>sexual boundary violations</em>. Those labels are discovered from the data, not imposed.
+            <p className="rounded-lg border border-[#8E5B37]/20 bg-[#F3ECE2] px-4 py-4 text-[#5F4632]">
+              <strong className="font-semibold text-[#4A3725]">Important:</strong> the two tubes are
+              <em> not</em> steered by dragging them through these three dimensions. The steering is computed and applied
+              elsewhere — as an activation-space intervention, described in{" "}
+              <a href="#projection" className={linkClass}>
+                &ldquo;The 3D is a projection&rdquo;
+              </a>{" "}
+              below — and only <em>then</em> projected back into this 3D view so the effect is visible. The geometry here
+              is the controller&apos;s map for understanding and debugging, not the lever it pulls.
             </p>
 
-            <p>
-              <strong className="font-semibold text-[#1F2420]">Why a flow instead of a classifier.</strong> A point
-              classifier answers &quot;is this turn safe right now?&quot; But, as the proposal argues, the danger is
-              usually the <em>transition</em>, not the current text — the moment a high-trust context is being pushed
-              toward a basin where things go wrong. A flow field answers the more useful question: <em>where is this
-              trajectory heading?</em> That is what lets the controller act before safety actually collapses.
-            </p>
-
-            <p>
-              <strong className="font-semibold text-[#1F2420]">The velocity field.</strong> Each path contributes little
-              directed segments (turn → next turn). From that cloud of arrows we fit a field <code>v(x)</code> — with
-              radial basis functions, or a mixture-density network for multi-modal flow — that returns, at any region of
-              semantic space, the direction conversations there tend to move. This is the predictive engine: it does not
-              describe a single conversation, it describes the dynamics all of them share.
-            </p>
-
-            <p>
-              <strong className="font-semibold text-[#1F2420]">Attractors and basins.</strong> Where the field converges
-              — negative divergence, low speed — sits an attractor: a sink the dynamics pull toward. Each attractor owns a
-              basin and carries an average outcome score. A <em>low-safety attractor</em> is a basin where, once a
-              trajectory falls in, the flow keeps dragging it toward a bad outcome. Detecting that pull early is the whole
-              game.
-            </p>
+            <details className="rounded-lg border border-[#1F2420]/12 bg-[#FBFAF6] px-4 py-3">
+              <summary className="cursor-pointer text-sm font-medium text-[#5F635D]">
+                Fallback view — precomputed-frame version (if the live flow does not render)
+              </summary>
+              <div className="mt-4 overflow-hidden rounded-md border border-[#20251F]/12 bg-[#0e0f11]">
+                <div className="relative aspect-[16/11] w-full min-h-[420px] md:aspect-[16/9]">
+                  <iframe
+                    src="/flow-steering/steering-flow.html"
+                    title="Static-frame AI-safety steering view"
+                    className="absolute inset-0 h-full w-full border-0"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-[#6B6F68]">
+                A lighter Plotly version that draws the same two probes and attractors over precomputed flow frames. It is
+                kept as a backup for browsers where the WebGL particle field is heavy.
+              </p>
+            </details>
           </div>
         </section>
 
         {/* ── The dataset ── */}
-        <section className="mx-auto mt-20 w-full">
-          <SectionTitle eyebrow="The data">Where the trajectories come from</SectionTitle>
+        <section className="mx-auto mt-16 w-full border-t border-[#1F2420]/10 pt-16">
+          <SectionTitle eyebrow="The data">The safety dataset behind the flow</SectionTitle>
 
           <div className={bodyText}>
             <p>
@@ -234,8 +209,8 @@ export default function FlowSteeringPage() {
               </a>
               . The reason this dataset fits is structural: every row is a <em>full multi-turn transcript</em>, so it
               becomes a real trajectory rather than a single point, and it ships transcript-level safety signals
-              (<code>min_harmlessness_score_transcript</code>, red-team rating, tags) that become the scalar field we color
-              the flow by.
+              (<code>min_harmlessness_score_transcript</code>, red-team rating, tags) that become the scalar field the
+              flow is colored by.
             </p>
 
             <p>
@@ -246,49 +221,156 @@ export default function FlowSteeringPage() {
               have cleaner per-response labels, but most of their rows are one prompt and one response — two-point paths,
               with no trajectory to steer — which is why the multi-turn red-team transcripts were chosen here.
             </p>
+
+            <p>
+              On this particular run, TraceScope named the three emergent axes <em>assistant prevalence</em>,{" "}
+              <em>informativeness level</em>, and <em>violation domain</em>, and the turns fell into regions like{" "}
+              <em>refusing harmful requests</em>, <em>dangerous predatory content</em>, and{" "}
+              <em>sexual boundary violations</em>. Those labels are discovered from the data, not imposed — which is the
+              subject of the next section.
+            </p>
+          </div>
+        </section>
+
+        {/* ── How the flow is computed ── */}
+        <section className="mx-auto mt-20 w-full">
+          <SectionTitle eyebrow="TraceScope">How many paths become a flow</SectionTitle>
+
+          <div className={bodyText}>
+            <p>
+              The flow comes from{" "}
+              <a href="https://github.com/Pixedar/TraceScope" target="_blank" rel="noopener noreferrer" className={linkClass}>
+                TraceScope
+              </a>
+              , a tool I built to map the flow of meaning through a collection of texts. It does not just show{" "}
+              <em>where</em> texts sit; it learns <em>how meaning tends to move</em> between them. The pipeline that turns
+              a pile of transcripts into the field above runs in a fixed sequence:
+            </p>
+
+            <ol className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] list-decimal space-y-3 pl-6 text-[1.02rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.08rem]">
+              <li><strong className="font-semibold text-[#1F2420]">Embed</strong> every turn into a high-dimensional vector (here, 3072-d embeddings).</li>
+              <li><strong className="font-semibold text-[#1F2420]">Cluster</strong> the turns, auto-selecting the number of clusters by silhouette score.</li>
+              <li><strong className="font-semibold text-[#1F2420]">Reduce to 3D</strong> with a UMAP/t-SNE search under a cosine metric, keeping the projection that best preserves neighborhoods.</li>
+              <li><strong className="font-semibold text-[#1F2420]">Compute axes</strong> with PCA on the 3D coordinates, then have an LLM read each axis&apos;s keyword evolution and give it a short, human label.</li>
+              <li><strong className="font-semibold text-[#1F2420]">Label clusters</strong> the same way, so each basin gets a name like <em>actionable harm instructions</em>.</li>
+              <li><strong className="font-semibold text-[#1F2420]">Train a flow model</strong> — radial basis functions (RBF, used here) or a mixture-density network — that learns a velocity field from the directed turn-to-turn segments of every path.</li>
+              <li><strong className="font-semibold text-[#1F2420]">Bake a 40³ velocity grid</strong> so any point in the space can be sampled by fast trilinear interpolation. That grid is exactly what the browser advects particles through.</li>
+            </ol>
+
+            <p>
+              <strong className="font-semibold text-[#1F2420]">Why a flow, not a cloud.</strong> A scatter of points tells
+              you where conversations have been. A flow field tells you where a conversation is <em>heading</em>. As the
+              proposal argues, the danger is usually the transition — the moment a context is being pushed toward a basin
+              where things go wrong — so a model of motion is what lets a controller act before safety collapses.
+            </p>
+
+            <p>
+              <strong className="font-semibold text-[#1F2420]">What an attractor means.</strong> Where the field converges
+              — low speed, negative divergence — sits an attractor: a stable endpoint that, once a trajectory enters its
+              basin, the dynamics keep pulling it toward. The attractor inherits an average outcome score from the data
+              around it, so a basin can be read as &ldquo;safer&rdquo; or &ldquo;more dangerous.&rdquo; The clearest
+              illustration is the original PRM800K math-reasoning run below.
+            </p>
           </div>
 
-          <Figure src="/flow-steering/prm800k-flow.gif" alt="TraceScope flow over PRM800K math-reasoning traces">
-            The exact same machinery, on a different scalar. Here it runs over PRM800K math-reasoning traces, where the
-            score is &quot;did the solution reach the correct answer?&quot; — the attractors (A1, A2, A3) are the basins
-            reasoning chains fall into. Swap that correctness scalar for transcript safety and you get the red-team flow
-            above. Building the field from <em>semantic paths</em> is what makes the method domain-agnostic: math
-            reasoning, agent traces, or red-team dialogues are all just trajectories with an outcome score.
-          </Figure>
+          <figure className="mx-auto my-12 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-4xl">
+            <div className="overflow-hidden rounded-lg border border-[#20251F]/18 bg-[#0d0e10] p-2 shadow-[0_22px_70px_rgba(31,36,32,0.18)]">
+              <video
+                className="mx-auto block w-full rounded-md"
+                autoPlay
+                loop
+                muted
+                playsInline
+                aria-label="TraceScope RBF flow over PRM800K math-reasoning traces with labeled attractors"
+              >
+                <source src="/flow-steering/prm800k-flow.webm" type="video/webm" />
+                <source src="/flow-steering/prm800k-flow.mp4" type="video/mp4" />
+              </video>
+            </div>
+            <figcaption className="mx-auto mt-5 w-full max-w-[calc(100vw_-_2.5rem)] text-sm leading-7 text-[#5F635D] md:max-w-3xl">
+              The same machinery on a different scalar. Here it runs over PRM800K math-reasoning chains, where the score
+              is &ldquo;did the solution reach the correct answer?&rdquo; The flow discovers several attractor basins
+              (A1, A2, A3 …); in that run <em>every</em> basin had a lower error rate than the dataset average, and paths
+              that crossed <em>between</em> basins hit score turbulence during the transition. Swap correctness for
+              transcript safety and the identical pipeline produces the red-team flow at the top of this page — which is
+              why building the field from <em>semantic paths</em> makes the method domain-agnostic.
+            </figcaption>
+          </figure>
+
+          <div className={bodyText}>
+            <p className="rounded-lg border border-[#2D8B75]/22 bg-[#F1F7F1] px-4 py-4 text-[#3E5A4A]">
+              <strong className="font-semibold text-[#2F6E55]">The 3D is optional.</strong> Three dimensions is a choice
+              made for human eyes. The steering does not need it: the flow, the attractors, and the corrective direction
+              can all be computed in the higher-dimensional embedding space (and the real intervention lives in an even
+              higher-dimensional activation space). The projection to 3D is a debugging and intuition lens — it lets us
+              <em> see</em> the basin a conversation is falling into and confirm the controller is doing something
+              sensible — but nothing about the control logic depends on the picture being three-dimensional.
+            </p>
+          </div>
         </section>
 
         {/* ── How the steering actually works ── */}
-        <section className="mx-auto mt-16 w-full border-t border-[#1F2420]/10 pt-16">
+        <section id="projection" className="mx-auto mt-16 w-full scroll-mt-20 border-t border-[#1F2420]/10 pt-16">
           <SectionTitle eyebrow="Important">The 3D is a projection — the steering is not</SectionTitle>
 
           <div className={bodyText}>
             <p>
               It is tempting to read the animation literally, as if the conversation lived in three dimensions and we
-              dragged a dot to safety. That is not what happens, and the distinction matters.
+              dragged a dot to safety. That is not what happens, and the distinction is the whole point.
             </p>
 
             <p>
-              The 3D scene is a <strong className="font-semibold text-[#1F2420]">projection</strong> of a learned
-              low-dimensional world model. Its job is the <em>decision</em>, not the mechanism: it tells us{" "}
-              <em>when</em> to act (the trajectory is aligned toward a low-safety attractor and inside its pull radius) and{" "}
-              <em>which way</em> the correction points (up the safety gradient, across the separatrix, away from the bad
-              sink). The geometry you see is the controller&apos;s internal map.
+              There are <strong className="font-semibold text-[#1F2420]">two separate geometries</strong>. One is the
+              TraceScope flow landscape you can rotate above — the controller&apos;s map. The other is the target
+              language model&apos;s <strong className="font-semibold text-[#1F2420]">hidden-state space</strong>, where
+              text is actually generated. They are not the same space, and there is no shared coordinate system between
+              them. What connects them is a <em>control signal</em>, not an embedding.
             </p>
 
             <p>
-              The actual steering happens in the model&apos;s{" "}
-              <strong className="font-semibold text-[#1F2420]">activation space</strong>. As described in the proposal,
-              the correction is a small, trained modulation added to the residual stream — a receptor/wire actuator,
-              separated from the monitor, and anchored by neutral-KL and key-retention objectives so it nudges the
-              trajectory without degrading unrelated behavior. The world model decides the direction; the actuator
-              realizes it as the few-dimensional activation edit that, projected back down, looks like the blue path
-              peeling away from the amber one.
+              Concretely (this is the mechanism from the companion{" "}
+              <a href="https://github.com/Pixedar" target="_blank" rel="noopener noreferrer" className={linkClass}>
+                EmotionsSteering
+              </a>{" "}
+              work): a point in the flow landscape gives normalized coordinates along the named axes,{" "}
+              <code>(c₁, c₂, c₃)</code>. Those are turned into an additive change to the residual stream,
+            </p>
+
+            <p className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] rounded-md border border-[#1F2420]/12 bg-[#15171a] px-5 py-4 text-center font-mono text-sm text-[#dbe1df] md:max-w-2xl">
+              Δ = α · Σ&nbsp;(cᵢ − 0.5) · vᵢ
             </p>
 
             <p>
-              In other words: the flow gives a <em>policy over actions</em>, the actions are activation-space
-              interventions, and the 3D divergence is just how that policy looks once you flatten it into a picture you can
-              rotate.
+              and a forward hook adds <code>Δ</code> to a chosen transformer block (or a few) <em>during generation</em>.
+              The target model is really being moved through its own activations — this is hidden-state steering, not
+              prompt engineering.
+            </p>
+
+            <p>
+              <strong className="font-semibold text-[#1F2420]">The crucial part is where the vᵢ come from.</strong> Each
+              axis direction <code>vᵢ</code> is <em>trained from real examples</em>: you take real conversations that sit
+              high versus low on that axis and learn the direction from the difference between their actual hidden
+              activations. It is <em>not</em> the embedding of the axis&apos;s label word. Steering toward the string
+              &ldquo;maliciousness&rdquo; would just be a fancy form of prompt-steering — pushing the model toward how the
+              <em> word</em> is represented. Steering along a probe learned from real malicious-vs-benign activations moves
+              the model along the feature it genuinely uses internally. That difference is exactly why a readable axis
+              label is not, by itself, a usable control handle — the lesson from the proposal&apos;s action-coupling
+              tests.
+            </p>
+
+            <p>
+              Two more properties keep it honest. The intervention is <em>additive residual steering</em>, the simplest
+              representation-engineering actuator, so its strength <code>α</code> must be calibrated — pushed too hard it
+              shoves the hidden state off the model&apos;s normal manifold and damages unrelated behavior. And it is meant
+              to be <em>conditional</em>: the controller steers only when its detector sees the trajectory drifting toward
+              a dangerous basin, which is what keeps the total intervention as small as the result below shows.
+            </p>
+
+            <p>
+              So the blue path peeling away from the amber one is a <em>projection of an activation-space policy</em>. The
+              flow decides <em>when</em> to act and <em>which direction</em> the correction points; the actuator realizes
+              that as a small, learned edit to the residual stream; and the 3D divergence is just what that policy looks
+              like once you flatten it into a picture you can rotate.
             </p>
           </div>
         </section>
