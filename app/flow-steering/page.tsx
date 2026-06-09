@@ -92,11 +92,8 @@ export default function FlowSteeringPage() {
           </h1>
           <p className="mt-6 text-base text-[#6C716A] md:text-lg">Wiktor Tomasik · June 9, 2026</p>
           <p className="mt-4 max-w-2xl text-base leading-7 text-[#6C716A]">
-            A concrete, runnable demo of the controller idea from{" "}
-            <a href="/hidden-state-safety/" className={linkClass}>
-              Hidden State Safety
-            </a>: use a learned <em>world model of the conversation</em> to notice when a trajectory is being dragged toward a
-            dangerous basin, and apply the smallest proactive nudge that changes where it ends up.
+            Uses a flow model of the conversation to notice when a trajectory is being dragged toward a dangerous basin,
+            then applies the smallest proactive nudge that changes where it ends up.
           </p>
         </header>
 
