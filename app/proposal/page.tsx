@@ -215,7 +215,7 @@ export default function ProposalPage() {
 
             <p>I measured whether hidden activations during the identical forced answer predicted whether the model later kept the answer or flipped under correction. The result scaled: the read became strong at 3B, 7B, and 14B, and the higher N 7B run was also strong. The 1.5B model was the only tested scale where this read got worse.</p>
 
-            <p>This is why I then did a more direct truth directions style test: build matched contrast pairs, learn a direction from the difference between their internal activations, add or subtract that direction during the forced answer, and measure whether the later action gap changes.</p>
+            <p>This is why I then did a more direct truth directions style test: build matched contrast pairs, learn a direction from the difference between their internal activations, add or subtract that direction while the model is producing the forced answer, and measure whether this changes which later continuation the model treats as more likely.</p>
           </div>
 
           <Figure src={figures.sameWords} alt="Same answer text across different situations">
@@ -231,7 +231,7 @@ export default function ProposalPage() {
           </div>
 
           <div className="mx-auto mt-7 w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
-            <p>The second test asked a different question. The first test only reads the hidden state and asks whether it predicts later behavior. This test changes the hidden state directly and asks whether the later scored action changes while the visible transcript stays the same.</p>
+            <p>The second test asked a different question. The first test only reads the hidden state and asks whether it predicts later behavior. In this test I intervened on the hidden activations: during the same forced answer, I added a small vector for a chosen coordinate, then measured whether the model later became more likely to stand by, recant, follow a constraint, or violate it.</p>
 
             <p>Here a hidden coordinate means a direction trained from contrast pairs, for example evidence present versus evidence absent, or ownership present versus ownership absent. An action gap means the logprob difference between two fixed continuations: keeping the earlier answer versus recanting it, or following a constraint versus violating it. If the gap moves when I steer a coordinate, then the coordinate is not only readable; it is coupled to behavior.</p>
 
@@ -247,7 +247,7 @@ export default function ProposalPage() {
           <div className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
             <p>This was the most important result for the world model idea. A probe can tell us that the model is in some hidden state, but that does not tell us what intervention to apply. Even when a coordinate is action coupled, the sign can be non obvious. Evidence may mean &quot;update when new evidence arrives,&quot; not &quot;defend the previous answer.&quot; Ownership may mean accountability, not stubbornness.</p>
 
-            <p>So the controller cannot simply say: if the truth probe is high, do X; if the pressure probe is high, do Y. It must learn what moving along each coordinate does to the next action boundary in the current context.</p>
+            <p>This links the first two results. The first test says that hidden state can help predict the future. The second test says prediction is not enough for control. A coordinate that is easy to read can still be the wrong handle to push, or can push in the opposite direction from the naive interpretation. So a controller cannot simply say: if the truth probe is high, do X; if the pressure probe is high, do Y. It needs a model that translates detected signals into the correct intervention for the current situation.</p>
           </div>
 
           <div className="mx-auto mt-16 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-3xl">
@@ -255,21 +255,21 @@ export default function ProposalPage() {
           </div>
 
           <div className="mx-auto mt-7 w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
-            <p>I also tested whether a coordinate that predicts future behavior is actually useful as a world model coordinate. The difference matters because a model can learn a compressed predictor that works on the benchmark while scrambling the variables we would need for intervention.</p>
+            <p>I also tested whether a coordinate that predicts future behavior is actually useful as a world model coordinate. This is the next part of the same story: if we want to steer the model, we need a representation that keeps the controllable variables separate enough to act on them.</p>
 
-            <p>I compared three coordinate choices. The interpretable axes were contrast directions for variables like evidence, pressure, and ownership. The PCA subspace was only a discovery baseline: it asks whether large activation variation contains the same variables, but it is not the proposed controller because raw PCA can miss sparse or rare features. The learned encoder was the high capacity predictor.</p>
+            <p>I compared two coordinate choices here. The interpretable axes were contrast directions for variables like evidence, pressure, and ownership. The learned encoder was a higher capacity predictor trained to compress the state.</p>
 
-            <p>The audit used three checks. Composition asks whether two separate moves, like evidence and pressure, add up when both are applied. Known variable recovery asks whether the coordinate actually contains evidence, pressure, and ownership. Later behavior prediction asks whether it predicts stand by versus recant behavior; AUC=0.5 is chance. The null controls test whether the apparent structure survives randomization.</p>
+            <p>The audit used three checks. Later behavior prediction asks whether the coordinate predicts stand by versus recant behavior; AUC=0.5 is chance. Known variable recovery asks whether the coordinate still contains evidence, pressure, and ownership. Composition asks whether two separate conversational moves, like evidence and pressure, still add up when both are applied. The null controls test whether the apparent structure survives randomization.</p>
 
-            <p>The result was useful because it was not just positive. At 7B, the learned encoder looked good on the composition score, but its null almost matched it. It also recovered almost none of the known variables and predicted later behavior poorly. That means prediction score by itself is not enough evidence that we found a controllable world model coordinate.</p>
+            <p>The learned encoder predicted later behavior better than the small interpretable coordinate in these small model runs, but it recovered almost none of the known steering variables. Its composition score was also almost identical to its null. This is exactly the failure mode that matters here: a feature space can predict the future while losing the structure needed to choose the right steering action.</p>
           </div>
 
           <Figure src={figures.worldModel} alt="World model coordinate audit">
-            The audit compares whether a coordinate composes moves, recovers the known variables, and predicts later behavior. The learned encoder has a high composition score, but the null almost matches it and the known variables are missing. PCA is shown only as a baseline sanity check, not as the proposed control method.
+            The audit compares prediction with controllability. The learned encoder predicts later behavior better in these small runs, but it does not recover the known steering variables, and its composition score is almost identical to its null. This means the controller needs a translator from hidden signals to interventions, not only a detector.
           </Figure>
 
           <div className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
-            <p>This adds a concrete constraint to the proposal. A useful world model coordinate must be identifiable and steerable, not just predictive. Before using a hidden signal in a controller, the coordinate should pass null controls, recover the variables it claims to represent, and show action coupling like in the previous test. Otherwise the controller may optimize a latent shortcut instead of controlling the state we care about.</p>
+            <p>This adds a concrete constraint to the proposal. A useful world model coordinate must be identifiable and steerable, not just predictive. Test 1 shows that hidden signals can predict later behavior. Test 2 shows that readable signals do not automatically tell us how to steer. Test 3 shows why: a learned predictor can keep the future signal while scrambling the variables we need for action. So the next model should learn the translation from current hidden state, context, and candidate intervention to the next action boundary.</p>
           </div>
 
           <div className="mx-auto mt-16 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-3xl">
@@ -283,7 +283,7 @@ export default function ProposalPage() {
 
             <p>In the repo this distinction mattered. The useful mechanism was closer to a learned receptor or wire: a separate actuator trained to translate a control state into a small hidden modulation, while neutral KL, key retention, and held out checks constrain what must not move. KL here means the steered model&apos;s next token distribution should stay close to the unsteered model on neutral prompts. Retention means the intervention should preserve important facts and unrelated behavior, not merely produce a safer looking refusal.</p>
 
-            <p>The strongest lesson was not that steering is solved. Broad steering could still create canned abstention, overcorrection, or loss of unrelated behavior. The more defensible result is architectural: monitor and actuator should be separated, and the actuator must be trained with anchors for the parts of the model&apos;s behavior that should remain unchanged.</p>
+            <p>The steering runs gave a narrower but useful result. Broad steering could still create canned abstention, overcorrection, or loss of unrelated behavior. The defensible result is architectural: monitor and actuator should be separated, and the actuator must be trained with anchors for the parts of the model&apos;s behavior that should remain unchanged.</p>
           </div>
 
           <figure className="mx-auto my-12 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-4xl">
@@ -320,8 +320,6 @@ export default function ProposalPage() {
           </figure>
 
           <div className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
-            <p>This is not an argument against finetuning. A properly designed finetune can be the right repair. The point is that any repair, whether a finetune or a runtime intervention, needs explicit conservation constraints. Otherwise the model can learn the visible target behavior while quietly moving other boundaries.</p>
-
             <p>The current receptor results are narrow but informative. They suggest the right next actuator is not a stronger raw direction, but a trained control port with paired frame data, key retention, neutral KL, and pressure tests. In world model terms, this is the difference between reading a coordinate and learning the allowed transition inside that coordinate.</p>
           </div>
         </section>
