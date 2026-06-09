@@ -137,9 +137,9 @@ export default function ProposalPage() {
               also shares this idea of hidden information.
             </p>
 
-            <p>We can attempt to actively steer the LLM based on these signals. However, just knowing that the LLM is currently in a state prone to hallucination doesn&apos;t tell us how we should change its behavior. For example, the LLM might currently be asked to imagine a fantasy fairytale.</p>
+            <p>We can attempt to actively steer the LLM based on these signals or forcefully end the conversation. However, just knowing that the LLM is currently in a state prone to hallucination doesn&apos;t tell us how we should change its behavior. For example, the LLM might currently be asked to imagine a fantasy fairytale.</p>
 
-            <p>The danger is not when the model is inventing fictional characters in a fairytale. The real danger begins when medical or legal advice becomes a fairytale because of user pressure or manipulation. In this scenario, the dangerous consequence is precisely the <strong className="font-semibold text-[#171A16]">transition</strong>: the model is in a high trust medical advice context, but is being pushed into an internal state highly prone to hallucination. If we do not steer the model away or end it, it breaches that epistemic boundary.</p>
+            <p>The danger is not when the model is inventing fictional characters in a fairytale. The real danger begins when medical or legal advice becomes a fairytale because of user pressure or manipulation. In this scenario, the dangerous consequence is precisely the transition: the model is in a high trust medical advice context, but is being pushed into an internal state highly prone to hallucination. If we do not steer the model away or end it, it breaches that epistemic boundary.</p>
 
             <p>There is a very subtle, important thing here, being that the dangerous state is not that the text would be inappropriate for the user. But rather, the relation between the generated text and the model&apos;s hidden state might yield dangerous consequences for the user.</p>
 
@@ -151,7 +151,7 @@ export default function ProposalPage() {
 
             <p>Is there some more general approach we can use to build such a controller?</p>
 
-            <p>Turns out there is:</p>
+            <p>It might be this:</p>
 
             <p>
               There is now an emerging trend in robotics around{" "}
@@ -167,7 +167,13 @@ export default function ProposalPage() {
 
             <p>A JEPA like world model is also a predictive engine, but it predicts in a fundamentally different way: it predicts how the state of the room/environment will change if it takes a certain action. It learns this precisely because we teach it to predict the consequences of its actions.</p>
 
-            <p>A true world model naturally discovers a stable internal map, a coordinate system that makes the underlying mechanics of an environment useful for control. For example, in a physical environment, this coordinate system might track things like the laws of motion, gravity, and momentum. It then applies these laws to predict the consequences of its action.</p>
+            <p>
+              A true world model naturally discovers a{" "}
+              <a href="https://media.licdn.com/dms/document/media/v2/D561FAQFhxUrGrq1nuw/feedshare-document-pdf-analyzed/B56Z6S2jb8JoAc-/0/1780580237936?e=1781740800&v=beta&t=M-B3jcC8IVZLYf8_UwFjRnanzp69v-oB4p8qYVgAfq4" target="_blank" rel="noopener noreferrer" className="text-[#8E4A25] underline decoration-[#C58A65]/60 underline-offset-4 hover:text-[#5F3018]">
+                stable internal map
+              </a>
+              , a coordinate system that makes the underlying mechanics of an environment useful for control. For example, in a physical environment, this coordinate system might track things like the laws of motion, gravity, and momentum. It then applies these laws to predict the consequences of its action.
+            </p>
 
             <p>It is like in the case of robotics, where the world model knows the laws of motion and uses them to predict that if it does not move its arm, the bottle will fall off the table. It is fundamentally different than copying known arm movements based on visual input.</p>
 
@@ -176,19 +182,15 @@ export default function ProposalPage() {
             <p>The hope is that, by predicting the consequences of its actions, we discover the right set of hidden activation patterns that will help us predict what kind of action we should take in a given context.</p>
 
             <p>
-              Also, in addition, we can train a{" "}
-              <a href="https://arxiv.org/abs/2601.00844" target="_blank" rel="noopener noreferrer" className="text-[#8E4A25] underline decoration-[#C58A65]/60 underline-offset-4 hover:text-[#5F3018]">
-                world model controller
-              </a>{" "}
-              in a way that applies a minimal amount of steering that will steer the model away from bad situations; because this is proactive, we can minimize the amount of steering needed.
+              Also, in addition, we can train a world model controller in a way that applies a minimal amount of steering that will steer the model away from bad situations; because this is proactive, we can minimize the amount of steering needed.
             </p>
 
             <p>
-              Another advantage is that current LLMs are shaped by a reward signal to behave safely. But human judgment is not a one dimensional scalar reward. It might contain thing like truthfulness, helpfulness, harmlessness, social context, uncertainty, moral consequences, user intent, and manipulation risk all at once. Compressing this into a{" "}
+              Another advantage is that current LLMs are shaped by reward models to behave safely. Research on{" "}
               <a href="https://arxiv.org/abs/2210.10760" target="_blank" rel="noopener noreferrer" className="text-[#8E4A25] underline decoration-[#C58A65]/60 underline-offset-4 hover:text-[#5F3018]">
-                single reward score
+                reward model overoptimization
               </a>{" "}
-              teaches the model to optimize the proxy—making the surface text look safe—without giving it a <strong className="font-semibold text-[#171A16]">stable causal model</strong> of ownership, evidence, commitment, pressure, and permissible action.
+              found that when a policy is optimized too strongly against a learned reward model, the reward score can keep improving while the underlying judged quality gets worse. In this context, this means the model can learn to satisfy the proxy rather than the thing we actually care about. Human judgment is not a one dimensional scalar reward. It might contain thing like truthfulness, helpfulness, harmlessness, social context, uncertainty, moral consequences, user intent, and manipulation risk all at once. Compressing this into a single reward score can teach the model to make the surface text look safe without giving it a stable causal model of ownership, evidence, commitment, pressure, and permissible action.
             </p>
           </div>
         </section>
@@ -275,19 +277,62 @@ export default function ProposalPage() {
           </div>
 
           <div className="mx-auto mt-16 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-3xl">
-            <h3 className="text-2xl font-semibold tracking-normal text-[#1F2420] md:text-3xl">4. Testing selective steering without damaging unrelated behavior</h3>
+            <h3 className="text-2xl font-semibold tracking-normal text-[#1F2420] md:text-3xl">4. Testing steering with a retention constraint</h3>
           </div>
 
           <div className="mx-auto mt-7 w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
-            <p>I also tested a more practical controller question: can steering change the risky pressure case without making the model worse on unrelated behavior?</p>
+            <p>I also tested steering as a control problem, not only as a hidden state reading problem. A linear probe asks: can I read some feature from the model&apos;s activations? That is useful, but it is passive. It does not tell us what happens if we actually intervene.</p>
 
-            <p>The best version was not high gain steering. It separated the monitor from the actuator. A small hidden state reader decided whether the current case belonged to the target failure mode, and only then a small internal wire was applied. The wire was trained with a neutral retention loss, meaning it was punished when it changed ordinary neutral answers.</p>
+            <p>The controller test was different. I used a small hidden state reader only as the monitor. Then a small internal wire acted as the intervention. During training, the wire had to improve the target pressure case, but it also paid a retention penalty on neutral examples. In this case the retention penalty was a KL term. KL is a distance between two probability distributions, so the penalty says: when this is an ordinary neutral prompt, keep the steered model&apos;s next token distribution close to the unsteered model.</p>
 
-            <p>The evaluation used Qwen2.5 1.5B Instruct, three seeds, and an LLM judge. The target score here is strict success rate: 1.000 means every judged item passed. With gated steering, persona pressure improved from 0.000 in the corrupt baseline to 0.267, while neutral retention stayed 1.000 and truth pressure stayed 1.000. The wrong state control means I used the same wire but fed it a state vector from the wrong task; on persona pressure it collapsed back to 0.000, which is the important sign that the effect was tied to the private state and not only to steering magnitude.</p>
+            <p>The test used Qwen2.5 1.5B Instruct, three seeds, held out prompts, and an LLM judge. The target pressure case was a social pressure setup where the model was pushed toward adopting the user&apos;s frame. The unrelated behavior checks were neutral tasks and truth challenge tasks, where the model should keep behaving normally. I compared no intervention, a prompt rule, a KL finetune, a benign finetune, and the gated internal wire.</p>
+          </div>
 
-            <p>This was still not a full repair. A normal benign realignment finetune was slightly stronger on persona pressure, 0.300 instead of 0.233 in the head to head run, but it damaged unrelated behavior: neutral retention fell from 1.000 to 0.500 and truth pressure fell from 1.000 to 0.500. The internal wire was weaker, but it kept those unrelated scores at 1.000.</p>
+          <div className="mx-auto my-12 w-full max-w-[calc(100vw_-_2.5rem)] rounded-lg border border-[#20251F]/10 bg-[#FBFAF6] p-5 shadow-[0_18px_55px_rgba(31,36,32,0.08)] md:max-w-4xl md:p-7">
+            <p className="mb-5 text-center text-xs font-semibold uppercase tracking-[0.22em] text-[#8E5B37]">Controller audit</p>
 
-            <p>The lesson for the world model controller is very concrete. The controller should not just learn <strong className="font-semibold text-[#171A16]">what direction</strong> to push. It should learn when to fire, how much to fire, and when to leave the model alone. When I made the intervention broader, for example by spreading it across more layers, the target behavior sometimes improved but neutral retention dropped to 0.500. So the right object is not maximum steering strength. The right object is a small action that moves the risky transition while preserving the states that should not move.</p>
+            <div className="grid gap-3 text-sm leading-6 text-[#343932] md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-center">
+              <div className="rounded-md border border-[#1F2420]/10 bg-white px-4 py-3">
+                <p className="font-semibold text-[#1F2420]">Move the target case</p>
+                <p className="mt-1 text-[#626760]">the intervention should help only where pressure creates the risky transition</p>
+              </div>
+              <p className="hidden text-center text-lg text-[#8A8F86] md:block">+</p>
+              <div className="rounded-md border border-[#1F2420]/10 bg-white px-4 py-3">
+                <p className="font-semibold text-[#1F2420]">Add KL retention</p>
+                <p className="mt-1 text-[#626760]">on neutral prompts, keep the steered next token distribution close to the original one</p>
+              </div>
+              <p className="hidden text-center text-lg text-[#8A8F86] md:block">-&gt;</p>
+              <div className="rounded-md border border-[#1F2420]/10 bg-white px-4 py-3">
+                <p className="font-semibold text-[#1F2420]">Measure collateral loss</p>
+                <p className="mt-1 text-[#626760]">check whether neutral and truth behavior changed when it should not move</p>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-3 md:grid-cols-3">
+              <div className="rounded-md border border-[#1F2420]/10 bg-[#F7F4EE] px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6F756D]">Wrong hidden state</p>
+                <p className="mt-3 text-2xl font-semibold text-[#1F2420]">0.27 -&gt; 0.00</p>
+                <p className="mt-2 text-sm leading-6 text-[#626760]">the gated wire lost the target effect when fed the wrong state</p>
+              </div>
+              <div className="rounded-md border border-[#2D8B75]/20 bg-[#EEF6F0] px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#4F6D5A]">Retention wire</p>
+                <p className="mt-3 text-2xl font-semibold text-[#1F2420]">0.00</p>
+                <p className="mt-2 text-sm leading-6 text-[#626760]">collateral loss on neutral and truth checks</p>
+              </div>
+              <div className="rounded-md border border-[#C85D4D]/20 bg-[#F9ECE8] px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8E4C43]">Benign finetune</p>
+                <p className="mt-3 text-2xl font-semibold text-[#1F2420]">0.50</p>
+                <p className="mt-2 text-sm leading-6 text-[#626760]">collateral loss on the same checks</p>
+              </div>
+            </div>
+
+            <p className="mt-5 text-sm leading-6 text-[#626760]">Qwen2.5 1.5B Instruct, three seed LLM judged aggregate. Collateral loss means 1 minus the mean score on neutral retention and truth pressure.</p>
+          </div>
+
+          <div className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
+            <p>This makes the mechanism much clearer. A probe can say that some hidden feature is present. The retention trained wire asks a stronger question: can I take an action in hidden state space that changes the risky transition and still leaves the model almost unchanged where intervention is not needed?</p>
+
+            <p>The result was not a complete solution. The internal wire was weaker than finetuning on the target pressure case. But the finetune damaged unrelated behavior, while the gated wire kept neutral and truth scores at 1.000 in this test. I also saw the opposite failure when steering was made too broad across layers: the target behavior could improve, but neutral retention dropped to 0.500. This is why the controller should not learn maximum steering strength. It should learn a small action under a no damage constraint.</p>
           </div>
         </section>
       </article>
