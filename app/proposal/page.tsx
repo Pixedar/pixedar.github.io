@@ -277,62 +277,54 @@ export default function ProposalPage() {
           </div>
 
           <div className="mx-auto mt-16 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-3xl">
-            <h3 className="text-2xl font-semibold tracking-normal text-[#1F2420] md:text-3xl">4. Testing steering with a retention constraint</h3>
+            <h3 className="text-2xl font-semibold tracking-normal text-[#1F2420] md:text-3xl">4. Testing how to steer without degrading unrelated behavior</h3>
           </div>
 
           <div className="mx-auto mt-7 w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
-            <p>I also tested steering as a control problem, not only as a hidden state reading problem. A linear probe asks: can I read some feature from the model&apos;s activations? That is useful, but it is passive. It does not tell us what happens if we actually intervene.</p>
+            <p>I also tested the implementation question: if a hidden signal is useful, what is the right mechanism for using it without damaging the rest of the model?</p>
 
-            <p>The controller test was different. I used a small hidden state reader only as the monitor. Then a small internal wire acted as the intervention. During training, the wire had to improve the target pressure case, but it also paid a retention penalty on neutral examples. In this case the retention penalty was a KL term. KL is a distance between two probability distributions, so the penalty says: when this is an ordinary neutral prompt, keep the steered model&apos;s next token distribution close to the unsteered model.</p>
+            <p>The simplest version is to train a linear probe and then push the model along that probe direction. A linear probe is just a small classifier that reads a feature from hidden activations. This is not the same thing as a controller. It tells us that a state is readable, but it does not tell us whether pushing that direction will help, what sign to use, how strongly to push, or when the push should be turned off.</p>
 
-            <p>The test used Qwen2.5 1.5B Instruct, three seeds, held out prompts, and an LLM judge. The target pressure case was a social pressure setup where the model was pushed toward adopting the user&apos;s frame. The unrelated behavior checks were neutral tasks and truth challenge tasks, where the model should keep behaving normally. I compared no intervention, a prompt rule, a KL finetune, a benign finetune, and the gated internal wire.</p>
+            <p>In the repo this distinction mattered. The mechanisms that applied steering too broadly were the ones that caused bad side effects: canned abstention, overcorrection, or worse behavior on unrelated neutral/truth checks. Increasing strength or spreading the intervention across more layers sometimes made the target behavior move more, but it also made the intervention less selective.</p>
           </div>
 
-          <div className="mx-auto my-12 w-full max-w-[calc(100vw_-_2.5rem)] rounded-lg border border-[#20251F]/10 bg-[#FBFAF6] p-5 shadow-[0_18px_55px_rgba(31,36,32,0.08)] md:max-w-4xl md:p-7">
-            <p className="mb-5 text-center text-xs font-semibold uppercase tracking-[0.22em] text-[#8E5B37]">Controller audit</p>
+          <figure className="mx-auto my-12 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-4xl">
+            <div className="rounded-lg border border-[#20251F]/10 bg-[#FBFAF6] p-5 shadow-[0_18px_55px_rgba(31,36,32,0.08)] md:p-7">
+              <p className="mb-6 text-center text-xs font-semibold uppercase tracking-[0.22em] text-[#8E5B37]">Architecture difference</p>
 
-            <div className="grid gap-3 text-sm leading-6 text-[#343932] md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-center">
-              <div className="rounded-md border border-[#1F2420]/10 bg-white px-4 py-3">
-                <p className="font-semibold text-[#1F2420]">Move the target case</p>
-                <p className="mt-1 text-[#626760]">the intervention should help only where pressure creates the risky transition</p>
-              </div>
-              <p className="hidden text-center text-lg text-[#8A8F86] md:block">+</p>
-              <div className="rounded-md border border-[#1F2420]/10 bg-white px-4 py-3">
-                <p className="font-semibold text-[#1F2420]">Add KL retention</p>
-                <p className="mt-1 text-[#626760]">on neutral prompts, keep the steered next token distribution close to the original one</p>
-              </div>
-              <p className="hidden text-center text-lg text-[#8A8F86] md:block">-&gt;</p>
-              <div className="rounded-md border border-[#1F2420]/10 bg-white px-4 py-3">
-                <p className="font-semibold text-[#1F2420]">Measure collateral loss</p>
-                <p className="mt-1 text-[#626760]">check whether neutral and truth behavior changed when it should not move</p>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="rounded-md border border-[#1F2420]/10 bg-white px-4 py-4">
+                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#8A4F42]">What did not work as a general controller</p>
+                  <div className="mt-5 space-y-3 text-sm leading-6 text-[#343932]">
+                    <div className="rounded-md bg-[#F8EFEA] px-3 py-3">probe reads a feature</div>
+                    <div className="text-center text-[#8A8F86]">-&gt;</div>
+                    <div className="rounded-md bg-[#F8EFEA] px-3 py-3">same direction is pushed with fixed strength</div>
+                    <div className="text-center text-[#8A8F86]">-&gt;</div>
+                    <div className="rounded-md bg-[#F8EFEA] px-3 py-3">the push can fire in the wrong context or at the wrong strength</div>
+                  </div>
+                  <p className="mt-4 text-sm leading-6 text-[#626760]">This is useful for proving that a coordinate exists, but it is not enough for safe control.</p>
+                </div>
+
+                <div className="rounded-md border border-[#2D8B75]/20 bg-[#F1F7F1] px-4 py-4">
+                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#4F6D5A]">Mechanism that worked best here</p>
+                  <div className="mt-5 space-y-3 text-sm leading-6 text-[#343932]">
+                    <div className="rounded-md bg-white px-3 py-3">state reader decides whether intervention is needed</div>
+                    <div className="text-center text-[#8A8F86]">-&gt;</div>
+                    <div className="rounded-md bg-white px-3 py-3">small learned actuator changes only selected layers</div>
+                    <div className="text-center text-[#8A8F86]">-&gt;</div>
+                    <div className="rounded-md bg-white px-3 py-3">neutral KL and held out checks constrain what must not move</div>
+                  </div>
+                  <p className="mt-4 text-sm leading-6 text-[#626760]">This separates monitor from actuator. The probe decides when to act; the learned actuator decides how to act.</p>
+                </div>
               </div>
             </div>
-
-            <div className="mt-6 grid gap-3 md:grid-cols-3">
-              <div className="rounded-md border border-[#1F2420]/10 bg-[#F7F4EE] px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6F756D]">Wrong hidden state</p>
-                <p className="mt-3 text-2xl font-semibold text-[#1F2420]">0.27 -&gt; 0.00</p>
-                <p className="mt-2 text-sm leading-6 text-[#626760]">the gated wire lost the target effect when fed the wrong state</p>
-              </div>
-              <div className="rounded-md border border-[#2D8B75]/20 bg-[#EEF6F0] px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#4F6D5A]">Retention wire</p>
-                <p className="mt-3 text-2xl font-semibold text-[#1F2420]">0.00</p>
-                <p className="mt-2 text-sm leading-6 text-[#626760]">collateral loss on neutral and truth checks</p>
-              </div>
-              <div className="rounded-md border border-[#C85D4D]/20 bg-[#F9ECE8] px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8E4C43]">Benign finetune</p>
-                <p className="mt-3 text-2xl font-semibold text-[#1F2420]">0.50</p>
-                <p className="mt-2 text-sm leading-6 text-[#626760]">collateral loss on the same checks</p>
-              </div>
-            </div>
-
-            <p className="mt-5 text-sm leading-6 text-[#626760]">Qwen2.5 1.5B Instruct, three seed LLM judged aggregate. Collateral loss means 1 minus the mean score on neutral retention and truth pressure.</p>
-          </div>
+            <figcaption className="mx-auto mt-5 w-full max-w-[calc(100vw_-_2.5rem)] text-sm leading-7 text-[#5F635D] md:max-w-3xl">The practical lesson was architectural. The most stable runtime steering pattern was gated, low gain, and trained or selected with retention anchors. KL here means a constraint on neutral prompts: after steering, the model&apos;s next token distribution should stay close to the unsteered model. This is different from directly steering along a readable probe direction.</figcaption>
+          </figure>
 
           <div className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
-            <p>This makes the mechanism much clearer. A probe can say that some hidden feature is present. The retention trained wire asks a stronger question: can I take an action in hidden state space that changes the risky transition and still leaves the model almost unchanged where intervention is not needed?</p>
+            <p>This is not an argument against finetuning. A properly designed finetune can be the right repair. The point is that any repair, whether a finetune or a runtime intervention, needs an explicit retention objective and unrelated behavior checks. Otherwise the model can learn the visible target behavior while quietly moving other boundaries.</p>
 
-            <p>The result was not a complete solution. The internal wire was weaker than finetuning on the target pressure case. But the finetune damaged unrelated behavior, while the gated wire kept neutral and truth scores at 1.000 in this test. I also saw the opposite failure when steering was made too broad across layers: the target behavior could improve, but neutral retention dropped to 0.500. This is why the controller should not learn maximum steering strength. It should learn a small action under a no damage constraint.</p>
+            <p>The best path forward is therefore not simply &quot;find the truth direction and push it.&quot; It is to train a controller that learns when a hidden state calls for intervention, which actuator should be used, how much steering is enough, and what parts of behavior must remain unchanged. That is much closer to a world model controller than to a probe.</p>
           </div>
         </section>
       </article>
