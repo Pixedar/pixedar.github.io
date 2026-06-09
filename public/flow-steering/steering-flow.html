@@ -109,13 +109,13 @@
     x: DATA.flow.positions.map(p => p[0]),
     y: DATA.flow.positions.map(p => p[1]),
     z: DATA.flow.positions.map(p => p[2]),
-    marker: { size: 3, color: DATA.flow.colors, opacity: 0.85 },
+    marker: { size: 3, color: DATA.flow.colors, opacity: 0.71 },
     name: 'flow', hoverinfo: 'skip', showlegend: false
   };
   const traceCloud = {
     type: 'scatter3d', mode: 'markers',
     x: DATA.cloud.x, y: DATA.cloud.y, z: DATA.cloud.z,
-    marker: { size: 2.5, color: DATA.cloud.colors, opacity: 0.42 },
+    marker: { size: 2.5, color: DATA.cloud.colors, opacity: 0.35 },
     name: 'dataset turns', hoverinfo: 'skip', showlegend: false
   };
   const traceAttractors = {
@@ -175,7 +175,8 @@
   document.getElementById('play').addEventListener('click', () => {
     Plotly.animate('plot', [null], { mode: 'immediate' });
     if (!flowLoaded) {
-      flowFrame.src = '/flow-steering/steering-flow-webgl.html';
+      const webglQuery = new URLSearchParams(location.search);
+      flowFrame.src = '/flow-steering/steering-flow-webgl.html' + (webglQuery.toString() ? '?' + webglQuery.toString() : '');
       flowLoaded = true;
     }
     document.body.classList.add('flowing');

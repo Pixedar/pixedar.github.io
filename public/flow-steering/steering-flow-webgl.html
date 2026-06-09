@@ -53,8 +53,14 @@
   const FLOW = (P.get("flow") === "mdn") ? "flow-mdn/" : "flow/";
   const DEFAULT_N = window.matchMedia("(max-width: 767px)").matches ? 27000 : 64000;
   const N = parseInt(P.get("n") || String(DEFAULT_N), 10);
-  const PSIZE = parseFloat(P.get("size") || "0.0032");
-  const PSPEED = parseFloat(P.get("speed") || "0.62");
+  const PSIZE = parseFloat(P.get("size") || "0.0026");
+  const PSPEED = parseFloat(P.get("speed") || "0.60");
+  const DEFAULT_TRAILS = window.matchMedia("(max-width: 767px)").matches ? 4000 : 10000;
+  const TRAIL_N = Math.min(parseInt(P.get("trails") || String(DEFAULT_TRAILS), 10), N);
+  const TRAIL_ALPHA = parseFloat(P.get("trailAlpha") || "0.20");
+  const TRAIL_LEN = parseFloat(P.get("trailLen") || "2.6");
+  const LIFE_SCALE = parseFloat(P.get("lifeScale") || "0.58");
+  const WARMUP = parseInt(P.get("warmup") || "6", 10);
   const $ = (id) => document.getElementById(id);
 
   function scoreColor(t, c){ t=Math.max(0,Math.min(1,t));
@@ -85,7 +91,8 @@
     const G = meta.gridShape[0];
     const aMin = meta.axisMin, aMax = meta.axisMax;
     const span = [aMax[0]-aMin[0], aMax[1]-aMin[1], aMax[2]-aMin[2]];
-    const DT = meta.dt || 0.02, LIFE = meta.lifespan || 57;
+    const DT = meta.dt || 0.02;
+    const LIFE = Math.max(16, Math.round((meta.lifespan || 57) * LIFE_SCALE));
     const diag = Math.hypot(span[0],span[1],span[2]);
     const center = [(aMin[0]+aMax[0])/2,(aMin[1]+aMax[1])/2,(aMin[2]+aMax[2])/2];
 
@@ -209,7 +216,7 @@
     })();
 
     // ── particles (dense, blob-constrained) ──
-    const pos=new Float32Array(N*3), col=new Float32Array(N*3), origin=new Float32Array(N*3), age=new Int16Array(N);
+    const pos=new Float32Array(N*3), col=new Float32Array(N*3), origin=new Float32Array(N*3), prevPos=new Float32Array(N*3), age=new Int16Array(N);
     function seed(i){
       const cp = cloud.length ? cloud[(Math.random()*cloud.length)|0] : [center[0],center[1],center[2]];
       origin[i*3]=cp[0]+(Math.random()-0.5)*0.04*span[0];
@@ -217,14 +224,26 @@
       origin[i*3+2]=cp[2]+(Math.random()-0.5)*0.04*span[2];
     }
     for(let i=0;i<N;i++){ seed(i); pos[i*3]=origin[i*3];pos[i*3+1]=origin[i*3+1];pos[i*3+2]=origin[i*3+2]; age[i]=(Math.random()*LIFE)|0; }
+    prevPos.set(pos);
     const pGeo=new THREE.BufferGeometry();
     pGeo.setAttribute("position",new THREE.BufferAttribute(pos,3));
     pGeo.setAttribute("color",new THREE.BufferAttribute(col,3));
     const sprite=(()=>{ const c=document.createElement("canvas");c.width=c.height=64;const g=c.getContext("2d");
       const gr=g.createRadialGradient(32,32,0,32,32,32); gr.addColorStop(0,"rgba(255,255,255,1)");gr.addColorStop(0.5,"rgba(255,255,255,0.5)");gr.addColorStop(1,"rgba(255,255,255,0)");
       g.fillStyle=gr;g.fillRect(0,0,64,64); return new THREE.CanvasTexture(c); })();
-    const pMat=new THREE.PointsMaterial({size:diag*PSIZE,map:sprite,vertexColors:true,transparent:true,opacity:0.82,depthWrite:false,blending:THREE.NormalBlending,sizeAttenuation:true});
+    const pMat=new THREE.PointsMaterial({size:diag*PSIZE,map:sprite,vertexColors:true,transparent:true,opacity:0.74,depthWrite:false,blending:THREE.NormalBlending,sizeAttenuation:true});
     root.add(new THREE.Points(pGeo,pMat));
+
+    const trailPos=new Float32Array(TRAIL_N*6);
+    const trailCol=new Float32Array(TRAIL_N*6);
+    const trailGeo=new THREE.BufferGeometry();
+    trailGeo.setAttribute("position",new THREE.BufferAttribute(trailPos,3));
+    trailGeo.setAttribute("color",new THREE.BufferAttribute(trailCol,3));
+    const trailMat=new THREE.LineBasicMaterial({
+      vertexColors:true,transparent:true,opacity:TRAIL_ALPHA,depthWrite:false,depthTest:false,blending:THREE.NormalBlending
+    });
+    const trails=new THREE.LineSegments(trailGeo,trailMat);
+    trails.renderOrder=8; root.add(trails);
 
     // ── thin probe paths ──
     function pathLine(path, hex){
@@ -291,20 +310,47 @@
       for(let s=0;s<steps;s++){
         for(let i=0;i<N;i++){ const i3=i*3;
           let x=pos[i3],y=pos[i3+1],z=pos[i3+2];
+          prevPos[i3]=x; prevPos[i3+1]=y; prevPos[i3+2]=z;
           const bo=sampleBlob(x,y,z);
-          if(bo<=0){ x=origin[i3];y=origin[i3+1];z=origin[i3+2]; age[i]=0; pos[i3]=x;pos[i3+1]=y;pos[i3+2]=z; continue; }
+          if(bo<=0){
+            if(Math.random()<0.08) seed(i);
+            x=origin[i3]; y=origin[i3+1]; z=origin[i3+2]; age[i]=0;
+            prevPos[i3]=x; prevPos[i3+1]=y; prevPos[i3+2]=z;
+            pos[i3]=x; pos[i3+1]=y; pos[i3+2]=z; continue;
+          }
           sampleVel(x,y,z,v);
-          const vs=DT*PSPEED*scale*(0.35+0.65*bo);   // slow near blob edge
+          const vs=DT*PSPEED*scale*(0.42+0.58*bo);   // slow near blob edge
           x+=v[0]*vs; y+=v[1]*vs; z+=v[2]*vs;
           age[i]++;
-          if(age[i]>=LIFE){ x=origin[i3];y=origin[i3+1];z=origin[i3+2]; age[i]=0; if(Math.random()<0.03) seed(i); }
+          if(age[i]>=LIFE){
+            if(Math.random()<0.10) seed(i);
+            x=origin[i3]; y=origin[i3+1]; z=origin[i3+2]; age[i]=0;
+            prevPos[i3]=x; prevPos[i3+1]=y; prevPos[i3+2]=z;
+          }
           pos[i3]=x;pos[i3+1]=y;pos[i3+2]=z;
         }
       }
     }
-    advance(34,1.0);
+    advance(WARMUP,1.0);
 
-    const tmp={r:0,g:0,b:0};
+    const tmp={r:0,g:0,b:0}, tv=[0,0,0];
+    function updateTrails(){
+      for(let i=0;i<TRAIL_N;i++){ const i3=i*3, i6=i*6;
+        const x=pos[i3], y=pos[i3+1], z=pos[i3+2];
+        const bo=Math.max(0,sampleBlob(x,y,z));
+        sampleVel(x,y,z,tv);
+        const tail=DT*PSPEED*TRAIL_LEN*(0.42+0.58*bo);
+        let x0=x-tv[0]*tail, y0=y-tv[1]*tail, z0=z-tv[2]*tail;
+        if(sampleBlob(x0,y0,z0)<=0){ x0=prevPos[i3]; y0=prevPos[i3+1]; z0=prevPos[i3+2]; }
+        trailPos[i6]=x0; trailPos[i6+1]=y0; trailPos[i6+2]=z0;
+        trailPos[i6+3]=x; trailPos[i6+4]=y; trailPos[i6+5]=z;
+        scoreColor(sampleScore(x0,y0,z0),tmp);
+        trailCol[i6]=tmp.r; trailCol[i6+1]=tmp.g; trailCol[i6+2]=tmp.b;
+        scoreColor(sampleScore(x,y,z),tmp);
+        trailCol[i6+3]=tmp.r; trailCol[i6+4]=tmp.g; trailCol[i6+5]=tmp.b;
+      }
+      trailGeo.attributes.position.needsUpdate=true; trailGeo.attributes.color.needsUpdate=true;
+    }
     function colorize(){
       for(let i=0;i<N;i++){ const i3=i*3; const af=age[i]/LIFE;
         let a=1.0; if(af<0.14)a=af/0.14; else if(af>0.8)a=(1.0-af)/0.2; a=Math.max(0,Math.min(1,a));
@@ -314,7 +360,7 @@
       }
       pGeo.attributes.position.needsUpdate=true; pGeo.attributes.color.needsUpdate=true;
     }
-    function renderFrame(scale){ advance(1,scale); colorize(); if(autorot) az+=0.0015*scale; applyCam(); renderer.render(scene,camera); }
+    function renderFrame(scale){ advance(1,scale); colorize(); updateTrails(); if(autorot) az+=0.0015*scale; applyCam(); renderer.render(scene,camera); }
     // debug hook so a hidden/headless tab can be driven + captured manually
     window.__dbg={ renderFrame, render:()=>{applyCam();renderer.render(scene,camera);}, setAutorot:(b)=>{autorot=b;}, setAz:(a)=>{az=a;} };
     let last=performance.now();
