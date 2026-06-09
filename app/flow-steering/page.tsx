@@ -92,11 +92,10 @@ export default function FlowSteeringPage() {
           </h1>
           <p className="mt-6 text-base text-[#6C716A] md:text-lg">Wiktor Tomasik · June 9, 2026</p>
           <p className="mt-4 max-w-2xl text-base leading-7 text-[#6C716A]">
-            A concrete, runnable demo of the controller idea from the{" "}
-            <a href="/proposal/" className={linkClass}>
-              proposal
-            </a>
-            : use a learned <em>world model of the conversation</em> to notice when a trajectory is being dragged toward a
+            A concrete, runnable demo of the controller idea from{" "}
+            <a href="/hidden-state-safety/" className={linkClass}>
+              Hidden State Safety
+            </a>: use a learned <em>world model of the conversation</em> to notice when a trajectory is being dragged toward a
             dangerous basin, and apply the smallest proactive nudge that changes where it ends up.
           </p>
         </header>
@@ -107,7 +106,7 @@ export default function FlowSteeringPage() {
 
           <div className="w-full space-y-7 text-[1.08rem] leading-8 text-[#30352E] md:text-[1.16rem] md:leading-9">
             <p>
-              The proposal makes a claim that a probe alone cannot satisfy: knowing the model is in a risky hidden state
+              The hidden-state safety essay makes a claim that a probe alone cannot satisfy: knowing the model is in a risky hidden state
               does not tell you <strong className="font-semibold text-[#171A16]">which way to push</strong>. To choose a
               correction you need something that predicts the consequences of an action — a small world model of how the
               conversation will evolve.
@@ -240,7 +239,7 @@ export default function FlowSteeringPage() {
             <p>
               <strong className="font-semibold text-[#1F2420]">Why a flow, not a cloud.</strong> A scatter of points tells
               you where conversations have been. A flow field tells you where a conversation is <em>heading</em>. As the
-              proposal argues, the danger is usually the transition — the moment a context is being pushed toward a basin
+              essay argues, the danger is usually the transition — the moment a context is being pushed toward a basin
               where things go wrong — so a model of motion is what lets a controller act before safety collapses.
             </p>
 
@@ -329,7 +328,7 @@ export default function FlowSteeringPage() {
               &ldquo;maliciousness&rdquo; would just be a fancy form of prompt-steering — pushing the model toward how the
               <em> word</em> is represented. Steering along a probe learned from real malicious-vs-benign activations moves
               the model along the feature it genuinely uses internally. That difference is exactly why a readable axis
-              label is not, by itself, a usable control handle — the lesson from the proposal&apos;s action-coupling
+              label is not, by itself, a usable control handle — the lesson from the hidden-state safety action-coupling
               tests.
             </p>
 
