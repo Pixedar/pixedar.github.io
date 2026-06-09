@@ -264,17 +264,6 @@
       lab.position.set(a.p[0],a.p[1]+diag*0.06,a.p[2]); lab.renderOrder=25; root.add(lab);
     });
 
-    // faint data cloud
-    if(cloud.length){
-      const cp=new Float32Array(cloud.length*3), cc=new Float32Array(cloud.length*3), t={r:0,g:0,b:0};
-      for(let i=0;i<cloud.length;i++){ cp[i*3]=cloud[i][0];cp[i*3+1]=cloud[i][1];cp[i*3+2]=cloud[i][2];
-        scoreColor(cloud[i][3],t); cc[i*3]=t.r*0.45;cc[i*3+1]=t.g*0.45;cc[i*3+2]=t.b*0.45; }
-      const cGeo=new THREE.BufferGeometry();
-      cGeo.setAttribute("position",new THREE.BufferAttribute(cp,3));
-      cGeo.setAttribute("color",new THREE.BufferAttribute(cc,3));
-      root.add(new THREE.Points(cGeo,new THREE.PointsMaterial({size:diag*0.006,vertexColors:true,transparent:true,opacity:0.5,depthWrite:false,sizeAttenuation:true})));
-    }
-
     // ── orbit ──
     let dist=diag*sc*2.0, az=0.9, pol=1.12, dragging=false, lx=0, ly=0, autorot=true;
     function applyCam(){ const s=Math.sin(pol),c=Math.cos(pol);

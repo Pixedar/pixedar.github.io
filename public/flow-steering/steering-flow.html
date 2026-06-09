@@ -24,7 +24,8 @@
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
       overflow: hidden;
     }
-    #plot { position: absolute; inset: 0; width: 100%; height: 100%; }
+    #plot { position: absolute; inset: 0; width: 100%; height: 100%; transition: opacity .18s ease; }
+    #flowFrame { position: absolute; inset: 0; z-index: 2; display: none; width: 100%; height: 100%; border: 0; background: var(--bg); }
     .overlay { position: absolute; z-index: 5; pointer-events: none; }
     .overlay > * { pointer-events: auto; }
     .controls {
@@ -43,6 +44,13 @@
       cursor: pointer;
     }
     button:hover { background: rgba(43,48,55,0.92); }
+    #pause { display: none; }
+    body.flowing #plot,
+    body.flowing .chip,
+    body.flowing .legend { opacity: 0; pointer-events: none; }
+    body.flowing #flowFrame { display: block; }
+    body.flowing #play { display: none; }
+    body.flowing #pause { display: inline-flex; }
     .legend {
       left: 14px; bottom: 14px;
       display: flex; flex-direction: column; gap: 7px;
@@ -72,6 +80,7 @@
 </head>
 <body>
   <div id="plot"></div>
+  <iframe id="flowFrame" title="Live AI-safety particle flow"></iframe>
 
   <div class="overlay chip">
     Unsteered settles at safety <b style="color:var(--bad)">0.25</b>,
@@ -82,7 +91,7 @@
 
   <div class="overlay controls">
     <button id="play">▶ Play flow</button>
-    <button id="pause">Pause</button>
+    <button id="pause">Static view</button>
   </div>
 
   <div class="overlay legend">
@@ -161,14 +170,19 @@
   Plotly.newPlot('plot', [traceFlow, traceCloud, traceAttractors, traceUnsteered, traceSteered], layout, { responsive: true, displayModeBar: false })
     .then(() => Plotly.addFrames('plot', frames));
 
+  const flowFrame = document.getElementById('flowFrame');
+  let flowLoaded = false;
   document.getElementById('play').addEventListener('click', () => {
-    Plotly.animate('plot', null, {
-      frame: { duration: 70, redraw: false },
-      transition: { duration: 0 }, mode: 'immediate', fromcurrent: true
-    });
+    Plotly.animate('plot', [null], { mode: 'immediate' });
+    if (!flowLoaded) {
+      flowFrame.src = '/flow-steering/steering-flow-webgl.html';
+      flowLoaded = true;
+    }
+    document.body.classList.add('flowing');
   });
   document.getElementById('pause').addEventListener('click', () => {
     Plotly.animate('plot', [null], { mode: 'immediate' });
+    document.body.classList.remove('flowing');
   });
   </script>
 </body>

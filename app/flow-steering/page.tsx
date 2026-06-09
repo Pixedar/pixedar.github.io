@@ -142,26 +142,26 @@ export default function FlowSteeringPage() {
             <div className="overflow-hidden rounded-lg border border-[#20251F]/12 bg-[#0d0e10] shadow-[0_28px_80px_rgba(31,36,32,0.16)]">
               <div className="relative aspect-[16/12] w-full min-h-[460px] md:aspect-[16/9]">
                 <iframe
-                  src="/flow-steering/steering-flow-webgl.html"
-                  title="Live AI-safety particle flow with steering"
+                  src="/flow-steering/steering-flow.html"
+                  title="AI-safety steering view with optional live flow"
                   className="absolute inset-0 h-full w-full border-0"
                   loading="lazy"
                 />
               </div>
             </div>
             <figcaption className="mx-auto mt-5 w-full max-w-[calc(100vw_-_2.5rem)] text-sm leading-7 text-[#5F635D] md:max-w-3xl">
-              The live particle field is the <em>real</em> flow learned from the red-team conversations, advected through
-              the trained velocity grid and colored by safety (red = low, green = high). Drag to rotate, scroll to zoom.
-              Both probes start from the same conversation; the <span className="font-medium text-[#9A7A2A]">amber</span>{" "}
-              path is unsteered and slides into the dangerous basin, while the{" "}
-              <span className="font-medium text-[#3F6493]">blue</span> path gets a few small early nudges and settles in
-              the green, high-safety basin. White-ringed markers are the attractors the flow converges to.
+              The default view keeps the original static point-cloud panel: axes, attractors, and the two probe paths stay
+              easy to inspect. Click <em>Play flow</em> to hide those static dots and replace them with the real learned
+              particle flow, advected through the trained velocity grid and colored by safety (red = low, green = high).
+              The <span className="font-medium text-[#9A7A2A]">amber</span> path is unsteered and slides into the
+              dangerous basin, while the <span className="font-medium text-[#3F6493]">blue</span> path gets a few small
+              early nudges and settles in the green, high-safety basin.
             </figcaption>
           </figure>
 
           <div className={bodyText}>
             <p className="rounded-lg border border-[#8E5B37]/20 bg-[#F3ECE2] px-4 py-4 text-[#5F4632]">
-              <strong className="font-semibold text-[#4A3725]">Important:</strong> the two tubes are
+              <strong className="font-semibold text-[#4A3725]">Important:</strong> the two paths are
               <em> not</em> steered by dragging them through these three dimensions. The steering is computed and applied
               elsewhere — as an activation-space intervention, described in{" "}
               <a href="#projection" className={linkClass}>
@@ -170,26 +170,6 @@ export default function FlowSteeringPage() {
               below — and only <em>then</em> projected back into this 3D view so the effect is visible. The geometry here
               is the controller&apos;s map for understanding and debugging, not the lever it pulls.
             </p>
-
-            <details className="rounded-lg border border-[#1F2420]/12 bg-[#FBFAF6] px-4 py-3">
-              <summary className="cursor-pointer text-sm font-medium text-[#5F635D]">
-                Fallback view — precomputed-frame version (if the live flow does not render)
-              </summary>
-              <div className="mt-4 overflow-hidden rounded-md border border-[#20251F]/12 bg-[#0e0f11]">
-                <div className="relative aspect-[16/11] w-full min-h-[420px] md:aspect-[16/9]">
-                  <iframe
-                    src="/flow-steering/steering-flow.html"
-                    title="Static-frame AI-safety steering view"
-                    className="absolute inset-0 h-full w-full border-0"
-                    loading="lazy"
-                  />
-                </div>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-[#6B6F68]">
-                A lighter Plotly version that draws the same two probes and attractors over precomputed flow frames. It is
-                kept as a backup for browsers where the WebGL particle field is heavy.
-              </p>
-            </details>
           </div>
         </section>
 
@@ -275,17 +255,12 @@ export default function FlowSteeringPage() {
 
           <figure className="mx-auto my-12 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-4xl">
             <div className="overflow-hidden rounded-lg border border-[#20251F]/18 bg-[#0d0e10] p-2 shadow-[0_22px_70px_rgba(31,36,32,0.18)]">
-              <video
+              <img
+                src="/flow-steering/prm-demo-v2.gif"
+                alt="TraceScope PRM800K RBF flow with found-error coloring"
                 className="mx-auto block w-full rounded-md"
-                autoPlay
-                loop
-                muted
-                playsInline
-                aria-label="TraceScope RBF flow over PRM800K math-reasoning traces with labeled attractors"
-              >
-                <source src="/flow-steering/prm800k-flow.webm" type="video/webm" />
-                <source src="/flow-steering/prm800k-flow.mp4" type="video/mp4" />
-              </video>
+                loading="lazy"
+              />
             </div>
             <figcaption className="mx-auto mt-5 w-full max-w-[calc(100vw_-_2.5rem)] text-sm leading-7 text-[#5F635D] md:max-w-3xl">
               The same machinery on a different scalar. Here it runs over PRM800K math-reasoning chains, where the score
@@ -336,7 +311,7 @@ export default function FlowSteeringPage() {
               <code>(c₁, c₂, c₃)</code>. Those are turned into an additive change to the residual stream,
             </p>
 
-            <p className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] rounded-md border border-[#1F2420]/12 bg-[#15171a] px-5 py-4 text-center font-mono text-sm text-[#dbe1df] md:max-w-2xl">
+            <p className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] px-5 py-2 text-center font-mono text-base text-[#1F2420] md:max-w-2xl">
               Δ = α · Σ&nbsp;(cᵢ − 0.5) · vᵢ
             </p>
 
