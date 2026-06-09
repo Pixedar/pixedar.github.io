@@ -223,8 +223,14 @@ export default function ProposalPage() {
           </Figure>
 
           <div className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
-            <p>This is the first bridge to the main idea. The sentence is not the whole action. In a social/moral environment, the action also includes the internal state from which the sentence was produced and the future state it makes more likely.</p>
+            <p>I also tested a related version of the same point: if we train a feature space to predict future behavior, does that feature space preserve the structure needed for steering? I compared interpretable contrast axes with a learned encoder. The learned encoder predicted later behavior better in these small model runs, but the separate structure audit showed that its composition score was almost identical to its null and it lost the known steering variables.</p>
+
+            <p>This is the first bridge to the main idea. The sentence is not the whole action. In a social/moral environment, the action also includes the internal state from which the sentence was produced and the future state it makes more likely. A feature space can predict the future while losing the structure needed to choose the right steering action.</p>
           </div>
+
+          <Figure src={figures.worldModel} alt="Coordinate audit showing later behavior prediction">
+            The plot shows only later behavior prediction. Bars are mean AUC over the 0.5B and 1.5B coordinate audit runs; whiskers show the two run range, and gray marks show the shuffle null. The learned encoder predicts better here, but the structure audit behind the same run showed it was not yet a control ready coordinate.
+          </Figure>
 
           <div className="mx-auto mt-16 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-3xl">
             <h3 className="text-2xl font-semibold tracking-normal text-[#1F2420] md:text-3xl">2. Testing which readable coordinates change later action</h3>
@@ -251,29 +257,7 @@ export default function ProposalPage() {
           </div>
 
           <div className="mx-auto mt-16 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-3xl">
-            <h3 className="text-2xl font-semibold tracking-normal text-[#1F2420] md:text-3xl">3. Testing the coordinate for world model use</h3>
-          </div>
-
-          <div className="mx-auto mt-7 w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
-            <p>I also tested whether a coordinate that predicts future behavior is actually useful as a world model coordinate. This is the next part of the same story: if we want to steer the model, we need a representation that keeps the controllable variables separate enough to act on them.</p>
-
-            <p>I compared two coordinate choices here. The interpretable axes were contrast directions for variables like evidence, pressure, and ownership. The learned encoder was a higher capacity predictor trained to compress the state.</p>
-
-            <p>The audit used three checks. Later behavior prediction asks whether the coordinate predicts stand by versus recant behavior; AUC=0.5 is chance. Known variable recovery asks whether the coordinate still contains evidence, pressure, and ownership. Composition asks whether two separate conversational moves, like evidence and pressure, still add up when both are applied. The null controls test whether the apparent structure survives randomization.</p>
-
-            <p>The learned encoder predicted later behavior better than the small interpretable coordinate in these small model runs, but it recovered almost none of the known steering variables. Its composition score was also almost identical to its null. This is exactly the failure mode that matters here: a feature space can predict the future while losing the structure needed to choose the right steering action.</p>
-          </div>
-
-          <Figure src={figures.worldModel} alt="World model coordinate audit">
-            The audit compares prediction with controllability. The learned encoder predicts later behavior better in these small runs, but it does not recover the known steering variables, and its composition score is almost identical to its null. This means the controller needs a translator from hidden signals to interventions, not only a detector.
-          </Figure>
-
-          <div className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
-            <p>This adds a concrete constraint to the proposal. A useful world model coordinate must be identifiable and steerable, not just predictive. Test 1 shows that hidden signals can predict later behavior. Test 2 shows that readable signals do not automatically tell us how to steer. Test 3 shows why: a learned predictor can keep the future signal while scrambling the variables we need for action. So the next model should learn the translation from current hidden state, context, and candidate intervention to the next action boundary.</p>
-          </div>
-
-          <div className="mx-auto mt-16 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-3xl">
-            <h3 className="text-2xl font-semibold tracking-normal text-[#1F2420] md:text-3xl">4. Testing how to steer without degrading unrelated behavior</h3>
+            <h3 className="text-2xl font-semibold tracking-normal text-[#1F2420] md:text-3xl">3. Testing how to steer without degrading unrelated behavior</h3>
           </div>
 
           <div className="mx-auto mt-7 w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
