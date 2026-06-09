@@ -215,7 +215,7 @@ export default function ProposalPage() {
 
             <p>I measured whether hidden activations during the identical forced answer predicted whether the model later kept the answer or flipped under correction. The result scaled: the read became strong at 3B, 7B, and 14B, and the higher N 7B run was also strong. The 1.5B model was the only tested scale where this read got worse.</p>
 
-            <p>A stronger future version should be closer to the truth directions style of experiment: build matched contrast pairs, learn a direction from the difference between their internal activations, and then actively add or subtract that direction to test whether it changes behavior. In my case the important version is not only &quot;can this direction predict the later flip?&quot; but &quot;can a controller move the state now and change the later action boundary before the bad answer appears?&quot;</p>
+            <p>This is why I then did a more direct truth directions style test: build matched contrast pairs, learn a direction from the difference between their internal activations, add or subtract that direction during the forced answer, and measure whether the later action gap changes.</p>
           </div>
 
           <Figure src={figures.sameWords} alt="Same answer text across different situations">
@@ -251,29 +251,25 @@ export default function ProposalPage() {
           </div>
 
           <div className="mx-auto mt-16 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-3xl">
-            <h3 className="text-2xl font-semibold tracking-normal text-[#1F2420] md:text-3xl">3. The world model must learn transitions, not just predictions</h3>
+            <h3 className="text-2xl font-semibold tracking-normal text-[#1F2420] md:text-3xl">3. Testing the coordinate for world model use</h3>
           </div>
 
           <div className="mx-auto mt-7 w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
-            <p>I also tested whether a learned predictive coordinate behaves like a real world model coordinate. This is important because a system can predict future behavior without representing the variables that make the behavior controllable.</p>
+            <p>I also tested whether a coordinate that predicts future behavior is actually useful as a world model coordinate. The difference matters because a model can learn a compressed predictor that works on the benchmark while scrambling the variables we would need for intervention.</p>
 
-            <p>Here &quot;composition&quot; means a simple test: if I apply two moves, like evidence and pressure, can the resulting hidden state be predicted from the separate effect of evidence plus the separate effect of pressure? At 7B, a learned encoder appeared to have high composition score, but its null almost matched it. More importantly, it recovered almost none of the causal axes, meaning the evidence/pressure/ownership variables, and did poorly at predicting later keep/flip behavior. In contrast, the more interpretable coordinate recovered the actual variables better.</p>
+            <p>I compared three coordinate choices. The interpretable axes were contrast directions for variables like evidence, pressure, and ownership. The PCA subspace was only a discovery baseline: it asks whether large activation variation contains the same variables, but it is not the proposed controller because raw PCA can miss sparse or rare features. The learned encoder was the high capacity predictor.</p>
+
+            <p>The audit used three checks. Composition asks whether two separate moves, like evidence and pressure, add up when both are applied. Known variable recovery asks whether the coordinate actually contains evidence, pressure, and ownership. Later behavior prediction asks whether it predicts stand by versus recant behavior; AUC=0.5 is chance. The null controls test whether the apparent structure survives randomization.</p>
+
+            <p>The result was useful because it was not just positive. At 7B, the learned encoder looked good on the composition score, but its null almost matched it. It also recovered almost none of the known variables and predicted later behavior poorly. That means prediction score by itself is not enough evidence that we found a controllable world model coordinate.</p>
           </div>
 
           <Figure src={figures.worldModel} alt="World model coordinate audit">
-            The learned encoder looks structured if one only reads the composition score, but the null almost matches it. It also fails to recover the evidence/pressure/ownership axes. This is the difference between prediction like structure and a useful world model coordinate.
+            The audit compares whether a coordinate composes moves, recovers the known variables, and predicts later behavior. The learned encoder has a high composition score, but the null almost matches it and the known variables are missing. PCA is shown only as a baseline sanity check, not as the proposed control method.
           </Figure>
 
           <div className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
-            <p>This gives a clearer form of the project. The world model should not merely predict whether the next answer will look safe. It should predict a transition:</p>
-
-            <p className="overflow-x-auto rounded-lg border border-[#1F2420]/10 bg-[#ECE8DD] px-4 py-4 font-mono text-sm leading-7 text-[#252922]">
-              conversation context + hidden state + candidate continuation -&gt; next action boundary state
-            </p>
-
-            <p>The dangerous moment is when a trusted context, user pressure, and a hidden state jointly move the model toward a state where an impermissible continuation becomes likely. That movement can happen before the final text looks obviously unsafe.</p>
-
-            <p>So the best path forward is a semantic world model over action coupled coordinates. Its job is to learn which hidden variables matter in which context, what happens if we move them, and how to apply the <strong className="font-semibold text-[#171A16]">smallest steering needed</strong> to avoid the bad transition. This is different from reward model safety: it is not just asking whether the text looks acceptable, but predicting the consequences of producing that text from that internal state.</p>
+            <p>This adds a concrete constraint to the proposal. A useful world model coordinate must be identifiable and steerable, not just predictive. Before using a hidden signal in a controller, the coordinate should pass null controls, recover the variables it claims to represent, and show action coupling like in the previous test. Otherwise the controller may optimize a latent shortcut instead of controlling the state we care about.</p>
           </div>
 
           <div className="mx-auto mt-16 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-3xl">
@@ -283,9 +279,11 @@ export default function ProposalPage() {
           <div className="mx-auto mt-7 w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
             <p>I also tested the implementation question: if a hidden signal is useful, what is the right mechanism for using it without damaging the rest of the model?</p>
 
-            <p>The simplest version is to train a linear probe and then push the model along that probe direction. A linear probe is just a small classifier that reads a feature from hidden activations. This is not the same thing as a controller. It tells us that a state is readable, but it does not tell us whether pushing that direction will help, what sign to use, how strongly to push, or when the push should be turned off.</p>
+            <p>The simplest version is to train a linear probe and then push the model along that probe direction. A linear probe is just a small classifier that reads a feature from hidden activations. This is not the same thing as a controller. It tells us that a state is readable, but it does not train the geometry of what should change and what must stay fixed.</p>
 
-            <p>In the repo this distinction mattered. The mechanisms that applied steering too broadly were the ones that caused bad side effects: canned abstention, overcorrection, or worse behavior on unrelated neutral/truth checks. Increasing strength or spreading the intervention across more layers sometimes made the target behavior move more, but it also made the intervention less selective.</p>
+            <p>In the repo this distinction mattered. The useful mechanism was closer to a learned receptor or wire: a separate actuator trained to translate a control state into a small hidden modulation, while neutral KL, key retention, and held out checks constrain what must not move. KL here means the steered model&apos;s next token distribution should stay close to the unsteered model on neutral prompts. Retention means the intervention should preserve important facts and unrelated behavior, not merely produce a safer looking refusal.</p>
+
+            <p>The strongest lesson was not that steering is solved. Broad steering could still create canned abstention, overcorrection, or loss of unrelated behavior. The more defensible result is architectural: monitor and actuator should be separated, and the actuator must be trained with anchors for the parts of the model&apos;s behavior that should remain unchanged.</p>
           </div>
 
           <figure className="mx-auto my-12 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-4xl">
@@ -294,37 +292,37 @@ export default function ProposalPage() {
 
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="rounded-md border border-[#1F2420]/10 bg-white px-4 py-4">
-                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#8A4F42]">What did not work as a general controller</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#8A4F42]">Raw probe push</p>
                   <div className="mt-5 space-y-3 text-sm leading-6 text-[#343932]">
-                    <div className="rounded-md bg-[#F8EFEA] px-3 py-3">probe reads a feature</div>
+                    <div className="rounded-md bg-[#F8EFEA] px-3 py-3">linear probe reads a hidden feature</div>
                     <div className="text-center text-[#8A8F86]">-&gt;</div>
-                    <div className="rounded-md bg-[#F8EFEA] px-3 py-3">same direction is pushed with fixed strength</div>
+                    <div className="rounded-md bg-[#F8EFEA] px-3 py-3">the read direction is reused as the actuator</div>
                     <div className="text-center text-[#8A8F86]">-&gt;</div>
-                    <div className="rounded-md bg-[#F8EFEA] px-3 py-3">the push can fire in the wrong context or at the wrong strength</div>
+                    <div className="rounded-md bg-[#F8EFEA] px-3 py-3">no KL or key retention objective defines what must stay fixed</div>
                   </div>
-                  <p className="mt-4 text-sm leading-6 text-[#626760]">This is useful for proving that a coordinate exists, but it is not enough for safe control.</p>
+                  <p className="mt-4 text-sm leading-6 text-[#626760]">This can prove that a coordinate is readable, but it does not train a selective control mechanism.</p>
                 </div>
 
                 <div className="rounded-md border border-[#2D8B75]/20 bg-[#F1F7F1] px-4 py-4">
-                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#4F6D5A]">Mechanism that worked best here</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#4F6D5A]">Anchored receptor / wire</p>
                   <div className="mt-5 space-y-3 text-sm leading-6 text-[#343932]">
-                    <div className="rounded-md bg-white px-3 py-3">state reader decides whether intervention is needed</div>
+                    <div className="rounded-md bg-white px-3 py-3">paired states expose target and retention geometry</div>
                     <div className="text-center text-[#8A8F86]">-&gt;</div>
-                    <div className="rounded-md bg-white px-3 py-3">small learned actuator changes only selected layers</div>
+                    <div className="rounded-md bg-white px-3 py-3">learned receptor maps control state to layer local modulation</div>
                     <div className="text-center text-[#8A8F86]">-&gt;</div>
-                    <div className="rounded-md bg-white px-3 py-3">neutral KL and held out checks constrain what must not move</div>
+                    <div className="rounded-md bg-white px-3 py-3">neutral KL, key retention, and held out truth checks anchor behavior</div>
                   </div>
-                  <p className="mt-4 text-sm leading-6 text-[#626760]">This separates monitor from actuator. The probe decides when to act; the learned actuator decides how to act.</p>
+                  <p className="mt-4 text-sm leading-6 text-[#626760]">This separates monitor from actuator. The reader decides whether to act; the receptor defines how the model may move.</p>
                 </div>
               </div>
             </div>
-            <figcaption className="mx-auto mt-5 w-full max-w-[calc(100vw_-_2.5rem)] text-sm leading-7 text-[#5F635D] md:max-w-3xl">The practical lesson was architectural. The most stable runtime steering pattern was gated, low gain, and trained or selected with retention anchors. KL here means a constraint on neutral prompts: after steering, the model&apos;s next token distribution should stay close to the unsteered model. This is different from directly steering along a readable probe direction.</figcaption>
+            <figcaption className="mx-auto mt-5 w-full max-w-[calc(100vw_-_2.5rem)] text-sm leading-7 text-[#5F635D] md:max-w-3xl">The practical lesson was architectural. A readable direction is a monitor. A receptor or wire is an actuator trained with anchors for what should not change. The current actuator is still narrow: it works best as a local, low gain nudge when the desired basin is nearby, not as a general repair.</figcaption>
           </figure>
 
           <div className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] space-y-7 text-[1.04rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.1rem] md:leading-9">
-            <p>This is not an argument against finetuning. A properly designed finetune can be the right repair. The point is that any repair, whether a finetune or a runtime intervention, needs an explicit retention objective and unrelated behavior checks. Otherwise the model can learn the visible target behavior while quietly moving other boundaries.</p>
+            <p>This is not an argument against finetuning. A properly designed finetune can be the right repair. The point is that any repair, whether a finetune or a runtime intervention, needs explicit conservation constraints. Otherwise the model can learn the visible target behavior while quietly moving other boundaries.</p>
 
-            <p>The best path forward is therefore not simply &quot;find the truth direction and push it.&quot; It is to train a controller that learns when a hidden state calls for intervention, which actuator should be used, how much steering is enough, and what parts of behavior must remain unchanged. That is much closer to a world model controller than to a probe.</p>
+            <p>The current receptor results are narrow but informative. They suggest the right next actuator is not a stronger raw direction, but a trained control port with paired frame data, key retention, neutral KL, and pressure tests. In world model terms, this is the difference between reading a coordinate and learning the allowed transition inside that coordinate.</p>
           </div>
         </section>
       </article>
