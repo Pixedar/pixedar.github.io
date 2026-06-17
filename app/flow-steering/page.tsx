@@ -298,7 +298,7 @@ export default function FlowSteeringPage() {
             </p>
 
             <p>
-              The implementation pattern is not &ldquo;take the x/y/z labels from TraceScope and make those labels bigger.&rdquo;
+              The implementation pattern is not to treat the three TraceScope axis labels as direct steering knobs.
               Real text samples are first used twice. They are embedded to build the semantic flow, and they are also run
               through Qwen to collect hidden states at selected layers. A linear model is then fit on those real samples,
               so a position or transition in the semantic space can be translated into a direction in Qwen&apos;s residual
@@ -416,16 +416,6 @@ export default function FlowSteeringPage() {
               into</em>. That is the effect the controller test is meant to isolate.
             </figcaption>
           </figure>
-
-          <div className={bodyText}>
-            <p className="rounded-lg border border-[#B86A5F]/20 bg-[#F7ECE8] px-4 py-4 text-[#8A3F37]">
-              This is a flow-controller prototype on projected data, meant to make the control problem visible and
-              testable — not a deployed activation controller. The flow is learned from a 240-path sample, the trajectories
-              are integrated through the fitted field rather than through a live model, and the numbers are illustrative.
-              The supported claim is narrower: a learned controller can identify a risky transition, choose a calibrated
-              small correction near a basin boundary, and produce a different projected endpoint in the fitted dynamics.
-            </p>
-          </div>
         </section>
       </article>
     </main>
