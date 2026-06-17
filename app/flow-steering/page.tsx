@@ -105,14 +105,14 @@ export default function FlowSteeringPage() {
             <p>
               The hidden-state safety essay makes a claim that a probe alone cannot satisfy: knowing the model is in a risky hidden state
               does not tell you <strong className="font-semibold text-[#171A16]">which way to push</strong>. To choose a
-              correction you need something that predicts the consequences of an action — a small world model of how the
-              conversation will evolve.
+              correction, the controller needs a learned relation between the current trajectory, its likely continuation,
+              and the hidden-state intervention that changes the continuation.
             </p>
 
             <p>
-              This page builds that world model from data and uses it as a controller. Take many real conversations. Lay
-              each one out as a <strong className="font-semibold text-[#171A16]">trajectory</strong> through a learned
-              semantic space. From the cloud of these trajectories, learn the{" "}
+              This page estimates that relation from data and visualizes it as a flow controller. Take many real
+              conversations. Lay each one out as a <strong className="font-semibold text-[#171A16]">trajectory</strong>{" "}
+              through a learned semantic space. From the cloud of these trajectories, learn the{" "}
               <strong className="font-semibold text-[#171A16]">flow</strong>: at any region, which way do conversations
               there tend to move next? Find the <strong className="font-semibold text-[#171A16]">attractors</strong> — the
               basins the flow keeps pulling toward — and mark which of them are dangerous, in the sense that conversations
@@ -123,9 +123,8 @@ export default function FlowSteeringPage() {
               Then the control loop is simple to state: when a live trajectory is being dragged toward a dangerous
               attractor, apply the smallest push that tips it across the boundary into a safer basin — and let the natural
               flow carry it the rest of the way. Because the intervention is{" "}
-              <strong className="font-semibold text-[#171A16]">proactive</strong>, it can be tiny. We do not wait for
-              safety to collapse and then fight the field; we nudge early, while the field is still gentle, and change the
-              destination.
+              <strong className="font-semibold text-[#171A16]">proactive</strong>, it can be small: the test is whether an
+              early correction near a basin boundary changes the final basin without forcing the whole path by hand.
             </p>
           </div>
         </section>
@@ -202,8 +201,8 @@ export default function FlowSteeringPage() {
               On this particular run, TraceScope named the three emergent axes <em>assistant prevalence</em>,{" "}
               <em>informativeness level</em>, and <em>violation domain</em>, and the turns fell into regions like{" "}
               <em>refusing harmful requests</em>, <em>dangerous predatory content</em>, and{" "}
-              <em>sexual boundary violations</em>. Those labels are discovered from the data, not imposed — which is the
-              subject of the next section.
+              <em>sexual boundary violations</em>. Those labels are discovered from the data, not imposed. They are useful
+              diagnostic names for the visible map, not the control vectors used to steer the model.
             </p>
           </div>
         </section>
@@ -292,56 +291,55 @@ export default function FlowSteeringPage() {
 
             <p>
               There are <strong className="font-semibold text-[#1F2420]">two separate geometries</strong>. One is the
-              TraceScope flow landscape you can rotate above — the controller&apos;s map. The other is the target
+              TraceScope flow landscape you can rotate above — the controller&apos;s map and readout. The other is the target
               language model&apos;s <strong className="font-semibold text-[#1F2420]">hidden-state space</strong>, where
               text is actually generated. They are not the same space, and there is no shared coordinate system between
-              them. What connects them is a <em>control signal</em>, not an embedding.
+              them. What connects them is a learned action pattern, not the names of the three visible axes.
             </p>
 
             <p>
-              Concretely (this is the mechanism from the companion{" "}
-              <a href="https://github.com/Pixedar" target="_blank" rel="noopener noreferrer" className={linkClass}>
-                EmotionsSteering
-              </a>{" "}
-              work): a point in the flow landscape gives normalized coordinates along the named axes,{" "}
-              <code>(c₁, c₂, c₃)</code>. Those are turned into an additive change to the residual stream,
-            </p>
-
-            <p className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] px-5 py-2 text-center font-mono text-base text-[#1F2420] md:max-w-2xl">
-              Δ = α · Σ&nbsp;(cᵢ − 0.5) · vᵢ
+              The implementation pattern is not &ldquo;take the x/y/z labels from TraceScope and make those labels bigger.&rdquo;
+              Real text samples are first used twice. They are embedded to build the semantic flow, and they are also run
+              through Qwen to collect hidden states at selected layers. A linear model is then fit on those real samples,
+              so a position or transition in the semantic space can be translated into a direction in Qwen&apos;s residual
+              stream. The readable axis names are only a diagnostic summary of the projection.
             </p>
 
             <p>
-              and a forward hook adds <code>Δ</code> to a chosen transformer block (or a few) <em>during generation</em>.
-              The target model is really being moved through its own activations — this is hidden-state steering, not
-              prompt engineering.
+              For the safety version, the action direction is learned from paired hidden-state contrasts: unsafe
+              continuation versus same-topic safe continuation, with an explicit off-topic-safe contrast to measure the
+              &ldquo;just change the subject&rdquo; failure mode. The raw safety direction is then cleaned by projecting out the
+              topic-content subspace and the off-topic direction before it is used as an actuator:
+            </p>
+
+            <p className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] px-5 py-2 text-center font-mono text-sm leading-7 text-[#1F2420] md:max-w-2xl md:text-base">
+              u_safe = PCA(unsafe - safe_same_topic)
+              <br />
+              u_action = project_out(topic, off_topic, u_safe)
+              <br />
+              h_layer = h_layer - alpha * u_action
             </p>
 
             <p>
-              <strong className="font-semibold text-[#1F2420]">The crucial part is where the vᵢ come from.</strong> Each
-              axis direction <code>vᵢ</code> is <em>trained from real examples</em>: you take real conversations that sit
-              high versus low on that axis and learn the direction from the difference between their actual hidden
-              activations. It is <em>not</em> the embedding of the axis&apos;s label word. Steering toward the string
-              &ldquo;maliciousness&rdquo; would just be a fancy form of prompt-steering — pushing the model toward how the
-              <em> word</em> is represented. Steering along a probe learned from real malicious-vs-benign activations moves
-              the model along the feature it genuinely uses internally. That difference is exactly why a readable axis
-              label is not, by itself, a usable control handle — the lesson from the hidden-state safety action-coupling
-              tests.
+              A forward hook applies that small delta at chosen middle layers during generation. A separate monitor probe
+              can decide <em>when</em> the unsafe-basin probability is high enough to apply the correction, but the monitor
+              is not automatically trusted as the actuator. This separation matters: a probe can be a good readout while
+              its weight vector is still a bad control handle.
             </p>
 
             <p>
-              Two more properties keep it honest. The intervention is <em>additive residual steering</em>, the simplest
-              representation-engineering actuator, so its strength <code>α</code> must be calibrated — pushed too hard it
-              shoves the hidden state off the model&apos;s normal manifold and damages unrelated behavior. And it is meant
-              to be <em>conditional</em>: the controller steers only when its detector sees the trajectory drifting toward
-              a dangerous basin, which is what keeps the total intervention as small as the result below shows.
+              The same lesson shows up in the later receptor experiments: a cleaner actuator is not a stronger global
+              concept vector, but a trained control port. A small receptor, head gate, or narrow LoRA can learn a
+              layer-specific perturbation pattern while the base model stays mostly fixed and retention losses keep the
+              change small. The correction is a local mathematical delta in the receiving layer, not a rewrite of the
+              model&apos;s general idea of safety, emotion, or morality.
             </p>
 
             <p>
-              So the blue path peeling away from the amber one is a <em>projection of an activation-space policy</em>. The
-              flow decides <em>when</em> to act and <em>which direction</em> the correction points; the actuator realizes
-              that as a small, learned edit to the residual stream; and the 3D divergence is just what that policy looks
-              like once you flatten it into a picture you can rotate.
+              So the blue path peeling away from the amber one is a <em>projection of a learned hidden-state policy</em>.
+              The controller estimates where the trajectory is going, chooses a small action in the model&apos;s activation
+              space, and only after that do we embed or project the result back into 3D to see whether the path actually
+              diverged.
             </p>
           </div>
         </section>
@@ -413,19 +411,19 @@ export default function FlowSteeringPage() {
               </div>
             </div>
             <figcaption className="mx-auto mt-5 w-full max-w-[calc(100vw_-_2.5rem)] text-sm leading-7 text-[#5F635D] md:max-w-3xl">
-              The point is not the size of the safety gain — it is the ratio. A proactive nudge worth a tenth of the
-              natural motion changes <em>which basin the conversation falls into</em>. Minimal input, divergent outcome —
-              exactly what a predictive controller buys you over a reactive one.
+              The point is not the absolute size of the safety gain, but the boundary-crossing behavior. In this fitted
+              flow, a correction worth about a tenth of the natural motion changes <em>which basin the conversation falls
+              into</em>. That is the effect the controller test is meant to isolate.
             </figcaption>
           </figure>
 
           <div className={bodyText}>
             <p className="rounded-lg border border-[#B86A5F]/20 bg-[#F7ECE8] px-4 py-4 text-[#8A3F37]">
-              This is a flow-model prototype on projected data, meant to make the controller idea visible and testable —
-              not a deployed activation controller. The flow is learned from a 240-path sample, the trajectories are
-              integrated through the fitted field rather than through a live model, and the numbers are illustrative. The
-              honest claim is the mechanism: a learned world model can decide a minimal, proactive correction, and a small
-              correction near a basin boundary is enough to change the outcome.
+              This is a flow-controller prototype on projected data, meant to make the control problem visible and
+              testable — not a deployed activation controller. The flow is learned from a 240-path sample, the trajectories
+              are integrated through the fitted field rather than through a live model, and the numbers are illustrative.
+              The supported claim is narrower: a learned controller can identify a risky transition, choose a calibrated
+              small correction near a basin boundary, and produce a different projected endpoint in the fitted dynamics.
             </p>
           </div>
         </section>
