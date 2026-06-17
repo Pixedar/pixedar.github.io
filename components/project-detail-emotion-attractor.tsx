@@ -9,6 +9,7 @@ import {
   Maximize2,
   Music2,
   Sparkles,
+  SkipForward,
   X,
   ChevronLeft,
   ChevronRight,
@@ -136,6 +137,7 @@ export function ProjectDetailEmotionAttractor() {
   const appVideoRef = useRef<HTMLVideoElement | null>(null)
   const [appMuted, setAppMuted] = useState(true)
   const [appPaused, setAppPaused] = useState(true)
+  const [showAppSkipIntro, setShowAppSkipIntro] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const [muted, setMuted] = useState(true)
@@ -224,6 +226,7 @@ export function ProjectDetailEmotionAttractor() {
     const v = appVideoRef.current
     if (!v) return
     await startVideoWithSound(v, 0.9, setAppMuted, setAppPaused)
+    setShowAppSkipIntro(!v.paused && v.currentTime < 56)
   }
 
   const pauseAppVideo = () => {
@@ -231,6 +234,15 @@ export function ProjectDetailEmotionAttractor() {
     if (!v) return
     v.pause()
     setAppPaused(true)
+    setShowAppSkipIntro(false)
+  }
+
+  const skipAppIntro = () => {
+    const v = appVideoRef.current
+    if (!v) return
+    v.currentTime = 56
+    setShowAppSkipIntro(false)
+    if (v.paused) void playAppVideo()
   }
 
   const playSculptureVideo = async () => {
@@ -366,13 +378,24 @@ export function ProjectDetailEmotionAttractor() {
                 <video
                   ref={appVideoRef}
                   src="/videos/emotion-attractor/app_demo.mp4"
-                  poster="/emotion-attractor-composite.png"
+                  poster="/videos/emotion-attractor/app_demo_poster_2m58.jpg"
                   preload="metadata"
                   playsInline
                   loop
                   muted={appMuted}
-                  onPlay={() => setAppPaused(false)}
-                  onPause={() => setAppPaused(true)}
+                  onPlay={() => {
+                    const v = appVideoRef.current
+                    setAppPaused(false)
+                    setShowAppSkipIntro(Boolean(v && v.currentTime < 56))
+                  }}
+                  onPause={() => {
+                    setAppPaused(true)
+                    setShowAppSkipIntro(false)
+                  }}
+                  onTimeUpdate={() => {
+                    const v = appVideoRef.current
+                    setShowAppSkipIntro(Boolean(v && !v.paused && v.currentTime < 56))
+                  }}
                   className={`w-full h-auto block pointer-events-none transition duration-500 ${
                     appPaused ? "scale-[1.02] blur-[3px] brightness-[0.62]" : "scale-100 blur-0 brightness-100"
                   }`}
@@ -402,6 +425,25 @@ export function ProjectDetailEmotionAttractor() {
                     >
                       Watch toward the end to see how these paths create a flow field model.
                     </span>
+                  </button>
+                ) : null}
+
+                {showAppSkipIntro ? (
+                  <button
+                    type="button"
+                    onClick={skipAppIntro}
+                    className="absolute top-3 right-3 z-30 inline-flex h-8 max-w-[calc(100%-1.5rem)] items-center gap-1.5 rounded-full px-2.5 text-[11px] font-medium text-white/80 transition hover:bg-black/60 hover:text-white"
+                    style={{
+                      backgroundColor: "rgba(0,0,0,0.42)",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      boxShadow: "0 6px 16px rgba(0,0,0,0.20)",
+                    }}
+                    aria-label="Skip intro and jump to trajectory"
+                    title="Skip intro and jump to trajectory"
+                  >
+                    <SkipForward className="h-3.5 w-3.5" />
+                    <span className="truncate">Skip to trajectory</span>
+                    <span className="text-white/45">0:56</span>
                   </button>
                 ) : null}
 
