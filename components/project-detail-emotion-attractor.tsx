@@ -397,8 +397,8 @@ export function ProjectDetailEmotionAttractor() {
                 <strong className="font-semibold" style={{ color: "#1a1a1a" }}>
                   emotion-tuned semantic embedding model
                 </strong>{" "}
-                fine-tuned around human affect, so entries are positioned by emotional meaning rather than surface-level
-                wording or syntax. A{" "}
+                setup: the encoder is fine-tuned around human affect and paired with a task-specific embedding prompt,
+                so the coordinates emphasize appraisal, intensity, regulation, and recurring emotional-state patterns. A{" "}
                 <strong className="font-semibold" style={{ color: "#1a1a1a" }}>
                   learned flow model
                 </strong>{" "}
