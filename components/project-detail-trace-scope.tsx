@@ -1,4 +1,5 @@
 import type React from "react"
+import Image from "next/image"
 import { ExternalLink, Github, Route } from "lucide-react"
 
 function PillLink({
@@ -47,6 +48,17 @@ export function ProjectDetailTraceScope() {
             <ExternalLink className="h-4 w-4" />
             Public URL
           </PillLink>
+        </div>
+
+        <div className="overflow-hidden border-2 border-black bg-black">
+          <Image
+            src="/flow-steering/prm-demo-v2.gif"
+            alt="TraceScope PRM800K RBF flow visualization"
+            width={950}
+            height={534}
+            unoptimized
+            className="block h-auto w-full"
+          />
         </div>
 
         <div className="border-2 border-black bg-black">

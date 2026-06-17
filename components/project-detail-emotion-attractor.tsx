@@ -38,22 +38,6 @@ const INNER_GLOW_STYLE: React.CSSProperties = {
   boxShadow: "inset 0 1px 2px rgba(255, 255, 255, 0.12)",
 }
 
-/**
- * The modal scrolls inside its own container.
- * Find the nearest scroll parent so IntersectionObserver triggers correctly.
- */
-function getScrollParent(el: HTMLElement | null): HTMLElement | null {
-  if (!el) return null
-  let cur: HTMLElement | null = el.parentElement
-  while (cur) {
-    const style = window.getComputedStyle(cur)
-    const oy = style.overflowY
-    if (oy === "auto" || oy === "scroll") return cur
-    cur = cur.parentElement
-  }
-  return null
-}
-
 function useTiltHandlers() {
   const raf = useRef<number | null>(null)
 
@@ -150,171 +134,18 @@ export function ProjectDetailEmotionAttractor() {
 
   // Videos
   const appVideoRef = useRef<HTMLVideoElement | null>(null)
-  const appVideoWrapRef = useRef<HTMLDivElement | null>(null)
-  const shouldPlayAppVideoRef = useRef(false)
-  const [appMuted, setAppMuted] = useState(false)
-  const [appPaused, setAppPaused] = useState(false)
-  const appUserPausedRef = useRef(false)
+  const [appMuted, setAppMuted] = useState(true)
+  const [appPaused, setAppPaused] = useState(true)
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
-  const videoWrapRef = useRef<HTMLDivElement | null>(null)
-  const shouldPlayRef = useRef(false)
-  const [muted, setMuted] = useState(false)
-  const [paused, setPaused] = useState(false)
+  const [muted, setMuted] = useState(true)
+  const [paused, setPaused] = useState(true)
   const [alphaOpen, setAlphaOpen] = useState(false)
 
   // Replace with your own Google Form embed link (works best with "?embedded=true")
   const ALPHA_FORM_URL =
     process.env.NEXT_PUBLIC_EMOTION_ATTRACTOR_ALPHA_FORM_URL ??
     "https://docs.google.com/forms/d/e/1FAIpQLScZvt_NKFrZr3PVIENcOo5WDMk5OeGcd34T03c5XFm0WrsRVw/viewform?embedded=true"
-  const userPausedRef = useRef(false)
-
-  // ✅ Autoplay only when visible inside modal scroll container; loop; no controls.
-  useEffect(() => {
-    const wrap = appVideoWrapRef.current
-    const video = appVideoRef.current
-    if (!wrap || !video) return
-
-    video.playsInline = true
-    video.loop = true
-
-    const attemptPlay = async () => {
-      const v = appVideoRef.current
-      if (!v) return
-      if (!shouldPlayAppVideoRef.current) return
-      if (appUserPausedRef.current) return
-
-      try {
-        await v.play()
-      } catch {
-        // If autoplay fails (usually because sound), force mute and try again
-        v.muted = true
-        setAppMuted(true)
-        try {
-          await v.play()
-        } catch {
-          // ignore
-        }
-      }
-    }
-
-    const onCanPlay = () => {
-      if (shouldPlayAppVideoRef.current) void attemptPlay()
-    }
-    video.addEventListener("canplay", onCanPlay)
-
-    const root = getScrollParent(wrap)
-    const obs = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0]
-        if (!entry) return
-
-        const visible = entry.isIntersecting && entry.intersectionRatio >= 0.15
-        shouldPlayAppVideoRef.current = visible
-
-        if (visible) {
-          // Try to play with sound the first time the section is in view.
-          // If the browser blocks autoplay-with-sound, the fallback in attemptPlay will safely mute.
-          void attemptPlay()
-        } else {
-          video.pause()
-        }
-      },
-      {
-        root,
-        threshold: [0, 0.15, 0.3, 0.55, 0.8],
-        rootMargin: "0px 0px -10% 0px",
-      },
-    )
-
-    obs.observe(wrap)
-
-    const onVis = () => {
-      const v = appVideoRef.current
-      if (!v) return
-      if (document.hidden) v.pause()
-      else if (shouldPlayAppVideoRef.current) void attemptPlay()
-    }
-    document.addEventListener("visibilitychange", onVis)
-
-    return () => {
-      document.removeEventListener("visibilitychange", onVis)
-      video.removeEventListener("canplay", onCanPlay)
-      obs.disconnect()
-    }
-  }, [])
-
-  useEffect(() => {
-    const wrap = videoWrapRef.current
-    const video = videoRef.current
-    if (!wrap || !video) return
-
-    video.playsInline = true
-    video.loop = true
-
-    const attemptPlay = async () => {
-      const v = videoRef.current
-      if (!v) return
-      if (!shouldPlayRef.current) return
-      if (userPausedRef.current) return
-
-      try {
-        await v.play()
-      } catch {
-        // If autoplay fails (usually because sound), force mute and try again
-        v.muted = true
-        setMuted(true)
-        try {
-          await v.play()
-        } catch {
-          // ignore
-        }
-      }
-    }
-
-    const onCanPlay = () => {
-      if (shouldPlayRef.current) void attemptPlay()
-    }
-    video.addEventListener("canplay", onCanPlay)
-
-    const root = getScrollParent(wrap)
-    const obs = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0]
-        if (!entry) return
-
-        const visible = entry.isIntersecting && entry.intersectionRatio >= 0.15
-        shouldPlayRef.current = visible
-
-        if (visible) {
-          void attemptPlay()
-        } else {
-          video.pause()
-        }
-      },
-      {
-        root,
-        threshold: [0, 0.15, 0.3, 0.55, 0.8],
-        rootMargin: "0px 0px -10% 0px",
-      },
-    )
-
-    obs.observe(wrap)
-
-    const onVis = () => {
-      const v = videoRef.current
-      if (!v) return
-      if (document.hidden) v.pause()
-      else if (shouldPlayRef.current) void attemptPlay()
-    }
-    document.addEventListener("visibilitychange", onVis)
-
-    return () => {
-      document.removeEventListener("visibilitychange", onVis)
-      video.removeEventListener("canplay", onCanPlay)
-      obs.disconnect()
-    }
-  }, [])
 
   // Keep actual element muted in sync with state.
   // Sculpture Evolution video plays at reduced volume so it doesn't overpower.
@@ -322,13 +153,14 @@ export function ProjectDetailEmotionAttractor() {
     const v = videoRef.current
     if (!v) return
     v.muted = muted
-    v.volume = 0.15
+    v.volume = 0.35
   }, [muted])
 
   useEffect(() => {
     const v = appVideoRef.current
     if (!v) return
     v.muted = appMuted
+    v.volume = 0.9
   }, [appMuted])
 
   // Lightbox keyboard controls
@@ -347,6 +179,72 @@ export function ProjectDetailEmotionAttractor() {
 
   const goPrev = () => setLightboxIndex((i) => (i === null ? 0 : (i - 1 + sculptures.length) % sculptures.length))
   const goNext = () => setLightboxIndex((i) => (i === null ? 0 : (i + 1) % sculptures.length))
+
+  const startVideoWithSound = async (
+    v: HTMLVideoElement,
+    volume: number,
+    setMutedState: React.Dispatch<React.SetStateAction<boolean>>,
+    setPausedState: React.Dispatch<React.SetStateAction<boolean>>,
+  ) => {
+    const playAttempt = async () => {
+      const playPromise = v.play()
+      if (playPromise && typeof playPromise.then === "function") {
+        playPromise.catch(() => {})
+        await Promise.race([
+          playPromise,
+          new Promise<never>((_, reject) => {
+            window.setTimeout(() => reject(new Error("play-timeout")), 700)
+          }),
+        ])
+      }
+      if (v.paused) throw new Error("play-paused")
+    }
+
+    v.muted = false
+    v.volume = volume
+    setMutedState(false)
+
+    try {
+      await playAttempt()
+      setPausedState(false)
+    } catch {
+      v.muted = true
+      setMutedState(true)
+
+      try {
+        await playAttempt()
+        setPausedState(false)
+      } catch {
+        setPausedState(true)
+      }
+    }
+  }
+
+  const playAppVideo = async () => {
+    const v = appVideoRef.current
+    if (!v) return
+    await startVideoWithSound(v, 0.9, setAppMuted, setAppPaused)
+  }
+
+  const pauseAppVideo = () => {
+    const v = appVideoRef.current
+    if (!v) return
+    v.pause()
+    setAppPaused(true)
+  }
+
+  const playSculptureVideo = async () => {
+    const v = videoRef.current
+    if (!v) return
+    await startVideoWithSound(v, 0.35, setMuted, setPaused)
+  }
+
+  const pauseSculptureVideo = () => {
+    const v = videoRef.current
+    if (!v) return
+    v.pause()
+    setPaused(true)
+  }
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -462,7 +360,7 @@ export function ProjectDetailEmotionAttractor() {
 
             {/* Video card (left on desktop, below description on mobile) */}
             <div className="w-full md:flex-[0_0_56%] md:max-w-[56%] order-2 md:order-1 md:pr-2">
-              <div ref={appVideoWrapRef} className="relative overflow-hidden bg-white" style={MEDIA_CARD_STYLE}>
+              <div className="relative overflow-hidden bg-white" style={MEDIA_CARD_STYLE}>
                 <div className="absolute inset-0 pointer-events-none" style={INNER_GLOW_STYLE} />
 
                 <video
@@ -471,22 +369,54 @@ export function ProjectDetailEmotionAttractor() {
                   poster="/emotion-attractor-composite.png"
                   preload="metadata"
                   playsInline
+                  loop
                   muted={appMuted}
-                  className="w-full h-auto block pointer-events-none"
+                  onPlay={() => setAppPaused(false)}
+                  onPause={() => setAppPaused(true)}
+                  className={`w-full h-auto block pointer-events-none transition duration-500 ${
+                    appPaused ? "scale-[1.02] blur-[3px] brightness-[0.62]" : "scale-100 blur-0 brightness-100"
+                  }`}
                 />
+
+                {appPaused ? (
+                  <button
+                    type="button"
+                    onClick={() => void playAppVideo()}
+                    className="absolute inset-0 z-20 flex flex-col items-center justify-center px-6 text-center"
+                    aria-label="Play Android app walkthrough"
+                    title="Play Android app walkthrough"
+                  >
+                    <span
+                      className="flex h-16 w-16 items-center justify-center rounded-full transition-transform duration-200 hover:scale-105"
+                      style={{
+                        backgroundColor: "rgba(26, 26, 26, 0.88)",
+                        border: "1px solid rgba(255,255,255,0.25)",
+                        boxShadow: "0 12px 28px rgba(0,0,0,0.36)",
+                      }}
+                    >
+                      <Play className="ml-1 h-8 w-8 text-white" />
+                    </span>
+                    <span
+                      className="mt-3 max-w-[24rem] text-sm font-medium leading-snug text-white"
+                      style={{ textShadow: "0 2px 10px rgba(0,0,0,0.75)" }}
+                    >
+                      Watch toward the end to see how these paths create a flow field model.
+                    </span>
+                  </button>
+                ) : null}
 
                 {/* Mute / unmute (left) */}
                 <button
                   type="button"
                   onClick={() => {
-                    setAppMuted((m) => !m)
-                    const v = appVideoRef.current
-                    if (v && shouldPlayAppVideoRef.current) {
-                      const p = v.play()
-                      if (p && typeof p.catch === "function") p.catch(() => {})
-                    }
+                    setAppMuted((m) => {
+                      const next = !m
+                      const v = appVideoRef.current
+                      if (v) v.muted = next
+                      return next
+                    })
                   }}
-                  className="absolute bottom-3 left-3 w-11 h-11 flex items-center justify-center"
+                  className="absolute bottom-3 left-3 z-30 w-11 h-11 flex items-center justify-center"
                   style={{
                     borderRadius: 12,
                     backgroundColor: "rgba(26, 26, 26, 0.86)",
@@ -503,21 +433,12 @@ export function ProjectDetailEmotionAttractor() {
                 <button
                   type="button"
                   onClick={() => {
-                    setAppPaused((p) => {
-                      const next = !p
-                      appUserPausedRef.current = next
-                      const v = appVideoRef.current
-                      if (v) {
-                        if (next) v.pause()
-                        else if (shouldPlayAppVideoRef.current) {
-                          const pr = v.play()
-                          if (pr && typeof (pr as any).catch === "function") (pr as any).catch(() => {})
-                        }
-                      }
-                      return next
-                    })
+                    const v = appVideoRef.current
+                    if (!v) return
+                    if (appPaused || v.paused) void playAppVideo()
+                    else pauseAppVideo()
                   }}
-                  className="absolute bottom-3 right-3 w-11 h-11 flex items-center justify-center"
+                  className="absolute bottom-3 right-3 z-30 w-11 h-11 flex items-center justify-center"
                   style={{
                     borderRadius: 12,
                     backgroundColor: "rgba(26, 26, 26, 0.86)",
@@ -728,7 +649,7 @@ export function ProjectDetailEmotionAttractor() {
 
             {/* Video card (left on desktop, below description on mobile) */}
             <div className="w-full md:flex-[0_0_56%] md:max-w-[56%] order-2 md:order-1 md:pr-2">
-              <div ref={videoWrapRef} className="relative overflow-hidden bg-white" style={MEDIA_CARD_STYLE}>
+              <div className="relative overflow-hidden bg-white" style={MEDIA_CARD_STYLE}>
                 <div className="absolute inset-0 pointer-events-none" style={INNER_GLOW_STYLE} />
 
                 <video
@@ -737,22 +658,48 @@ export function ProjectDetailEmotionAttractor() {
                   poster="/emotion-attractor-composite.png"
                   preload="metadata"
                   playsInline
+                  loop
                   muted={muted}
-                  className="w-full h-auto block pointer-events-none"
+                  onPlay={() => setPaused(false)}
+                  onPause={() => setPaused(true)}
+                  className={`w-full h-auto block pointer-events-none transition duration-500 ${
+                    paused ? "scale-[1.02] blur-[3px] brightness-[0.62]" : "scale-100 blur-0 brightness-100"
+                  }`}
                 />
+
+                {paused ? (
+                  <button
+                    type="button"
+                    onClick={() => void playSculptureVideo()}
+                    className="absolute inset-0 z-20 flex items-center justify-center"
+                    aria-label="Play sculpture evolution video"
+                    title="Play sculpture evolution video"
+                  >
+                    <span
+                      className="flex h-16 w-16 items-center justify-center rounded-full transition-transform duration-200 hover:scale-105"
+                      style={{
+                        backgroundColor: "rgba(26, 26, 26, 0.88)",
+                        border: "1px solid rgba(255,255,255,0.25)",
+                        boxShadow: "0 12px 28px rgba(0,0,0,0.36)",
+                      }}
+                    >
+                      <Play className="ml-1 h-8 w-8 text-white" />
+                    </span>
+                  </button>
+                ) : null}
 
                 {/* Mute / unmute (left) */}
                 <button
                   type="button"
                   onClick={() => {
-                    setMuted((m) => !m)
-                    const v = videoRef.current
-                    if (v && shouldPlayRef.current) {
-                      const p = v.play()
-                      if (p && typeof p.catch === "function") p.catch(() => {})
-                    }
+                    setMuted((m) => {
+                      const next = !m
+                      const v = videoRef.current
+                      if (v) v.muted = next
+                      return next
+                    })
                   }}
-                  className="absolute bottom-3 left-3 w-11 h-11 flex items-center justify-center"
+                  className="absolute bottom-3 left-3 z-30 w-11 h-11 flex items-center justify-center"
                   style={{
                     borderRadius: 12,
                     backgroundColor: "rgba(26, 26, 26, 0.86)",
@@ -769,21 +716,12 @@ export function ProjectDetailEmotionAttractor() {
                 <button
                   type="button"
                   onClick={() => {
-                    setPaused((p) => {
-                      const next = !p
-                      userPausedRef.current = next
-                      const v = videoRef.current
-                      if (v) {
-                        if (next) v.pause()
-                        else if (shouldPlayRef.current) {
-                          const pr = v.play()
-                          if (pr && typeof (pr as any).catch === "function") (pr as any).catch(() => {})
-                        }
-                      }
-                      return next
-                    })
+                    const v = videoRef.current
+                    if (!v) return
+                    if (paused || v.paused) void playSculptureVideo()
+                    else pauseSculptureVideo()
                   }}
-                  className="absolute bottom-3 right-3 w-11 h-11 flex items-center justify-center"
+                  className="absolute bottom-3 right-3 z-30 w-11 h-11 flex items-center justify-center"
                   style={{
                     borderRadius: 12,
                     backgroundColor: "rgba(26, 26, 26, 0.86)",
@@ -821,6 +759,17 @@ export function ProjectDetailEmotionAttractor() {
           <p className="text-lg leading-relaxed" style={{ color: "#4a4a4a" }}>
             Give it chatbot conversations, agent traces, news headlines, research papers, support logs, or anything ordered — TraceScope embeds them, discovers clusters with labeled semantic axes, learns a continuous flow field over 3D semantic space using Mixture Density Networks, and lets you visualize not just where texts are, but how meaning tends to move between them. It ships with an interactive 3D renderer and a lightweight programmatic API for integration into LLM agents, observability pipelines, and research tools.
           </p>
+
+          <div className="relative overflow-hidden bg-black" style={MEDIA_CARD_STYLE}>
+            <Image
+              src="/flow-steering/prm-demo-v2.gif"
+              alt="TraceScope PRM800K flow-field visualization"
+              width={950}
+              height={534}
+              unoptimized
+              className="block h-auto w-full"
+            />
+          </div>
 
           <div className="flex flex-wrap gap-3 justify-center">
             <PillLink href="https://github.com/Pixedar/TraceScope">
