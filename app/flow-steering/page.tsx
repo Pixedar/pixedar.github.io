@@ -103,23 +103,22 @@ export default function FlowSteeringPage() {
 
           <div className="w-full space-y-7 text-[1.08rem] leading-8 text-[#30352E] md:text-[1.16rem] md:leading-9">
             <p>
-              Lay conversations out as paths through a learned map of meaning. From many real paths, learn the{" "}
-              <strong className="font-semibold text-[#171A16]">flow</strong>: at any point, which way similar
-              conversations tend to drift next. Some regions act like basins. Once a path starts sliding into them, the
-              rest of the exchange tends to keep going there.
+              <strong className="font-semibold text-[#171A16]">The one idea.</strong> Lay every conversation out as a
+              path through a learned map of meaning. From thousands of real paths, learn the{" "}
+              <strong className="font-semibold text-[#171A16]">flow</strong>: at any point, which way conversations there
+              tend to drift next. Mark the basins they drain into as safe or dangerous.
             </p>
 
             <p>
-              The safety question is then not only &ldquo;is this message bad?&rdquo; It is{" "}
-              <strong className="font-semibold text-[#171A16]">where is this trajectory heading?</strong> If the path is
-              being pulled toward a basin that ends badly, the useful intervention is a small early nudge that changes
-              which basin it falls into.
+              When a live conversation is drifting toward a dangerous basin, add the smallest possible nudge to the
+              model&apos;s internal state. The nudge should barely move the next-word distribution, yet applied early and
+              repeatedly it can tip the trajectory across the boundary. The model&apos;s own flow carries the rest of the
+              turn.
             </p>
 
             <p>
-              The nudge is applied inside the language model&apos;s hidden state, then projected back into the 3D map so we
-              can see whether the path diverged. The point is not to drag a dot through the picture. The point is to read
-              the drift, apply a tiny activation-space correction, and check whether the destination changed.
+              That is the test this page visualizes: invisible per step, decisive over the path. The 3D view shows the
+              drift and the final divergence; the actual correction happens inside the language model&apos;s hidden state.
             </p>
           </div>
         </section>
@@ -151,14 +150,13 @@ export default function FlowSteeringPage() {
 
           <div className={bodyText}>
             <p className="rounded-lg border border-[#8E5B37]/20 bg-[#F3ECE2] px-4 py-4 text-[#5F4632]">
-              <strong className="font-semibold text-[#4A3725]">Important:</strong> the two paths are
-              <em> not</em> steered by dragging them through these three dimensions. The steering is computed and applied
-              elsewhere — as an activation-space intervention, described in{" "}
+              <strong className="font-semibold text-[#4A3725]">Important:</strong> the two paths come from an
+              activation-space intervention. The browser shows the result after projecting that intervention back into the
+              3D map, as described in{" "}
               <a href="#projection" className={linkClass}>
-                &ldquo;The 3D is a projection&rdquo;
+                &ldquo;Two maps and one lever&rdquo;
               </a>{" "}
-              below — and only <em>then</em> projected back into this 3D view so the effect is visible. The geometry here
-              is the controller&apos;s map for understanding and debugging, not the lever it pulls.
+              below. The visible geometry is the map; the lever lives in the model&apos;s hidden state.
             </p>
           </div>
         </section>
@@ -177,10 +175,10 @@ export default function FlowSteeringPage() {
               <a href="https://www.anthropic.com/news/red-teaming-language-models-to-reduce-harms-methods-scaling-behaviors-and-lessons-learned" target="_blank" rel="noopener noreferrer" className={linkClass}>
                 red-teaming work
               </a>
-              . The reason this dataset fits is structural: every row is a <em>full multi-turn transcript</em>, so it
-              becomes a real trajectory rather than a single point, and it ships transcript-level safety signals
-              (<code>min_harmlessness_score_transcript</code>, red-team rating, tags) that become the scalar field the
-              flow is colored by.
+              . The reason this dataset fits is structural: every row is a <em>full multi-turn transcript</em>, giving
+              the flow real trajectories. It also ships transcript-level safety signals
+              (<code>min_harmlessness_score_transcript</code>, red-team rating, tags) that become the scalar field colored
+              through the flow.
             </p>
 
             <p>
@@ -196,8 +194,8 @@ export default function FlowSteeringPage() {
               On this particular run, TraceScope named the three emergent axes <em>assistant prevalence</em>,{" "}
               <em>informativeness level</em>, and <em>violation domain</em>, and the turns fell into regions like{" "}
               <em>refusing harmful requests</em>, <em>dangerous predatory content</em>, and{" "}
-              <em>sexual boundary violations</em>. Those labels are discovered from the data, not imposed. They are useful
-              diagnostic names for the visible map, not the control vectors used to steer the model.
+              <em>sexual boundary violations</em>. TraceScope discovers those labels from the data. They name the visible
+              map for diagnosis; the control vectors are learned separately from hidden states.
             </p>
           </div>
         </section>
@@ -212,9 +210,9 @@ export default function FlowSteeringPage() {
               <a href="https://github.com/Pixedar/TraceScope" target="_blank" rel="noopener noreferrer" className={linkClass}>
                 TraceScope
               </a>
-              , a tool I built to map the flow of meaning through a collection of texts. It does not just show{" "}
-              <em>where</em> texts sit; it learns <em>how meaning tends to move</em> between them. The pipeline that turns
-              a pile of transcripts into the field above runs in a fixed sequence:
+              , a tool I built to map the flow of meaning through a collection of texts. It maps <em>where</em> texts sit
+              and learns <em>how meaning tends to move</em> between them. The pipeline that turns a pile of transcripts
+              into the field above runs in a fixed sequence:
             </p>
 
             <ol className="mx-auto w-full max-w-[calc(100vw_-_2.5rem)] list-decimal space-y-3 pl-6 text-[1.02rem] leading-8 text-[#343932] md:max-w-3xl md:text-[1.08rem]">
@@ -228,10 +226,9 @@ export default function FlowSteeringPage() {
             </ol>
 
             <p>
-              <strong className="font-semibold text-[#1F2420]">Why a flow, not a cloud.</strong> A scatter of points tells
-              you where conversations have been. A flow field tells you where a conversation is <em>heading</em>. As the
-              essay argues, the danger is usually the transition — the moment a context is being pushed toward a basin
-              where things go wrong — so a model of motion is what lets a controller act before safety collapses.
+              <strong className="font-semibold text-[#1F2420]">Why the flow matters.</strong> A scatter of points tells
+              you where conversations have been. A flow field tells you where a conversation is <em>heading</em>. Danger
+              often lives in the transition: the moment a context starts sliding toward a basin where things go wrong.
             </p>
 
             <p>
@@ -264,40 +261,36 @@ export default function FlowSteeringPage() {
 
           <div className={bodyText}>
             <p className="rounded-lg border border-[#2D8B75]/22 bg-[#F1F7F1] px-4 py-4 text-[#3E5A4A]">
-              <strong className="font-semibold text-[#2F6E55]">The 3D is optional.</strong> Three dimensions is a choice
-              made for human eyes. The steering does not need it: the flow, the attractors, and the corrective direction
-              can all be computed in the higher-dimensional embedding space (and the real intervention lives in an even
-              higher-dimensional activation space). The projection to 3D is a debugging and intuition lens — it lets us
-              <em> see</em> the basin a conversation is falling into and confirm the controller is doing something
-              sensible — but nothing about the control logic depends on the picture being three-dimensional.
+              <strong className="font-semibold text-[#2F6E55]">The 3D is the readout.</strong> Three dimensions are for
+              human eyes. The flow, attractors, and corrective direction can be computed in higher-dimensional embedding
+              space, and the real intervention lives in an even higher-dimensional activation space. The 3D projection is
+              a debugging and intuition lens: it lets us see the basin a conversation is falling into and check whether
+              the correction moved the path.
             </p>
           </div>
         </section>
 
         {/* ── How the steering actually works ── */}
         <section id="projection" className="mx-auto mt-16 w-full scroll-mt-20 border-t border-[#1F2420]/10 pt-16">
-          <SectionTitle eyebrow="Important">The 3D is a projection — the steering is not</SectionTitle>
+          <SectionTitle eyebrow="Mechanism">Two maps and one lever</SectionTitle>
 
           <div className={bodyText}>
             <p>
-              It is tempting to read the animation literally, as if the conversation lived in three dimensions and we
-              dragged a dot to safety. That is not what happens, and the distinction is the whole point.
+              Keep the visible map and the model lever separate. The rotating 3D landscape shows where a conversation is
+              heading, which destinations end badly, and whether the correction landed. The actual lever is the target
+              model&apos;s hidden state, where the text is produced.
             </p>
 
             <p>
-              There are <strong className="font-semibold text-[#1F2420]">two separate geometries</strong>. One is the
-              TraceScope flow landscape you can rotate above — the controller&apos;s map and readout. The other is the target
-              language model&apos;s <strong className="font-semibold text-[#1F2420]">hidden-state space</strong>, where
-              text is actually generated. They are not the same space, and there is no shared coordinate system between
-              them. What connects them is a learned action pattern, not the names of the three visible axes.
+              The two geometries use different coordinates. One is the TraceScope flow landscape; the other is the
+              language model&apos;s activation space. A learned action pattern connects them. Real samples are embedded to
+              build the semantic flow, then run through Qwen to collect hidden states at selected layers.
             </p>
 
             <p>
-              The implementation pattern is not to treat the three TraceScope axis labels as direct steering knobs.
-              Real text samples are first used twice. They are embedded to build the semantic flow, and they are also run
-              through Qwen to collect hidden states at selected layers. A linear model is then fit on those real samples,
-              so a position or transition in the semantic space can be translated into a direction in Qwen&apos;s residual
-              stream. The readable axis names are only a diagnostic summary of the projection.
+              A linear model fit on those real samples translates a position or transition in the semantic space into a
+              direction in Qwen&apos;s residual stream. The readable TraceScope axis names are diagnostic summaries of the
+              projection. The steering direction comes from the hidden states.
             </p>
 
             <p>
@@ -317,17 +310,15 @@ export default function FlowSteeringPage() {
 
             <p>
               A forward hook applies that small delta at chosen middle layers during generation. A separate monitor probe
-              can decide <em>when</em> the unsafe-basin probability is high enough to apply the correction, but the monitor
-              is not automatically trusted as the actuator. This separation matters: a probe can be a good readout while
-              its weight vector is still a bad control handle.
+              decides <em>when</em> the unsafe-basin probability is high enough to apply the correction. The timing signal
+              and the actuator direction are separate objects: a probe can be a good readout while its weight vector is a
+              bad control handle.
             </p>
 
             <p>
-              The same lesson shows up in the later receptor experiments: a cleaner actuator is not a stronger global
-              concept vector, but a trained control port. A small receptor, head gate, or narrow LoRA can learn a
-              layer-specific perturbation pattern while the base model stays mostly fixed and retention losses keep the
-              change small. The correction is a local mathematical delta in the receiving layer, not a rewrite of the
-              model&apos;s general idea of safety, emotion, or morality.
+              The same lesson shows up in the later receptor experiments. A small receptor, head gate, or narrow LoRA can
+              learn a layer-specific perturbation pattern while the base model stays mostly fixed and retention losses
+              keep the change small. The correction stays local: a mathematical delta in the receiving layer.
             </p>
 
             <p>
@@ -406,9 +397,8 @@ export default function FlowSteeringPage() {
               </div>
             </div>
             <figcaption className="mx-auto mt-5 w-full max-w-[calc(100vw_-_2.5rem)] text-sm leading-7 text-[#5F635D] md:max-w-3xl">
-              The point is not the absolute size of the safety gain, but the boundary-crossing behavior. In this fitted
-              flow, a correction worth about a tenth of the natural motion changes <em>which basin the conversation falls
-              into</em>. That is the effect the controller test is meant to isolate.
+              Boundary crossing is the result to watch. In this fitted flow, a correction worth about a tenth of the
+              natural motion changes <em>which basin the conversation falls into</em>.
             </figcaption>
           </figure>
         </section>
