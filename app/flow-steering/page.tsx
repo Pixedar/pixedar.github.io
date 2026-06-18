@@ -99,32 +99,27 @@ export default function FlowSteeringPage() {
 
         {/* ── The idea ── */}
         <section className="mx-auto mt-16 w-full max-w-[calc(100vw_-_2.5rem)] md:max-w-3xl">
-          <SectionTitle eyebrow="The idea">From detection to control</SectionTitle>
+          <SectionTitle eyebrow="The idea">Steering out of a dangerous basin</SectionTitle>
 
           <div className="w-full space-y-7 text-[1.08rem] leading-8 text-[#30352E] md:text-[1.16rem] md:leading-9">
             <p>
-              The hidden-state safety essay makes a claim that a probe alone cannot satisfy: knowing the model is in a risky hidden state
-              does not tell you <strong className="font-semibold text-[#171A16]">which way to push</strong>. To choose a
-              correction, the controller needs a learned relation between the current trajectory, its likely continuation,
-              and the hidden-state intervention that changes the continuation.
+              Lay conversations out as paths through a learned map of meaning. From many real paths, learn the{" "}
+              <strong className="font-semibold text-[#171A16]">flow</strong>: at any point, which way similar
+              conversations tend to drift next. Some regions act like basins. Once a path starts sliding into them, the
+              rest of the exchange tends to keep going there.
             </p>
 
             <p>
-              This page estimates that relation from data and visualizes it as a flow controller. Take many real
-              conversations. Lay each one out as a <strong className="font-semibold text-[#171A16]">trajectory</strong>{" "}
-              through a learned semantic space. From the cloud of these trajectories, learn the{" "}
-              <strong className="font-semibold text-[#171A16]">flow</strong>: at any region, which way do conversations
-              there tend to move next? Find the <strong className="font-semibold text-[#171A16]">attractors</strong> — the
-              basins the flow keeps pulling toward — and mark which of them are dangerous, in the sense that conversations
-              that fall into them end badly.
+              The safety question is then not only &ldquo;is this message bad?&rdquo; It is{" "}
+              <strong className="font-semibold text-[#171A16]">where is this trajectory heading?</strong> If the path is
+              being pulled toward a basin that ends badly, the useful intervention is a small early nudge that changes
+              which basin it falls into.
             </p>
 
             <p>
-              Then the control loop is simple to state: when a live trajectory is being dragged toward a dangerous
-              attractor, apply the smallest push that tips it across the boundary into a safer basin — and let the natural
-              flow carry it the rest of the way. Because the intervention is{" "}
-              <strong className="font-semibold text-[#171A16]">proactive</strong>, it can be small: the test is whether an
-              early correction near a basin boundary changes the final basin without forcing the whole path by hand.
+              The nudge is applied inside the language model&apos;s hidden state, then projected back into the 3D map so we
+              can see whether the path diverged. The point is not to drag a dot through the picture. The point is to read
+              the drift, apply a tiny activation-space correction, and check whether the destination changed.
             </p>
           </div>
         </section>
