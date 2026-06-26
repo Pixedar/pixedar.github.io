@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Safety Flow Steering Ã¢â‚¬â€ live flow</title>
+  <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+  <style>
+    :root{
+      --bg:#0d0e10; --text:#f0f3f2; --muted:#aeb7b4; --line:#2c3138;
+      --good:#30d174; --bad:#ff5c5c; --amber:#ffd166; --blue:#7db0ff;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:var(--bg);overflow:hidden}
+    body{color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+    #app{position:absolute;inset:0}
+    canvas{display:block}
+    .overlay{position:absolute;z-index:5}
+    .chip{
+      left:14px;top:14px;max-width:min(360px,62vw);padding:11px 14px;
+      border:1px solid var(--line);border-radius:10px;background:rgba(13,14,16,.72);
+      backdrop-filter:blur(6px);font-size:12.5px;line-height:1.5;color:var(--muted)
+    }
+    .chip b{color:var(--text);font-weight:600}
+    .chip .delta{color:var(--good);font-weight:700}
+    .legend{
+      left:14px;bottom:14px;display:flex;flex-direction:column;gap:7px;padding:11px 13px;
+      border:1px solid var(--line);border-radius:10px;background:rgba(13,14,16,.72);
+      backdrop-filter:blur(6px);font-size:12px;color:var(--muted)
+    }
+    .key{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+    .swatch{width:22px;height:3px;border-radius:2px;display:inline-block}
+    .dot{width:9px;height:9px;border-radius:50%;display:inline-block;border:1px solid #fff}
+    .hint{right:14px;bottom:14px;font-size:11.5px;color:#7f8682;opacity:.85}
+    .err{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+      text-align:center;padding:24px;color:var(--muted);font-size:14px;line-height:1.6}
+    .ctrl{right:14px;top:14px;display:flex;gap:8px}
+    .ctrl button{font:inherit;font-size:12px;color:var(--text);cursor:pointer;
+      border:1px solid var(--line);border-radius:8px;background:rgba(13,14,16,.72);
+      backdrop-filter:blur(6px);padding:8px 12px}
+    .ctrl button:hover{border-color:#3a4048}
+    .ctrl button.active{border-color:var(--good);color:var(--good)}
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div class="overlay chip" id="chip">Loading live flow&hellip;</div>
+  <div class="overlay legend">
+    <span class="key"><span class="swatch" style="background:linear-gradient(90deg,var(--bad),var(--amber),var(--good))"></span><span id="scoreLegend">flow / points colored by safety</span></span>
+    <span class="key" id="riskLegend"><span class="dot" style="background:var(--bad)"></span>judged dangerous turns</span>
+    <span class="key"><span class="swatch" style="background:var(--amber)"></span><span id="unsteeredLegend">unsteered probe &rarr; dangerous basin</span></span>
+    <span class="key"><span class="swatch" style="background:var(--blue)"></span><span id="steeredLegend">steered probe &rarr; safe basin</span></span>
+    <span class="key" id="attractorLegend"><span class="dot" style="background:var(--good)"></span>attractor (basin the flow pulls toward)</span>
+  </div>
+  <div class="overlay hint">drag to rotate &middot; scroll to zoom</div>
+  <div class="overlay ctrl">
+    <button id="toggleFlow">Show flow</button>
+    <button id="switchDs">Different dataset</button>
+  </div>
+  <div class="err" id="err">This view needs WebGL. The fallback panel still works.</div>
+
+  <script>
+  const P = new URLSearchParams(location.search);
+  const FLOW = (function(){var _f=P.get("flow");return !_f?"flow-rbf-tight-orig/":(_f==="mdn"?"flow-mdn/":(_f.slice(-1)==="/"?_f:_f+"/"));})();
+  const PLAY = P.get("play")==="1";   // start in flow (used when embedded)
+  const BARE = P.get("bare")==="1";   // hide own controls (parent provides them)
+  const DEFAULT_N = window.matchMedia("(max-width: 767px)").matches ? 45000 : 120000;
+  const N = parseInt(P.get("n") || String(DEFAULT_N), 10);
+  const PSIZE = parseFloat(P.get("size") || "0.0026");
+  const PSPEED = parseFloat(P.get("speed") || "0.32");
+  const DEFAULT_TRAILS = window.matchMedia("(max-width: 767px)").matches ? 4000 : 10000;
+  const TRAIL_N = Math.min(parseInt(P.get("trails") || String(DEFAULT_TRAILS), 10), N);
+  const TRAIL_ALPHA = parseFloat(P.get("trailAlpha") || "0.20");
+  const TRAIL_LEN = parseFloat(P.get("trailLen") || "6");
+  const NATIVE_SIZE = parseFloat(P.get("nativeSize") || "0.00042");
+  const NATIVE_OPACITY = parseFloat(P.get("nativeOpacity") || "0.72");
+  const NATIVE_SPEED = parseFloat(P.get("nativeSpeed") || "1");
+  // Red measurements are sparse in the real corpus. This changes where
+  // particles start, not the measured score or the learnt velocity field.
+  const RISK_SEED = Math.max(0,Math.min(0.8,parseFloat(P.get("riskSeed") || "0")));
+  const LIFE_SCALE = parseFloat(P.get("lifeScale") || "0.58");
+  const WARMUP = parseInt(P.get("warmup") || "6", 10);
+  const SHOW_ALL_PATHS = P.get("paths")==="all";
+  const SHOW_ATTRACTORS = P.get("attractors")!=="0";
+  // Enabled only by the separate cached-TraceScope particle page. Existing
+  // proposal flows retain the renderer settings they already use.
+  const NATIVE_FIELD = P.get("native")==="1";
+  const $ = (id) => document.getElementById(id);
+
+  function scoreColor(t, c){ t=Math.max(0,Math.min(1,t));
+    c.r = t<=0.5 ? 1.0 : 2.0*(1.0-t);
+    c.g = t<=0.5 ? 2.0*t : 1.0; c.b = 0.05; return c; }
+
+  function niceTicks(min, max, count){
+    const range = max-min; if(range<=1e-9) return [min];
+    const raw = range/count, mag = Math.pow(10, Math.floor(Math.log10(raw))), norm = raw/mag;
+    let step = (norm<1.5?1:norm<3?2:norm<7?5:10)*mag;
+    const start = Math.ceil(min/step)*step, out=[];
+    for(let v=start; v<=max+1e-9; v+=step) out.push(Math.round(v*1000)/1000);
+    return out;
+  }
+
+  async function main(){
+    let meta, velBuf, scoreBuf;
+    try{
+      const cacheKey=Date.now();
+      const [m,v,s] = await Promise.all([
+        fetch(FLOW+"meta.json?cb="+cacheKey,{cache:"no-store"}).then(r=>r.json()),
+        fetch(FLOW+"velocity.bin?cb="+cacheKey,{cache:"no-store"}).then(r=>r.arrayBuffer()),
+        fetch(FLOW+"score.bin?cb="+cacheKey,{cache:"no-store"}).then(r=>r.arrayBuffer()),
+      ]);
+      meta=m; velBuf=new Float32Array(v); scoreBuf=new Float32Array(s);
+    }catch(e){ $("err").style.display="flex"; $("chip").style.display="none"; console.error(e); return; }
+    if(!window.THREE){ $("err").style.display="flex"; return; }
+
+    const G = meta.gridShape[0];
+    const aMin = meta.axisMin, aMax = meta.axisMax;
+    const span = [aMax[0]-aMin[0], aMax[1]-aMin[1], aMax[2]-aMin[2]];
+    const DT = meta.dt || 0.02;
+    const LIFE = NATIVE_FIELD ? (meta.lifespan || 57) : Math.max(16, Math.round((meta.lifespan || 57) * LIFE_SCALE));
+    const diag = Math.hypot(span[0],span[1],span[2]);
+    const center = [(aMin[0]+aMax[0])/2,(aMin[1]+aMax[1])/2,(aMin[2]+aMax[2])/2];
+
+    function sampleVel(x,y,z,out){
+      let nx=span[0]>0?(x-aMin[0])/span[0]*(G-1):0, ny=span[1]>0?(y-aMin[1])/span[1]*(G-1):0, nz=span[2]>0?(z-aMin[2])/span[2]*(G-1):0;
+      let ixf=Math.floor(nx),iyf=Math.floor(ny),izf=Math.floor(nz);
+      const tx=nx-ixf,ty=ny-iyf,tz=nz-izf;
+      const ix=Math.min(Math.max(ixf,0),G-2),iy=Math.min(Math.max(iyf,0),G-2),iz=Math.min(Math.max(izf,0),G-2);
+      let ox=0,oy=0,oz=0;
+      for(let dx=0;dx<2;dx++)for(let dy=0;dy<2;dy++)for(let dz=0;dz<2;dz++){
+        const w=(dx?tx:1-tx)*(dy?ty:1-ty)*(dz?tz:1-tz);
+        const b=(((ix+dx)*G+(iy+dy))*G+(iz+dz))*3;
+        ox+=w*velBuf[b]; oy+=w*velBuf[b+1]; oz+=w*velBuf[b+2];
+      }
+      out[0]=ox;out[1]=oy;out[2]=oz;
+    }
+    function sampleScore(x,y,z){
+      let nx=span[0]>0?(x-aMin[0])/span[0]*(G-1):0, ny=span[1]>0?(y-aMin[1])/span[1]*(G-1):0, nz=span[2]>0?(z-aMin[2])/span[2]*(G-1):0;
+      let ixf=Math.floor(nx),iyf=Math.floor(ny),izf=Math.floor(nz);
+      const tx=nx-ixf,ty=ny-iyf,tz=nz-izf;
+      const ix=Math.min(Math.max(ixf,0),G-2),iy=Math.min(Math.max(iyf,0),G-2),iz=Math.min(Math.max(izf,0),G-2);
+      let val=0;
+      for(let dx=0;dx<2;dx++)for(let dy=0;dy<2;dy++)for(let dz=0;dz<2;dz++){
+        const w=(dx?tx:1-tx)*(dy?ty:1-ty)*(dz?tz:1-tz);
+        val+=w*scoreBuf[((ix+dx)*G+(iy+dy))*G+(iz+dz)];
+      }
+      return val;
+    }
+
+    // Ã¢â€â‚¬Ã¢â€â‚¬ blob occupancy from the data cloud (keeps particles on the manifold) Ã¢â€â‚¬Ã¢â€â‚¬
+    const cloud = meta.cloud || [];
+    const B = 36;
+    const blob = new Float32Array(B*B*B);
+    const bIdx = (i,j,k)=>(i*B+j)*B+k;
+    const toCell = (p,a)=> span[a]>0 ? Math.min(B-1,Math.max(0,Math.round((p-aMin[a])/span[a]*(B-1)))) : 0;
+    const rCells = 3;
+    for(const cp of cloud){
+      const ci=toCell(cp[0],0), cj=toCell(cp[1],1), ck=toCell(cp[2],2);
+      for(let di=-rCells;di<=rCells;di++)for(let dj=-rCells;dj<=rCells;dj++)for(let dk=-rCells;dk<=rCells;dk++){
+        const i=ci+di,j=cj+dj,k=ck+dk;
+        if(i<0||j<0||k<0||i>=B||j>=B||k>=B) continue;
+        const d=Math.sqrt(di*di+dj*dj+dk*dk);
+        const o=Math.max(0, 1-(d/(rCells+1)));
+        if(o>blob[bIdx(i,j,k)]) blob[bIdx(i,j,k)]=o;
+      }
+    }
+    function sampleBlob(x,y,z){
+      const i=toCell(x,0), j=toCell(y,1), k=toCell(z,2);
+      return blob[bIdx(i,j,k)];
+    }
+
+    // Ã¢â€â‚¬Ã¢â€â‚¬ three.js Ã¢â€â‚¬Ã¢â€â‚¬
+    const app=$("app");
+    const renderer=new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    renderer.setSize(app.clientWidth,app.clientHeight);
+    renderer.setClearColor(0x0d0e10,1);
+    app.appendChild(renderer.domElement);
+    const scene=new THREE.Scene();
+    const camera=new THREE.PerspectiveCamera(45, app.clientWidth/app.clientHeight, 0.01, 1000);
+
+    const root=new THREE.Group();
+    const sc=6.0/diag;
+    root.matrixAutoUpdate=false;
+    // Plotly's original safety panel renders the third data axis vertically.
+    // Three.js is Y-up, so this display transform maps data (x,y,z) -> world (x,z,y).
+    root.matrix.set(
+      sc,0,0,-center[0]*sc,
+      0,0,sc,-center[2]*sc,
+      0,sc,0,-center[1]*sc,
+      0,0,0,1
+    );
+    root.matrixWorldNeedsUpdate=true;
+    scene.add(root);
+
+    // Ã¢â€â‚¬Ã¢â€â‚¬ text sprite helper Ã¢â€â‚¬Ã¢â€â‚¬
+    function textSprite(text, color, px, scaleData){
+      const pad=8, c=document.createElement("canvas"), g=c.getContext("2d");
+      g.font=`${px}px Inter, sans-serif`;
+      const w=Math.ceil(g.measureText(text).width)+pad*2, h=px+pad*2;
+      c.width=w; c.height=h;
+      g.font=`${px}px Inter, sans-serif`; g.textAlign="center"; g.textBaseline="middle";
+      g.fillStyle=color; g.fillText(text,w/2,h/2);
+      const t=new THREE.CanvasTexture(c); t.minFilter=THREE.LinearFilter;
+      const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false,depthWrite:false}));
+      sp.scale.set(scaleData*(w/h), scaleData, 1);
+      return sp;
+    }
+
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Plotly-style axes: box edges + grid + numbered ticks + titles Ã¢â€â‚¬Ã¢â€â‚¬
+    const gridMat=new THREE.LineBasicMaterial({color:0x30343b,transparent:true,opacity:0.55});
+    const boxMat=new THREE.LineBasicMaterial({color:0x474d56,transparent:true,opacity:0.8});
+    const axLabels = meta.axisLabels || ["axis 1","axis 2","axis 3"];
+    const ticks=[niceTicks(aMin[0],aMax[0],5),niceTicks(aMin[1],aMax[1],5),niceTicks(aMin[2],aMax[2],5)];
+
+    function addLine(p0,p1,mat){
+      const geo=new THREE.BufferGeometry().setAttribute("position",
+        new THREE.BufferAttribute(new Float32Array([p0[0],p0[1],p0[2],p1[0],p1[1],p1[2]]),3));
+      root.add(new THREE.Line(geo,mat));
+    }
+    // box edges
+    const X0=aMin[0],X1=aMax[0],Y0=aMin[1],Y1=aMax[1],Z0=aMin[2],Z1=aMax[2];
+    const corners=[[X0,Y0,Z0],[X1,Y0,Z0],[X1,Y0,Z1],[X0,Y0,Z1],[X0,Y1,Z0],[X1,Y1,Z0],[X1,Y1,Z1],[X0,Y1,Z1]];
+    const eIdx=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+    eIdx.forEach(([a,b])=>addLine(corners[a],corners[b],boxMat));
+    // grid on floor (y=Y0), back wall (z=Z0), side wall (x=X0)
+    ticks[0].forEach(tx=>{ addLine([tx,Y0,Z0],[tx,Y0,Z1],gridMat); addLine([tx,Y0,Z0],[tx,Y1,Z0],gridMat); });
+    ticks[2].forEach(tz=>{ addLine([X0,Y0,tz],[X1,Y0,tz],gridMat); addLine([X0,Y0,tz],[X0,Y1,tz],gridMat); });
+    ticks[1].forEach(ty=>{ addLine([X0,ty,Z0],[X1,ty,Z0],gridMat); addLine([X0,ty,Z0],[X0,ty,Z1],gridMat); });
+    // numeric tick labels
+    const tnum=diag*0.030, tcol="#9aa29d";
+    ticks[0].forEach(tx=>{ const s=textSprite(String(tx),tcol,28,tnum); s.position.set(tx,Y0-diag*0.03,Z1+diag*0.02); root.add(s); });
+    ticks[1].forEach(ty=>{ const s=textSprite(String(ty),tcol,28,tnum); s.position.set(X0-diag*0.03,ty,Z1+diag*0.02); root.add(s); });
+    ticks[2].forEach(tz=>{ const s=textSprite(String(tz),tcol,28,tnum); s.position.set(X1+diag*0.03,Y0-diag*0.03,tz); root.add(s); });
+    // axis titles
+    const ttl=diag*0.045, tcCol="#c2c9c4";
+    (function(){
+      const a=textSprite(axLabels[0],tcCol,30,ttl); a.position.set((X0+X1)/2,Y0-diag*0.09,Z1+diag*0.04); root.add(a);
+      const b=textSprite(axLabels[1],tcCol,30,ttl); b.position.set(X0-diag*0.10,(Y0+Y1)/2,Z1+diag*0.04); root.add(b);
+      const c=textSprite(axLabels[2],tcCol,30,ttl); c.position.set(X1+diag*0.10,Y0-diag*0.06,(Z0+Z1)/2); root.add(c);
+    })();
+
+    // Ã¢â€â‚¬Ã¢â€â‚¬ particles (dense, blob-constrained) Ã¢â€â‚¬Ã¢â€â‚¬
+    const pos=new Float32Array(N*3), col=new Float32Array(N*3), origin=new Float32Array(N*3), prevPos=new Float32Array(N*3), age=new Int16Array(N);
+    const riskyCloud=cloud.filter(p=>p[3]!=null&&p[3]<0.5);
+    function seed(i){
+      let x=0,y=0,z=0;
+      // Oversample observed dangerous turns so the small red portion of the
+      // measured field remains legible while particles are moving.
+      if(NATIVE_FIELD&&riskyCloud.length&&Math.random()<RISK_SEED){
+        const p=riskyCloud[(Math.random()*riskyCloud.length)|0];
+        const j=diag*0.0035;
+        x=Math.max(aMin[0],Math.min(aMax[0],p[0]+(Math.random()-.5)*j));
+        y=Math.max(aMin[1],Math.min(aMax[1],p[1]+(Math.random()-.5)*j));
+        z=Math.max(aMin[2],Math.min(aMax[2],p[2]+(Math.random()-.5)*j));
+        if(sampleBlob(x,y,z)>0){ origin[i*3]=x; origin[i*3+1]=y; origin[i*3+2]=z; return; }
+      }
+      // TraceScope's native particle system spawns on the observed path
+      // manifold rather than filling empty regions of the full cube.
+      for(let attempt=0;attempt<48;attempt++){
+        x=aMin[0]+Math.random()*span[0]; y=aMin[1]+Math.random()*span[1]; z=aMin[2]+Math.random()*span[2];
+        if(!NATIVE_FIELD||sampleBlob(x,y,z)>0) break;
+      }
+      origin[i*3]=x; origin[i*3+1]=y; origin[i*3+2]=z;
+    }
+    for(let i=0;i<N;i++){ seed(i); pos[i*3]=origin[i*3];pos[i*3+1]=origin[i*3+1];pos[i*3+2]=origin[i*3+2]; age[i]=(Math.random()*LIFE)|0; }
+    prevPos.set(pos);
+    const pGeo=new THREE.BufferGeometry();
+    pGeo.setAttribute("position",new THREE.BufferAttribute(pos,3));
+    pGeo.setAttribute("color",new THREE.BufferAttribute(col,3));
+    const sprite=(()=>{ const c=document.createElement("canvas");c.width=c.height=64;const g=c.getContext("2d");
+      const gr=g.createRadialGradient(32,32,0,32,32,32); gr.addColorStop(0,"rgba(255,255,255,1)");gr.addColorStop(0.5,"rgba(255,255,255,0.5)");gr.addColorStop(1,"rgba(255,255,255,0)");
+      g.fillStyle=gr;g.fillRect(0,0,64,64); return new THREE.CanvasTexture(c); })();
+    // Small, individually readable particles like the TraceScope viewer.
+    // Trails are deliberately subordinate rather than becoming the picture.
+    const pMat=new THREE.PointsMaterial({size:diag*(NATIVE_FIELD?NATIVE_SIZE:PSIZE),map:sprite,vertexColors:true,transparent:true,opacity:NATIVE_FIELD?NATIVE_OPACITY:0.74,depthWrite:false,blending:THREE.NormalBlending,sizeAttenuation:true});
+    const pPoints=new THREE.Points(pGeo,pMat); root.add(pPoints);
+    // data cloud as static points (the default "static" backbone, like the original static view)
+    const cloudPts=(()=>{
+      const n=cloud.length, cp=new Float32Array(n*3), cc=new Float32Array(n*3), t={r:0,g:0,b:0};
+      for(let i=0;i<n;i++){ const a=cloud[i]; cp[i*3]=a[0]; cp[i*3+1]=a[1]; cp[i*3+2]=a[2];
+        scoreColor(a[3]==null?0.5:a[3],t); cc[i*3]=t.r; cc[i*3+1]=t.g; cc[i*3+2]=t.b; }
+      const g=new THREE.BufferGeometry();
+      g.setAttribute("position",new THREE.BufferAttribute(cp,3));
+      g.setAttribute("color",new THREE.BufferAttribute(cc,3));
+      const pts=new THREE.Points(g,new THREE.PointsMaterial({size:diag*0.0028,map:sprite,vertexColors:true,transparent:true,opacity:0.36,depthWrite:false,sizeAttenuation:true}));
+      pts.renderOrder=6; root.add(pts); return pts;
+    })();
+    // The real corpus is mostly safe (green), so draw the strictly dangerous
+    // measured turns separately, on top. This is a visibility layer over the
+    // same positions and scores—not an inferred attractor or synthetic basin.
+    const riskPts=(()=>{
+      const risk=cloud.filter(a=>a[3]!=null&&a[3]<0.5);
+      if(!risk.length) return null;
+      const rp=new Float32Array(risk.length*3), rc=new Float32Array(risk.length*3), t={r:0,g:0,b:0};
+      for(let i=0;i<risk.length;i++){
+        const a=risk[i]; rp[i*3]=a[0]; rp[i*3+1]=a[1]; rp[i*3+2]=a[2];
+        scoreColor(a[3],t); rc[i*3]=t.r; rc[i*3+1]=t.g; rc[i*3+2]=t.b;
+      }
+      const g=new THREE.BufferGeometry();
+      g.setAttribute("position",new THREE.BufferAttribute(rp,3));
+      g.setAttribute("color",new THREE.BufferAttribute(rc,3));
+      const pts=new THREE.Points(g,new THREE.PointsMaterial({size:diag*0.0046,map:sprite,vertexColors:true,transparent:true,opacity:0.86,depthWrite:false,depthTest:false,sizeAttenuation:true}));
+      pts.renderOrder=18; root.add(pts); return pts;
+    })();
+    // reference conversation paths (the real trajectories the flow was fit to) -- threads, not blobs
+    const refLines=(()=>{
+      const rp=meta.refPaths||[]; if(!rp.length) return null;
+      const seg=[], col=[], cc={r:0,g:0,b:0};
+      for(const path of rp){
+        for(let i=0;i+1<path.length;i++){
+          const a=path[i].p, b=path[i+1].p;
+          seg.push(a[0],a[1],a[2], b[0],b[1],b[2]);
+          scoreColor(path[i].s==null?0.5:path[i].s,cc); col.push(cc.r,cc.g,cc.b);
+          scoreColor(path[i+1].s==null?0.5:path[i+1].s,cc); col.push(cc.r,cc.g,cc.b);
+        }
+      }
+      const g=new THREE.BufferGeometry();
+      g.setAttribute("position",new THREE.BufferAttribute(new Float32Array(seg),3));
+      g.setAttribute("color",new THREE.BufferAttribute(new Float32Array(col),3));
+      const ls=new THREE.LineSegments(g,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:0.45,depthWrite:false}));
+      ls.renderOrder=5; root.add(ls); return ls;
+    })();
+
+    const trailPos=new Float32Array(TRAIL_N*6);
+    const trailCol=new Float32Array(TRAIL_N*6);
+    const trailGeo=new THREE.BufferGeometry();
+    trailGeo.setAttribute("position",new THREE.BufferAttribute(trailPos,3));
+    trailGeo.setAttribute("color",new THREE.BufferAttribute(trailCol,3));
+    const trailMat=new THREE.LineBasicMaterial({
+      vertexColors:true,transparent:true,opacity:TRAIL_ALPHA,depthWrite:false,depthTest:false,blending:THREE.NormalBlending
+    });
+    const trails=new THREE.LineSegments(trailGeo,trailMat);
+    trails.renderOrder=8; root.add(trails);
+    // Static mode is the comparison surface. Keep its real paired paths in a
+    // separate layer so the live particle field is not hidden behind tubes.
+    const pathLayer=new THREE.Group(); root.add(pathLayer);
+
+    // static by default; "Show flow" toggles the particle animation, "Different dataset" swaps the field
+    let flowing=PLAY;
+    function setMode(){
+      // Keep particles visible, and use only a few faint strokes for direction.
+      // Thousands of long line segments turn the field into green hair.
+      pPoints.visible=flowing; trails.visible=flowing&&TRAIL_N>0; cloudPts.visible=!flowing; if(riskPts) riskPts.visible=!flowing;
+      pathLayer.visible=true;   // paths stay placed on the flow in both static and play modes
+      if(refLines) refLines.visible=!flowing&&!NATIVE_FIELD;
+      const riskKey=$("riskLegend"); if(riskKey) riskKey.style.display=flowing?"none":"";
+      const b=$("toggleFlow"); if(b){ b.textContent=flowing?"Show static":"Play flow"; b.classList.toggle("active",flowing); }
+    }
+    if($("toggleFlow")) $("toggleFlow").addEventListener("click",()=>{ flowing=!flowing; setMode(); });
+    if($("switchDs")) $("switchDs").addEventListener("click",()=>{
+      const other=FLOW.indexOf("flow-real-mdn")>=0?"flow-real-rbf/":
+        (FLOW.indexOf("flow-real-rbf")>=0?"flow-real-mdn/":
+        (FLOW.indexOf("neural")>=0?"flow-rbf-tight-orig/":"flow-neural/"));
+      const u=new URL(location.href); u.searchParams.set("flow",other); location.href=u.toString();
+    });
+    if(BARE){ const cc=document.querySelector(".ctrl"); if(cc) cc.style.display="none"; }
+    setMode();
+
+    // Ã¢â€â‚¬Ã¢â€â‚¬ thin probe paths Ã¢â€â‚¬Ã¢â€â‚¬
+    function drawPath(path, hex, compact=false){
+      const v=path.map(p=>new THREE.Vector3(p.p[0],p.p[1],p.p[2]));
+      const curve=new THREE.CatmullRomCurve3(v);
+      const stroke=new THREE.Mesh(
+        new THREE.TubeGeometry(curve, Math.max(72,v.length*2), diag*(compact?0.00042:0.00072), 6, false),
+        new THREE.MeshBasicMaterial({color:hex,transparent:true,opacity:compact?0.72:0.82,depthTest:false})
+      );
+      stroke.renderOrder=25; pathLayer.add(stroke);
+      // beads along the path, colored by safety (red -> green), like the original markers
+      const cc={r:.5,g:.5,b:.5}, step=Math.max(1,Math.round(path.length/16));
+      for(let i=0;i<path.length;i+=step){
+        const p=path[i].p; scoreColor(path[i].s==null?0.5:path[i].s,cc);
+        const bead=new THREE.Mesh(new THREE.SphereGeometry(diag*(compact?0.0019:0.0030),10,10),
+          new THREE.MeshBasicMaterial({color:new THREE.Color(cc.r,cc.g,cc.b),depthTest:false}));
+        bead.position.set(p[0],p[1],p[2]); bead.renderOrder=26; pathLayer.add(bead);
+      }
+      // end marker: white shell + path-colored tip
+      const e=path[path.length-1].p;
+      const shell=new THREE.Mesh(new THREE.SphereGeometry(diag*(compact?0.0036:0.0052),14,14),new THREE.MeshBasicMaterial({color:0xffffff,depthTest:false}));
+      shell.position.set(e[0],e[1],e[2]); shell.renderOrder=24; pathLayer.add(shell);
+      const tip=new THREE.Mesh(new THREE.SphereGeometry(diag*(compact?0.0027:0.0041),12,12),new THREE.MeshBasicMaterial({color:hex,depthTest:false}));
+      tip.position.set(e[0],e[1],e[2]); tip.renderOrder=25; pathLayer.add(tip);
+    }
+    const paths=meta.paths||{};
+    const showingAll=SHOW_ALL_PATHS&&Array.isArray(paths.all)&&paths.all.length;
+    if(showingAll){
+      // The unsteered answers project into a tight semantic bundle; draw it
+      // last so the eight amber paths are not hidden beneath blue branches.
+      paths.all.filter(item=>item.condition==='steered').forEach(item=>drawPath(item.points,0x7db0ff,true));
+      paths.all.filter(item=>item.condition==='unsteered').forEach(item=>drawPath(item.points,0xffd166,true));
+    } else {
+      if(paths.unsteered) drawPath(paths.unsteered,0xffd166);
+      if(paths.steered) drawPath(paths.steered,0x7db0ff);
+    }
+    // Existing demonstrations share a start. Measured Qwen runs may diverge on
+    // their first generated turn, so don't draw a dishonest shared-start marker.
+    const sharedPath=paths.steered || (showingAll ? (paths.all.find(item=>item.condition==='steered')||{}).points : null);
+    if(paths.sharedStart!==false&&sharedPath&&sharedPath.length){
+      const st=sharedPath[0].p;
+      const m=new THREE.Mesh(new THREE.SphereGeometry(diag*0.013,16,16),new THREE.MeshBasicMaterial({color:0xffffff,depthTest:false}));
+      m.position.set(st[0],st[1],st[2]); m.renderOrder=22; pathLayer.add(m);
+      const sl=textSprite("start","#e8eef0",22,diag*0.026);
+      sl.position.set(st[0],st[1]-diag*0.05,st[2]); sl.renderOrder=26; pathLayer.add(sl);
+    }
+
+    // Ã¢â€â‚¬Ã¢â€â‚¬ attractors as flat billboard markers + labels Ã¢â€â‚¬Ã¢â€â‚¬
+    function ringSprite(hex){
+      const c=document.createElement("canvas");c.width=c.height=128;const g=c.getContext("2d");
+      const grd=g.createRadialGradient(64,64,3,64,64,62);
+      grd.addColorStop(0,hex+"d0"); grd.addColorStop(0.45,hex+"4d"); grd.addColorStop(1,hex+"00");
+      g.fillStyle=grd; g.beginPath(); g.arc(64,64,62,0,7); g.fill();
+      const t=new THREE.CanvasTexture(c);
+      const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false,depthWrite:false}));
+      return sp;
+    }
+    const tmpc={r:0,g:0,b:0};
+    if(!SHOW_ATTRACTORS) $("attractorLegend").style.display="none";
+    (SHOW_ATTRACTORS?(meta.attractors||[]):[]).forEach((a,i)=>{
+      const s=a.s==null?0.5:a.s; scoreColor(s,tmpc);
+      const hex="#"+[tmpc.r,tmpc.g,tmpc.b].map(x=>("0"+Math.round(x*255).toString(16)).slice(-2)).join("");
+      const mk=ringSprite(hex); mk.scale.set(diag*0.13,diag*0.13,1); mk.position.set(a.p[0],a.p[1],a.p[2]); mk.renderOrder=24; root.add(mk);
+      const isBad=(meta.badAttractorIndices||[]).includes(i);
+      const lab=textSprite("A"+(i+1)+"  safety "+(a.s==null?"?":a.s.toFixed(2)), isBad?"#ff9a9a":"#bdeccb", 26, diag*0.034);
+      lab.position.set(a.p[0],a.p[1]+diag*0.06,a.p[2]); lab.renderOrder=25; root.add(lab);
+    });
+
+    // Ã¢â€â‚¬Ã¢â€â‚¬ orbit Ã¢â€â‚¬Ã¢â€â‚¬
+    let dist=diag*sc*2.0, az=0.9, pol=1.12, dragging=false, lx=0, ly=0, autorot=true;
+    function applyCam(){ const s=Math.sin(pol),c=Math.cos(pol);
+      camera.position.set(Math.sin(az)*s*dist, c*dist, Math.cos(az)*s*dist); camera.lookAt(0,0,0); }
+    renderer.domElement.addEventListener("pointerdown",e=>{dragging=true;autorot=false;lx=e.clientX;ly=e.clientY;});
+    window.addEventListener("pointerup",()=>dragging=false);
+    window.addEventListener("pointermove",e=>{ if(!dragging)return;
+      az-=(e.clientX-lx)*0.006; pol+=(e.clientY-ly)*0.006; pol=Math.max(0.2,Math.min(Math.PI-0.2,pol)); lx=e.clientX; ly=e.clientY; });
+    renderer.domElement.addEventListener("wheel",e=>{ e.preventDefault();
+      dist*=(1+Math.sign(e.deltaY)*0.08); dist=Math.max(diag*sc*0.7,Math.min(diag*sc*5,dist)); },{passive:false});
+    function resize(){ const w=app.clientWidth,h=app.clientHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+    window.addEventListener("resize",resize);
+
+    const sm=meta.summary||{};
+    if(sm.unsteered_final_safety!=null){
+      if(sm.real_data){
+        const modelName=sm.model||"Qwen";
+        $("scoreLegend").textContent=`measured flow / judged ${modelName} safety`;
+        if(showingAll){
+          $("unsteeredLegend").textContent=`${sm.conversations||0} measured unsteered paths`;
+          $("steeredLegend").textContent=`${sm.conversations||0} measured steered paths`;
+          const unHarm=sm.unsteered_harmful_turns||0, stHarm=sm.steered_harmful_turns||0;
+          const source=(sm.flow_source||"field").replace(/^TraceScope cached /,"").replace(/^measured\s+/i,"");
+          $("chip").innerHTML=`Measured ${source}; all <b>${sm.conversations||0}</b> paired ${modelName} conversations are shown. `+
+            `<b style="color:var(--bad)">${unHarm} harmful turn${unHarm===1?"":"s"}</b> ${unHarm===1?"occurs":"occur"} unsteered; `+
+            `<b style="color:var(--good)">${stHarm} harmful turn${stHarm===1?"":"s"}</b> ${stHarm===1?"occurs":"occur"} steered.`;
+        } else {
+          $("unsteeredLegend").textContent="measured unsteered trajectory";
+          $("steeredLegend").textContent="measured steered trajectory";
+          $("chip").innerHTML=`Measured ${modelName} turns on the ${sm.flow_source||"field"}. `+
+            `The unsteered run ends at safety <b style="color:var(--bad)">${sm.unsteered_final_safety.toFixed(2)}</b>; `+
+            `the steered run ends at <b style="color:var(--good)">${sm.steered_final_safety.toFixed(2)}</b> `+
+            `(<span class="delta">${sm.safety_delta_final>=0?"+":""}${sm.safety_delta_final.toFixed(2)}</span>).`;
+        }
+      } else {
+        $("chip").innerHTML=`Both paths share the same start and corridor; the steered one peels off where steering is applied. `+
+          `Unsteered settles at safety <b style="color:var(--bad)">${sm.unsteered_final_safety.toFixed(2)}</b>, `+
+          `steered ends at <b style="color:var(--good)">${sm.steered_final_safety.toFixed(2)}</b> `+
+          `(<span class="delta">${sm.safety_delta_final>=0?"+":""}${sm.safety_delta_final.toFixed(2)}</span>).`;
+      }
+    } else { $("chip").style.display="none"; }
+
+    // Ã¢â€â‚¬Ã¢â€â‚¬ advection (blob-constrained, like FlowFieldSystem) Ã¢â€â‚¬Ã¢â€â‚¬
+    const v=[0,0,0];
+    function advance(steps,scale){
+      for(let s=0;s<steps;s++){
+        for(let i=0;i<N;i++){ const i3=i*3;
+          let x=pos[i3],y=pos[i3+1],z=pos[i3+2];
+          prevPos[i3]=x; prevPos[i3+1]=y; prevPos[i3+2]=z;
+          sampleVel(x,y,z,v);
+          const mag=Math.hypot(v[0],v[1],v[2]);
+          if(mag>1e-9){
+            // TraceScope's FlowFieldSystem integrates the cached velocity as
+            // p += v * 0.02. Normalising v here made MDN move about 11x too
+            // far per frame and invented the previous random-looking swarm.
+            if(NATIVE_FIELD){ x+=v[0]*0.02*scale*NATIVE_SPEED; y+=v[1]*0.02*scale*NATIVE_SPEED; z+=v[2]*0.02*scale*NATIVE_SPEED; }
+            else { const sd=PSPEED*scale*diag*0.012/mag; x+=v[0]*sd; y+=v[1]*sd; z+=v[2]*sd; }
+          }
+          age[i]++;
+          let expired;
+          if(NATIVE_FIELD){
+            x=aMin[0]+((x-aMin[0])%span[0]+span[0])%span[0];
+            y=aMin[1]+((y-aMin[1])%span[1]+span[1])%span[1];
+            z=aMin[2]+((z-aMin[2])%span[2]+span[2])%span[2];
+            expired=age[i]>=LIFE||sampleBlob(x,y,z)<=0;
+          } else {
+            expired=age[i]>=LIFE||x<aMin[0]||x>aMax[0]||y<aMin[1]||y>aMax[1]||z<aMin[2]||z>aMax[2];
+          }
+          if(expired){
+            if(Math.random()<0.12) seed(i);
+            x=origin[i3]; y=origin[i3+1]; z=origin[i3+2]; age[i]=0;
+            prevPos[i3]=x; prevPos[i3+1]=y; prevPos[i3+2]=z;
+          }
+          pos[i3]=x;pos[i3+1]=y;pos[i3+2]=z;
+        }
+      }
+    }
+    advance(NATIVE_FIELD?34:WARMUP,1.0);
+
+    const tmp={r:0,g:0,b:0}, tv=[0,0,0];
+    function updateTrails(){
+      for(let i=0;i<TRAIL_N;i++){ const i3=i*3, i6=i*6;
+        const x=pos[i3], y=pos[i3+1], z=pos[i3+2];
+        sampleVel(x,y,z,tv);
+        const tm=Math.hypot(tv[0],tv[1],tv[2])||1e-9;
+        const tail=NATIVE_FIELD?0.02*TRAIL_LEN*NATIVE_SPEED:PSPEED*diag*0.012*TRAIL_LEN;
+        let x0=NATIVE_FIELD?x-tv[0]*tail:x-tv[0]/tm*tail;
+        let y0=NATIVE_FIELD?y-tv[1]*tail:y-tv[1]/tm*tail;
+        let z0=NATIVE_FIELD?z-tv[2]*tail:z-tv[2]/tm*tail;
+        trailPos[i6]=x0; trailPos[i6+1]=y0; trailPos[i6+2]=z0;
+        trailPos[i6+3]=x; trailPos[i6+4]=y; trailPos[i6+5]=z;
+        scoreColor(sampleScore(x0,y0,z0),tmp);
+        trailCol[i6]=tmp.r; trailCol[i6+1]=tmp.g; trailCol[i6+2]=tmp.b;
+        scoreColor(sampleScore(x,y,z),tmp);
+        trailCol[i6+3]=tmp.r; trailCol[i6+4]=tmp.g; trailCol[i6+5]=tmp.b;
+      }
+      trailGeo.attributes.position.needsUpdate=true; trailGeo.attributes.color.needsUpdate=true;
+    }
+    function colorize(){
+      for(let i=0;i<N;i++){ const i3=i*3; const af=age[i]/LIFE;
+        let a=1.0; if(af<0.14)a=af/0.14; else if(af>0.8)a=(1.0-af)/0.2; a=Math.max(0,Math.min(1,a));
+        
+        scoreColor(sampleScore(pos[i3],pos[i3+1],pos[i3+2]),tmp);
+        col[i3]=tmp.r*a; col[i3+1]=tmp.g*a; col[i3+2]=tmp.b*a;
+      }
+      pGeo.attributes.position.needsUpdate=true; pGeo.attributes.color.needsUpdate=true;
+    }
+    function renderFrame(scale){ if(flowing){ advance(1,scale); colorize(); updateTrails(); } if(autorot) az+=0.0015*scale; applyCam(); renderer.render(scene,camera); }
+    // debug hook so a hidden/headless tab can be driven + captured manually
+    window.__dbg={ renderFrame, render:()=>{applyCam();renderer.render(scene,camera);}, setAutorot:(b)=>{autorot=b;}, setAz:(a)=>{az=a;} };
+    let last=performance.now();
+    function frame(now){ const dtMs=now-last; last=now; renderFrame(Math.max(0.4,Math.min(2.5,dtMs/16.67))); requestAnimationFrame(frame); }
+    applyCam(); resize(); requestAnimationFrame(frame);
+  }
+  main();
+  </script>
+</body>
+</html>
