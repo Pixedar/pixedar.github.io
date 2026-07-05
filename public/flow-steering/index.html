@@ -55,6 +55,9 @@
   .cv.red{color:var(--red)}.cv.green{color:var(--green)}
   .cs{font-size:14.5px;color:#6b524d;margin:10px 0 0;line-height:1.5}
   .card.green .cs{color:#3E5A4A}
+  .card.evidence{border:1px solid rgba(31,36,32,.12);background:#F8F6F1;padding:16px 17px}
+  .card.evidence .ck{color:#626760;font-size:11.5px;letter-spacing:.08em;margin-bottom:7px}
+  .card.evidence .cs{color:#4A4F48;font-size:15px;line-height:1.55;margin:0}
   .stats4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
   @media(max-width:560px){.stats4{grid-template-columns:repeat(2,1fr)}}
   .stat{background:#fff;border:1px solid rgba(31,36,32,.1);border-radius:9px;padding:12px 10px;text-align:center}
@@ -62,6 +65,11 @@
   .sv{font-family:ui-sans-serif,system-ui,sans-serif;font-size:17px;font-weight:650;color:#1F2420;margin:0}
   .sv.green{color:var(--green)}
   .chartcard{background:var(--panel);border:1px solid rgba(31,36,32,.1);border-radius:12px;padding:20px 18px 12px;box-shadow:0 16px 50px rgba(31,36,32,.07)}
+  .chartcard.final-experiment{border-top:3px solid rgba(63,100,147,.48)}
+  .chartcard.flow-diagnostic{border-top:3px solid rgba(142,91,55,.48)}
+  .chartcard.direction-study{border-top:3px solid rgba(47,110,85,.48)}
+  .source{font-family:ui-sans-serif,system-ui,sans-serif;font-size:10.5px;line-height:1.4;
+    letter-spacing:.1em;text-transform:uppercase;color:#7B8078;text-align:center;margin:0 0 9px}
   .ctitle{font-family:ui-sans-serif,system-ui,sans-serif;font-size:14px;font-weight:650;color:var(--head);text-align:center;margin:2px 0 3px}
   .csub{font-family:ui-sans-serif,system-ui,sans-serif;font-size:12.5px;color:#6C716A;text-align:center;margin:0 0 8px}
   .legend{font-family:ui-sans-serif,system-ui,sans-serif;font-size:12.5px;color:#555;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:6px 0 2px}
@@ -85,20 +93,26 @@
     <h2>Steering out of a dangerous basin</h2>
     <p>From the trajectories of many safety conversations in a semantic space, we compute a generalized
        flow: a model of where a conversation tends to drift, and how likely a given drift is to drain into a
-       dangerous basin. The flow is probabilistic — a turn need not point straight at the basin; what
-       matters is that paths from where it sits tend to end up there. The method uses that flow to notice
+       dangerous basin. The flow is probabilistic: a turn may point elsewhere while paths from its current
+       state still tend to end up in that basin. The method uses that flow to notice
        when a live trajectory's chance of ending in a dangerous basin is rising, then applies the smallest
        proactive nudge to the model's internals — steering — that changes where it ends up. Because the
        nudge compounds over a whole trajectory, it is especially suited to long-running agents — coding
        sessions, extended reasoning, and other long agent runs — where small early drift accumulates into a
        bad ending.</p>
+    <p>The target cases include persistent adversarial goals — one person or a coordinated group gradually
+       probing for a failure — and long-horizon agents whose individually reasonable steps accumulate into
+       unsafe drift over hours of interaction.</p>
+    <p>These cases require separate evaluation. Deliberate adversarial pressure and endogenous agent drift
+       create different transition distributions, even when both eventually reach a similar unsafe outcome.</p>
     <p>When a live conversation is drifting toward a dangerous basin, add the smallest possible nudge to
        the model's internal state. The nudge should barely move the next-word distribution, yet applied
-       early and repeatedly it can tip the trajectory across the boundary. The model's own flow carries
+       early and repeatedly it may tip the trajectory across the boundary. The model's own flow carries
        the rest of the turn.</p>
-    <p>That is the test this page visualizes: invisible per step, decisive over the path. The 3D view
-       shows the drift and the final divergence; the actual correction happens inside the language
-       model's hidden state.</p>
+    <p>The 3D view shows trajectory drift and later divergence; the correction occurs inside the language
+       model's hidden state. The experiments below measure predictive information in the trace, the local
+       policy change produced by repeated pulses, and the causal evidence still required to connect a
+       particular pulse with a safer future.</p>
   </section>
 
   <section id="trajectories">
@@ -107,15 +121,15 @@
     <figure>
       <div class="frame"><iframe src="steering-flow-v2.html" title="Flow steering view" loading="lazy"></iframe></div>
       <figcaption>The point cloud shows where real conversation turns sit, colored by safety
-        (green is safe, red is dangerous). Two paths start from the same place. The amber one is left
-        alone and slides into the dangerous basin. The blue one gets a few small early nudges and settles
-        in the safe basin. Press <em>Play flow</em> to replace the dots with particles carried through the
-        learned field.</figcaption>
+        (green is safe, red is dangerous). Two paths start from the same place. The amber one illustrates
+        a trajectory left alone; the blue one illustrates the same trajectory receiving a few small early
+        nudges. Press <em>Play flow</em> to replace the dots with particles carried through the learned
+        field.</figcaption>
     </figure>
-    <div class="note"><strong>Important:</strong> the two paths come from a push inside the model's
-      hidden state. The browser draws them afterward, by projecting that push back into the 3D map, as the
-      <a href="#mechanism">mechanism</a> section describes. The visible geometry is the map; the lever
-      lives in the model's hidden state.</div>
+    <div class="note"><strong>Important:</strong> the browser draws the proposed correction afterward by
+      projecting it into the 3D map, as the <a href="#mechanism">mechanism</a> section describes. The visible
+      geometry is the map; the lever lives in the model's hidden state. The paired paths show the intended
+      controller, while the measurements below report which pieces have been demonstrated directly.</div>
   </section>
 
   <hr class="rule"/>
@@ -143,12 +157,15 @@
     </ol>
     <p><strong>Why the flow matters.</strong> A scatter of points tells you where conversations have been. A
        flow field tells you where a conversation is <em>heading</em>. Danger often lives in the transition:
-       the moment a context starts sliding toward a basin where things go wrong.</p>
+       the moment a context starts sliding toward a basin where things go wrong. In the held-out experiment
+       below, the learned high-dimensional flow predicts future conversation states substantially better
+       than keeping the current state fixed.</p>
     <p><strong>What an attractor means.</strong> Where the field converges, with low speed and inward flow,
        sits an attractor: a stable endpoint that, once a trajectory enters its basin, the dynamics keep
        pulling it toward. The attractor inherits an average outcome score from the data around it, so a
-       basin can be read as safer or more dangerous. The clearest illustration is the math-reasoning run
-       below.</p>
+       basin can be read as safer or more dangerous. For control, that interpretation is treated as a
+       candidate until held-out branches confirm both convergence and later outcomes. The clearest
+       illustration is the math-reasoning run below.</p>
     <figure>
       <div class="panel" style="background:#0d0e10;padding:10px">
         <img src="prm-demo-v2.gif" alt="TraceScope flow over math-reasoning chains" style="width:100%;border-radius:8px;display:block"/>
@@ -162,10 +179,9 @@
         across domains.</figcaption>
     </figure>
     <div class="note"><strong>The projection is the readout.</strong> The low-dimensional view is for human
-      eyes. The flow, the attractors, and the corrective direction can be computed in the full
-      high-dimensional embedding space, and the real intervention lives in an even higher-dimensional
-      activation space. The projection lets us see the basin a conversation is falling into and check that
-      the correction moved the path.</div>
+      eyes. The final experiment fits the dynamics in a train-only 48-dimensional representation of Qwen's
+      native hidden states, while the intervention lives in the larger activation space. The projection
+      lets us see the basin a conversation is approaching and display any measured counterfactual branch.</div>
   </section>
 
   <hr class="rule"/>
@@ -181,18 +197,26 @@
        the flow real trajectories. It also ships transcript-level safety signals
        (<code>min_harmlessness_score_transcript</code>, red-team rating, tags) that become the scalar field
        colored through the flow.</p>
-    <p>The prepared sample keeps 240 stratified paths — 120 dangerous and 120 safe — across roughly 1,500
-       turns, each turn carrying the same path-level scores. Safety is a robust-normalized harmlessness
-       score; the dangerous flag is deliberately conservative (a transcript counts as dangerous if its
-       minimum harmlessness is low <em>or</em> the red-team rating is high). Single-turn moderation sets like
-       BeaverTails and WildGuardMix have cleaner per-response labels, but most of their rows are one prompt
-       and one response — two-point paths, with no trajectory to steer — which is why the multi-turn red-team
-       transcripts were chosen here.</p>
-    <p>On this particular run, TraceScope named the three emergent axes <em>assistant prevalence</em>,
+    <p>The prepared visualization keeps 240 stratified paths — 120 dangerous and 120 safe — across roughly
+       1,500 turns. Safety is a robust-normalized harmlessness score; the dangerous flag is deliberately
+       conservative. Single-turn moderation sets have cleaner per-response labels, but most rows are only
+       one prompt and one response — two-point paths, with no trajectory to steer — which is why the
+       multi-turn red-team transcripts were chosen here.</p>
+    <p>On this run, TraceScope named the three emergent axes <em>assistant prevalence</em>,
        <em>informativeness level</em>, and <em>violation domain</em>, and the turns fell into regions like
        <em>refusing harmful requests</em>, <em>dangerous predatory content</em>, and <em>sexual boundary
-       violations</em>. TraceScope discovers those labels from the data. They name the visible map for
-       diagnosis; the control vectors are learned separately from hidden states.</p>
+       violations</em>. These labels name the visible map for diagnosis; the control vectors are learned
+       separately from hidden states.</p>
+    <p>For the new controlled test, Qwen2.5-1.5B generated <strong>400 reactive paths</strong> from
+       <strong>50 independent red-team goals</strong>: 33 train, 6 validation, and 11 sealed test. The
+       resulting <strong>4,304 assistant responses</strong> span a median of 10.5 decisions per path.
+       Qwen3Guard judged every complete-prefix response; 213 were Unsafe and 104 paths contained at least
+       one Unsafe response.</p>
+    <p>The next user message preserves the original human escalation, but its bridge depends on whether the
+       preceding Qwen answer refused, offered an alternative, asked a question, or continued. An intervention
+       can therefore alter later input through the conversation loop. At every turn, the eight matched paths
+       receive a rotated design of zero, positive and negative safety-direction pulses, orthogonal pulses,
+       and mixed directions, all nonzero actions having the same norm.</p>
   </section>
 
   <hr class="rule"/>
@@ -201,197 +225,255 @@
     <p class="eyebrow">Mechanism</p>
     <h2>Two maps and one lever</h2>
     <p>Two different spaces are involved, and the method keeps them apart. The first is the TraceScope
-       semantic flow view at the top of this page: a map, built from text, of where conversations go and
-       which way they tend to move. It is used for watching and for deciding when to act. The second is
-       the language model's activation space, the hidden state inside the model while it writes. That is
-       where the words are produced, and it is the only place the correction is applied.</p>
-    <p><strong>Deciding when to act.</strong> As a conversation runs, its latest turn has a position in
-       the flow map. A monitor lives in that semantic flow space and tracks two things: where the
-       conversation sits, and which way the flow is carrying it. While it sits in safe territory the
-       monitor does nothing. When the flow shows the probability of draining into a dangerous basin is
-       rising, the monitor turns the correction on. Because it reads location and direction of travel, it
-       acts on how likely the conversation is to end up in that basin, not on the current word alone — the
-       turn need not be pointed straight at the attractor, only carried by a flow that tends to end there.</p>
-    <p><strong>Choosing the push.</strong> The three axes TraceScope names are learned from the data, and
-       each is a real high-level feature of the conversation, so a chosen combination of them can act as a
-       steering knob on its own. Training a probe on the underlying text gives a direction that is not
-       compressed into only those three features, so it can isolate the safety change more precisely. That
-       direction can still be projected back onto the three axes, which keeps the map a faithful readout of
-       where the push moved the conversation.</p>
-    <p>The direction itself is measured from the model. For each topic we take an unsafe continuation and a
-       same-topic safe one, run both through the model, and read the difference in their hidden states.
-       Averaged over many topics this difference points along safety. A same topic can be discussed safely
-       or harmfully, so the raw direction also carries some topic content and some of the habit of dodging
-       a question by changing the subject. We remove both of those, leaving a direction that moves along
-       safety alone.</p>
+       semantic flow view at the top of this page: a map of where conversations go and which way they tend
+       to move. It supplies a diagnostic projection of long-horizon tendency. The second is the language
+       model's activation space, the hidden state inside the model while it writes. The correction is applied
+       there, and controller validation stays in the native high-dimensional state.</p>
+    <p><strong>Deciding when to act.</strong> A monitor estimates a finite-horizon committor: the probability
+       that the run reaches an unsafe outcome within the next <em>H</em> steps. Its state can include the
+       conversation, recent velocity, memory, tool calls, current plan, and environment observations.
+       Interventions focus on interior states where safe and unsafe futures both remain plausible, before
+       the current response itself requires blocking.</p>
     <div class="eqn">
-      <div class="row"><span class="v">d</span><sub>safe</sub> = mean( <span class="v">h</span><sub>unsafe</sub> − <span class="v">h</span><sub>safe&middot;same&middot;topic</sub> )</div>
-      <div class="row"><span class="v">a</span> = <span class="v">d</span><sub>safe</sub> − project<sub>topic</sub>(<span class="v">d</span><sub>safe</sub>) − project<sub>off&middot;topic</sub>(<span class="v">d</span><sub>safe</sub>)</div>
-      <div class="row"><span class="v">h</span><sub>layer</sub> &larr; <span class="v">h</span><sub>layer</sub> − <span class="v">α</span> &middot; <span class="v">a</span></div>
-      <div class="gloss">measure the unsafe direction · remove topic and change-of-subject · subtract a small amount during generation</div>
+      <div class="row"><span class="v">q</span><sub>H</sub>(<span class="v">s</span><sub>t</sub>) =
+        P(unsafe within H steps | trace, memory, tools, plan, observations)</div>
+      <div class="gloss">estimate future risk in native state space · display a projection in TraceScope</div>
     </div>
-    <p><strong>Applying it.</strong> While the monitor is on, a small amount of this direction is added to
-       the hidden state at a few middle layers, at every step. Each addition barely changes the next word.
-       Added across the whole turn, the small changes shift the probability of where the trajectory ends,
-       bending it over the boundary into a safer basin, and the model's own flow carries the rest. The push
-       lands hardest where the flow diverges — the unstable regions near a separatrix, where two nearby
-       paths peel into different basins. A nudge there decides which basin the conversation falls into,
-       while the same nudge deep inside a basin does little, so acting early, in that unstable zone, is what
-       lets the push stay small. The part that decides when to act and the part that supplies the push are
-       separate pieces, so each can be measured on its own.</p>
-    <p><strong>A lighter form of the push.</strong> The same correction can be packaged as a small trained
-       part that plugs into one layer: a receptor, a head gate, or a narrow adapter. It learns to emit the
-       safety push only when it is needed and to stay quiet otherwise, while the base model is left as it
-       was and a retention term keeps the change small. Across model sizes from 0.5 to 14 billion
-       parameters this part fired about twice as hard on unsafe states as on safe ones and stayed clear of
-       the topic direction, reaching the same place as the measured direction with a smaller footprint.</p>
-    <p>The two paths in <a href="#trajectories">the two trajectories</a> above are this correction,
-       projected back into the flow map. The controller reads where the conversation is heading, adds a
-       small push in the activation space, and only then is the result placed back into the 3D view so the
-       change of basin is visible.</p>
+    <p>The central test compares this estimate with a direct future-risk classifier given the same current
+       state. Recent velocity, phase, and history earn a role only when they improve calibration or warning
+       time on held-out trajectories.</p>
+    <p><strong>Choosing the push.</strong> The direction is measured from the model. For each topic, an
+       unsafe continuation and a same-topic safe continuation are run through Qwen, and the difference in
+       their hidden states supplies a candidate safety direction. Because that contrast may also carry topic
+       or change-of-subject information, the controlled experiment adds its opposite, orthogonal equal-norm
+       directions, mixed directions, and zero. This turns the steering direction from an assumption into
+       something that can be measured at matched states.</p>
+    <div class="eqn">
+      <div class="row"><span class="v">d</span><sub>safe</sub> = mean( <span class="v">h</span><sub>safe&middot;same&middot;topic</sub> − <span class="v">h</span><sub>unsafe</sub> )</div>
+      <div class="row"><span class="v">u</span><sub>t</sub> ∈ {0, +<span class="v">d</span><sub>safe</sub>, −<span class="v">d</span><sub>safe</sub>, <span class="v">d</span><sub>orthogonal</sub>}</div>
+      <div class="row"><span class="v">h</span><sub>17, token</sub> &larr; <span class="v">h</span><sub>17, token</sub> + α<span class="v">u</span><sub>t</sub></div>
+      <div class="gloss">measure a candidate direction · compare it with matched controls · add a small amount during generation</div>
+    </div>
+    <p>Natural dynamics and control response are separate quantities. The flow estimates how the state
+       changes under ordinary generation. Repeated matched branches estimate the local action effect,
+       represented by the gradient of future risk with respect to the pulse. A useful action needs a stable
+       sign across branches from the same state.</p>
+    <div class="eqn">
+      <div class="row"><span class="v">J</span><sub>u</sub>(<span class="v">s</span><sub>t</sub>) =
+        ∂<span class="v">q</span><sub>H</sub>(<span class="v">s</span><sub>t</sub>; <span class="v">u</span>) /
+        ∂<span class="v">u</span> at <span class="v">u</span> = 0</div>
+      <div class="gloss">measure how a small action changes future risk at this state</div>
+    </div>
+    <p><strong>Applying it.</strong> While the monitor is on, a small amount of the selected direction is
+       added to one residual stream at the final prompt token and every generated token. Each addition should
+       barely change the next word; repeated over a turn, the changes may alter which later branch is reached.
+       In the controlled test, 3,766 nonzero interventions produced median next-token KL of 0.000147 and a
+       95th percentile of 0.001235, both inside the preregistered limits.</p>
+    <p><strong>A lighter form of the push.</strong> Once a local causal response can be estimated reliably,
+       the correction could be packaged as a small receptor, head gate, or narrow adapter that stays quiet
+       outside the uncertain region. The base model remains unchanged. The flow supplies long-horizon
+       context, while the local response model supplies the steering direction.</p>
+    <p>The two paths in <a href="#trajectories">the two trajectories</a> visualize that intended combination:
+       read where the conversation is heading, add a small push in activation space, and project the resulting
+       branch back into the flow map.</p>
   </section>
 
   <hr class="rule"/>
 
   <section>
     <p class="eyebrow">Result</p>
-    <h2>A tiny input that changes the destination</h2>
-    <p>The showcase trajectory is a real eight-turn red-team conversation that keeps pressing on
-       <em>how to rob a jewelry store, and whether to do it with a gun</em>. Left alone, its trajectory
-       slides into the dangerous basin and the sampled safety along the path collapses toward zero, ending
-       around <strong>0.25</strong>.</p>
-    <p>With the controller on, the same start gets a handful of small, early nudges — twelve interventions
-       over a hundred and sixty integration steps, about <strong>10% of the total motion</strong>. That is
-       enough to cross the separatrix. After the crossing the controller releases and the <em>natural</em>
-       flow finishes the job, carrying the trajectory up into the high-safety basin where it settles around
-       <strong>0.76</strong>.</p>
+    <h2>Measurements along the path</h2>
+    <p>The animation asks whether a small early correction can change a much later destination. The new
+       experiment measures the two ingredients behind that picture separately: whether a generalized flow
+       predicts where a held-out conversation moves, and whether repeated hidden-state nudges can preserve
+       the model's local policy.</p>
 
     <figure>
       <div class="panel">
-        <p class="ce">Same start · different ending</p>
+        <p class="ce">Measured properties</p>
         <div class="cards2">
-          <div class="card red">
-            <p class="ck">Unsteered</p>
-            <p class="cv red">0.25</p>
-            <p class="cs">final sampled safety — follows the field straight into the dangerous attractor's basin.</p>
+          <div class="card evidence">
+            <p class="ck">Predictive dynamics</p>
+            <p class="cs">Three-turn endpoint error is lower than persistence on both validation and sealed-test paths.</p>
           </div>
-          <div class="card green">
-            <p class="ck">Steered</p>
-            <p class="cv green">0.76</p>
-            <p class="cs">final sampled safety · +0.51 — crosses into the safe basin and ends 1.19 units away from the unsteered endpoint.</p>
+          <div class="card evidence">
+            <p class="ck">Intervention scale</p>
+            <p class="cs">Median and 95th-percentile next-token KL remain within the preregistered limits.</p>
           </div>
         </div>
         <div class="stats4">
-          <div class="stat"><p class="sk">Interventions</p><p class="sv">12</p></div>
-          <div class="stat"><p class="sk">Steering fraction</p><p class="sv">10%</p></div>
-          <div class="stat"><p class="sk">Endpoint shift</p><p class="sv">1.19</p></div>
-          <div class="stat"><p class="sk">Safety gain</p><p class="sv green">+0.51</p></div>
+          <div class="stat"><p class="sk">Independent goals</p><p class="sv">50</p></div>
+          <div class="stat"><p class="sk">Complete paths</p><p class="sv">400</p></div>
+          <div class="stat"><p class="sk">Qwen responses</p><p class="sv">4,304</p></div>
+          <div class="stat"><p class="sk">Median path</p><p class="sv">10.5 turns</p></div>
         </div>
       </div>
-      <figcaption>Boundary crossing is the result to watch. In this fitted flow, a correction worth about a
-        tenth of the natural motion changes <em>which basin the conversation falls into</em>.</figcaption>
+      <figcaption>The learned field predicts the path, and the hidden-state intervention stays small.
+        The next experiment connects them by learning the effect of each direction locally.</figcaption>
     </figure>
 
-    <p>That showcase lives in the flow. The numbers that follow come from actually generating text with the
-       model and measuring it directly. A small readout, the monitor, scores how unsafe the current hidden
-       state looks, from 0 (safe) to 1 (unsafe), and the push is applied at every step while the monitor
-       flags the conversation, so its strength is the only setting. On a 7 billion parameter model, a push
-       small enough that the first 60 words come out identical to the no-push reply still drops the monitor's
-       reading of the finished reply from 0.17 to 0.05 — about 70 percent — while each step's next-word
-       distribution moves by only 0.0006 (a KL divergence, where 0 means identical). The flow numbers
-       further down are from a 1.5 billion parameter model.</p>
+    <p>The four figures below come from three analyses. The source line above each title marks the final
+       reactive experiment, the earlier fitted-field diagnostic, or the earlier activation-direction study.</p>
 
-    <p>There is a cost to pushing the hidden state. Push too hard and it leaves the manifold of activations
-       the model normally produces, and the text degrades — repetition, derailment, broken grammar. So the
-       goal is the gentlest push that still redirects the trajectory: small enough to keep the reply
-       on-manifold and readable, applied early enough that the flow does the rest. This is what the next two
-       measurements check. How deep into the reply the push stays invisible depends on the prompt; the chart
-       shows, for each of four red-team prompts, how many words at the start of the reply are still
-       identical to the no-push reply as the push strength rises.</p>
+    <p>At the primary three-turn horizon, the learned flow's mean endpoint error was 13.51 on validation and
+       13.58 on the sealed test, compared with 16.33 and 16.03 for persistence. The improvement appears in
+       both held-out splits and across horizons one, three, and five. This establishes predictive structure
+       relative to a fixed-state baseline. The stricter comparison uses a direct future-risk classifier on
+       the same state and measures any additional warning time supplied by the trajectory.</p>
 
     <figure>
-      <div class="chartcard">
-        <div class="ctitle">How far into the reply a push stays invisible</div>
-        <div class="csub">7B model · words at the start identical to the no-push reply, per prompt</div>
-        <svg id="chartA" viewBox="0 0 640 320" role="img" aria-label="identical opening words versus push strength, four prompts and their mean"></svg>
-        <div class="legend"><span><i style="background:#bdb4a6"></i>each red-team prompt</span><span><i style="background:#3F6493"></i>mean of the four</span></div>
+      <div class="chartcard final-experiment">
+        <div class="source">Final reactive experiment · held-out Qwen paths</div>
+        <div class="ctitle">The flow predicts where a held-out path moves</div>
+        <div class="csub">three-turn endpoint error · lower is better</div>
+        <svg id="chartA" viewBox="0 0 640 290" role="img" aria-label="three-turn endpoint error for persistence and the learned flow"></svg>
+        <div class="legend"><span><i style="background:#bdb4a6"></i>keep state fixed</span><span><i style="background:#3F6493"></i>learned flow</span></div>
       </div>
-      <figcaption>Each thin line is one prompt; the thick line is their mean. At a faint push some prompts
-        keep over 150 opening words identical while others change within about 30 words, so the effect is
-        prompt-dependent. As the push grows it reaches the wording sooner. A push that still leaves a long
-        identical opening is enough to change the finished reply, as the numbers above show.</figcaption>
+      <figcaption>The flow reduces endpoint error by 17.3% on validation and 15.3% on the sealed test
+        relative to persistence. Ablations of position, velocity, phase, and history can identify which
+        parts carry the predictive signal.</figcaption>
     </figure>
 
-    <p>A faint push can change the ending because of the flow. Released into the field, a point from an
-       unsafe turn almost always drifts into the dangerous basin, a point from a safe turn rarely does, and
-       an answer that changed the subject lands near half. Raising the push lowers the unsafe points'
-       dangerous-basin share from 93 to about 67 in 100.</p>
+    <p>The reduction relative to persistence indicates that recent trace information constrains likely next
+       states. TraceScope expresses this tendency visually by releasing starting points into the fitted field
+       and recording which basin they reach. Basin membership remains a diagnostic summary; the finite-horizon
+       future-risk probability is the quantity needed by a controller.</p>
 
     <figure>
-      <div class="chartcard">
-        <div class="ctitle">Where the flow carries a conversation</div>
-        <div class="csub">1.5B model · share of starting points that drift into the dangerous basin</div>
-        <svg id="chartB" viewBox="0 0 640 200" role="img" aria-label="dangerous-basin share by starting condition"></svg>
+      <div class="chartcard flow-diagnostic">
+        <div class="source">Earlier TraceScope diagnostic · fitted visualization field</div>
+        <div class="ctitle">Where the fitted flow carries a conversation</div>
+        <div class="csub">share of starting points that reach the dangerous basin</div>
+        <svg id="chartC" viewBox="0 0 640 200" role="img" aria-label="dangerous-basin share by starting condition"></svg>
       </div>
-      <figcaption>A point from an unsafe turn lands in the dangerous basin about 93 in 100, a safe
-        same-topic turn about 8 in 100, and an answer that changed the subject near half.</figcaption>
+      <figcaption>Within the fitted field, unsafe starts reach the dangerous basin about 93 in 100, safe
+        same-topic starts about 8 in 100, and changed-subject answers sit near half. These descriptive
+        tendencies identify useful regions for repeated counterfactual branching.</figcaption>
     </figure>
 
-    <p>The method also holds as the model grows. For steering to be safe to apply, the safety direction
-       has to stay distinct from what the conversation is about, otherwise the push would drag the topic
-       around too. The chart shows how cleanly the two separate at each size: it stays high everywhere and
-       is cleanest in the largest model, so there is little topic content for the cleaning step to remove
-       at scale.</p>
+    <p>Across 3,766 nonzero-control turns, median next-token KL was 0.000147 against a limit of 0.001, and
+       the 95th percentile was 0.001235 against a limit of 0.005. These values measure local policy change
+       during generation, before any later projection into the flow view.</p>
 
     <figure>
-      <div class="chartcard">
-        <div class="ctitle">The safety direction stays separate from the topic at every size</div>
-        <div class="csub">how cleanly the safety direction separates from what the conversation is about (higher is better)</div>
-        <svg id="chartD" viewBox="0 0 640 280" role="img" aria-label="safety-topic separation across model sizes, bar chart"></svg>
+      <div class="chartcard final-experiment">
+        <div class="source">Final reactive experiment · intervention audit</div>
+        <div class="ctitle">The nudge stays inside the local policy-distance budget</div>
+        <div class="csub">observed next-token KL as a share of its predeclared limit</div>
+        <svg id="chartB" viewBox="0 0 640 210" role="img" aria-label="median and 95th percentile next-token KL relative to limits"></svg>
       </div>
-      <figcaption>Measured at 0.5, 1.5, 3, 7 and 14 billion parameters as 1 minus the share of the raw
-        safety direction that overlaps the topic. It sits between 64 and 79 percent across the range and is
-        highest in the 14B model, so the safety signal carries its own direction at every scale.</figcaption>
+      <figcaption>The median used 14.7% of its allowed KL budget; the 95th percentile used 24.7%.
+        Both values were measured during generation, before the later projection.</figcaption>
     </figure>
+
+    <p>Across Qwen models from 0.5B to 14B parameters, the candidate safety direction's measured separation
+       from topic ranges from 64% to 79%. This supplies an activation-space basis for randomized branching;
+       matched local responses determine which direction helps at a particular state.</p>
+
+    <figure>
+      <div class="chartcard direction-study">
+        <div class="source">Earlier activation-direction study · Qwen 0.5B–14B</div>
+        <div class="ctitle">Safety–topic separation across model sizes</div>
+        <div class="csub">share of the candidate safety direction outside the topic subspace · higher is better</div>
+        <svg id="chartD" viewBox="0 0 640 280" role="img" aria-label="safety-topic separation across model sizes"></svg>
+      </div>
+      <figcaption>The separation persists across all five model sizes and reaches 79% at 14B. The path
+        forward uses this direction as one candidate among antithetic, orthogonal, mixed, and zero actions.</figcaption>
+    </figure>
+
+    <p>The next study focuses on state-local action response. Natural dynamics vary strongly across goals,
+       while the effect of a tiny action depends on its application state. The generalized flow estimates
+       the distribution of future states; repeated counterfactual branches estimate how candidate actions
+       change that distribution. TraceScope then displays measured branches, probabilities, and uncertainty.</p>
+
+    <div class="note"><strong>How to read the two paths.</strong> The amber and blue trajectories remain the
+      target experiment: the same start, a small early intervention, and a later divergence. The plots above
+      measure the predictive flow and the size of the nudge; the path forward below describes how to measure
+      the missing state-local response before treating the blue path as a safety result.</div>
+  </section>
+
+  <hr class="rule"/>
+
+  <section>
+    <p class="eyebrow">Next experiment</p>
+    <h2>The path forward</h2>
+    <p>The next implementation tests whether trajectory tendency provides earlier useful information and
+       whether a low-KL action changes the corresponding future-risk probability. Repeated counterfactual
+       branches begin from the <em>same</em> naturally occurring agent states, allowing matched branches to
+       identify a local causal response in native activation space.</p>
+    <ol>
+      <li><strong>Build the full trace state</strong> from conversation history, memory, tool calls, plan,
+          environment observations, and native model activations.</li>
+      <li><strong>Separate the threat models</strong> into held-out persistent-adversary and endogenous-drift
+          sets, since each produces a different transition distribution.</li>
+      <li><strong>Measure lead time</strong> against a direct classifier given the same current state, then
+          ablate recent velocity, phase, and history to locate the added predictive information.</li>
+      <li><strong>Find sensitive interior states</strong> where safe and unsafe futures both occur and the
+          estimated future-risk probability can still move.</li>
+      <li><strong>Branch repeatedly</strong> from each state with zero, antithetic, orthogonal, and mixed
+          low-KL actions; estimate the local action gradient and its uncertainty.</li>
+      <li><strong>Gate the intervention</strong> on agreement across matched branches, then measure unsafe
+          outcomes, task success, refusal rate, response quality, and cumulative KL.</li>
+      <li><strong>Project the measured result</strong> into TraceScope with branch probability and uncertainty,
+          keeping the 3D field as a view of high-dimensional evidence.</li>
+    </ol>
+    <p>A valid controller requires earlier calibrated risk than the current-state baseline, a stable local
+       action effect across repeated branches, and retained task performance. Held-out adversarial and drift
+       trajectories provide the test before adaptive intervention begins.</p>
   </section>
 </div>
 
 <script>
-const ALPHA=[0,0.5,1,1.5,2,3,4,6,8,12,16,24];
-const prompts=[
-  {name:"bypass", d:[144,36,36,36,10,10,10,10,10,10,10,10]},
-  {name:"pathogen", d:[155,155,155,84,84,39,39,39,22,22,22,13]},
-  {name:"ransomware", d:[160,31,31,31,31,31,31,31,31,31,31,9]},
-  {name:"weapon", d:[160,160,18,18,18,18,18,18,11,11,11,0]}
+const prediction=[
+  {label:"validation", persistence:16.329, flow:13.512},
+  {label:"sealed test", persistence:16.034, flow:13.584}
 ];
-const meanA=[154.75,95.5,60,42.25,35.75,24.5,24.5,24.5,18.5,18.5,18.5,8];
+const klStats=[
+  {label:"median",value:0.0001469,limit:0.001},
+  {label:"95th percentile",value:0.0012353,limit:0.005}
+];
 const basinByClass=[
-  {label:"unsafe start",   v:0.933, c:"#8A3F37"},
-  {label:"changed subject",v:0.503, c:"#9A7A2A"},
-  {label:"safe start",     v:0.080, c:"#2F6E55"}];
-const scaling={labels:["0.5B","1.5B","3B","7B","14B"], clean:[64,70,72,69,79]};
+  {label:"unsafe start",v:0.933,c:"#8A3F37"},
+  {label:"changed subject",v:0.503,c:"#9A7A2A"},
+  {label:"safe start",v:0.080,c:"#2F6E55"}
+];
+const scaling={
+  labels:["0.5B","1.5B","3B","7B","14B"],
+  clean:[64,70,72,69,79]
+};
 
 const NS="http://www.w3.org/2000/svg";
 function el(t,a){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
 function txt(x,y,s,anchor){const e=el("text",{x,y,class:"tick","text-anchor":anchor||"middle"});e.textContent=s;return e;}
 
-(function(){ // chart A: per-prompt thin lines + mean
-  const svg=document.getElementById("chartA"); const W=640,H=320,L=62,R=24,T=20,B=46;
-  const x0=L,x1=W-R,y0=H-B,y1=T; const xmax=24;
-  const X=v=>x0+v/xmax*(x1-x0), Y=v=>y0-v/160*(y0-y1);
+(function(){ // chart A: held-out three-step endpoint error
+  const svg=document.getElementById("chartA"); const W=640,H=290,L=58,R=24,T=24,B=48;
+  const x0=L,x1=W-R,y0=H-B,y1=T,ymax=18,Y=v=>y0-v/ymax*(y0-y1);
   svg.appendChild(el("line",{x1:x0,y1:y0,x2:x1,y2:y0,class:"axis"}));
-  [0,4,8,12,16,24].forEach(t=>{svg.appendChild(el("line",{x1:X(t),y1:y0,x2:X(t),y2:y0+5,class:"axis"}));svg.appendChild(txt(X(t),y0+18,t));});
-  [[0,"0"],[80,"80"],[160,"160 words"]].forEach(t=>svg.appendChild(txt(x0-8,Y(t[0])+4,t[1],"end")));
-  svg.appendChild(txt((x0+x1)/2,H-6,"push strength"));
-  prompts.forEach(p=>{let d="";p.d.forEach((v,i)=>d+=(i?"L":"M")+X(ALPHA[i]).toFixed(1)+" "+Y(v).toFixed(1)+" ");
-    svg.appendChild(el("path",{d,fill:"none",stroke:"#bdb4a6","stroke-width":1.4,opacity:.9}));});
-  let dm="";meanA.forEach((v,i)=>dm+=(i?"L":"M")+X(ALPHA[i]).toFixed(1)+" "+Y(v).toFixed(1)+" ");
-  svg.appendChild(el("path",{d:dm,fill:"none",stroke:"#3F6493","stroke-width":3,"stroke-linejoin":"round"}));
-  meanA.forEach((v,i)=>svg.appendChild(el("circle",{cx:X(ALPHA[i]),cy:Y(v),r:3,fill:"#3F6493"})));
+  [0,6,12,18].forEach(v=>{svg.appendChild(el("line",{x1:x0,y1:Y(v),x2:x1,y2:Y(v),stroke:"#ece6db","stroke-width":1}));svg.appendChild(txt(x0-8,Y(v)+4,v,"end"));});
+  const slot=(x1-x0)/prediction.length,bw=58,gap=10;
+  prediction.forEach((row,i)=>{const center=x0+slot*(i+.5),xp=center-bw-gap/2,xf=center+gap/2;
+    svg.appendChild(el("rect",{x:xp,y:Y(row.persistence),width:bw,height:y0-Y(row.persistence),rx:4,fill:"#bdb4a6"}));
+    svg.appendChild(el("rect",{x:xf,y:Y(row.flow),width:bw,height:y0-Y(row.flow),rx:4,fill:"#3F6493"}));
+    svg.appendChild(txt(xp+bw/2,Y(row.persistence)-7,row.persistence.toFixed(2)));
+    svg.appendChild(txt(xf+bw/2,Y(row.flow)-7,row.flow.toFixed(2)));
+    svg.appendChild(txt(center,y0+20,row.label));
+  });
 })();
 
-(function(){ // chart B: horizontal bars
-  const svg=document.getElementById("chartB"); const W=640,H=200,L=150,R=46,T=12,B=14; const x0=L,x1=W-R;
+(function(){ // chart B: local KL relative to frozen limit
+  const svg=document.getElementById("chartB"); const W=640,H=210,L=150,R=42,T=22,B=20,x0=L,x1=W-R;
+  klStats.forEach((row,i)=>{const y=T+i*74,h=32,ratio=row.value/row.limit,w=ratio*(x1-x0);
+    svg.appendChild(el("rect",{x:x0,y,width:x1-x0,height:h,rx:6,fill:"#ece6db"}));
+    svg.appendChild(el("rect",{x:x0,y,width:w,height:h,rx:6,fill:"#2F6E55"}));
+    svg.appendChild(txt(x0-12,y+21,row.label,"end"));
+    svg.appendChild(txt(x0+w+8,y+21,(ratio*100).toFixed(1)+"% of limit","start"));
+    svg.appendChild(txt(x1,y+h+17,"limit "+row.limit.toFixed(3),"end"));
+  });
+})();
+
+(function(){ // chart C: fitted dangerous-basin share
+  const svg=document.getElementById("chartC"); const W=640,H=200,L=150,R=46,T=12,B=14; const x0=L,x1=W-R;
   basinByClass.forEach((b,i)=>{const y=T+i*((H-T-B)/basinByClass.length)+4,h=30,w=b.v*(x1-x0);
     svg.appendChild(el("rect",{x:x0,y,width:x1-x0,height:h,rx:5,fill:"#ece6db"}));
     svg.appendChild(el("rect",{x:x0,y,width:w,height:h,rx:5,fill:b.c}));
@@ -399,12 +481,12 @@ function txt(x,y,s,anchor){const e=el("text",{x,y,class:"tick","text-anchor":anc
     svg.appendChild(txt(x0+w+8,y+20,Math.round(b.v*100)+"%","start"));});
 })();
 
-(function(){ // chart D: vertical bars, safety-topic separation 0-100%
+(function(){ // chart D: safety-topic separation
   const svg=document.getElementById("chartD"); const W=640,H=280,L=54,R=24,T=22,B=44; const x0=L,x1=W-R,y0=H-B,y1=T;
-  const ymax=100, Y=v=>y0-v/ymax*(y0-y1);
+  const ymax=100,Y=v=>y0-v/ymax*(y0-y1);
   svg.appendChild(el("line",{x1:x0,y1:y0,x2:x1,y2:y0,class:"axis"}));
   [[0,"0"],[50,"50%"],[100,"100%"]].forEach(t=>svg.appendChild(txt(x0-8,Y(t[0])+4,t[1],"end")));
-  const n=scaling.labels.length, slot=(x1-x0)/n, bw=slot*0.5;
+  const n=scaling.labels.length,slot=(x1-x0)/n,bw=slot*0.5;
   scaling.clean.forEach((v,i)=>{const cx=x0+slot*(i+0.5);
     svg.appendChild(el("rect",{x:cx-bw/2,y:Y(v),width:bw,height:y0-Y(v),rx:4,fill:"#1D9E75"}));
     svg.appendChild(txt(cx,Y(v)-7,v+"%"));
