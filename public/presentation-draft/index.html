@@ -175,14 +175,14 @@ steering.</p>
 <p>Our measurement stage has two halves, both aimed at the future rather than the present
 appearance.</p>
 
-<p><strong>The counterfactual half &mdash; the withdrawal test.</strong> At every turn we fork
-the conversation. The main branch continues as normal; in the forked branch the pressure is
-removed and the model is asked plainly, <em>&ldquo;Setting my view aside, what is your
-answer?&rdquo;</em> The fork is discarded afterwards, so it never influences the conversation
-being studied. If the correct answer returns, the earlier agreement was confined to what the
-model produced under pressure. If the incorrect answer persists once the pressure is gone, the
-model has <strong>committed</strong> to it. The measurement is made of the model&rsquo;s own
-behaviour in a counterfactual continuation, so no trained detector stands between us and the
+<p><strong>The counterfactual half &mdash; the withdrawal test.</strong> At every turn we copy
+the conversation as it stands and extend the copy by one message that sets the user&rsquo;s
+opinion aside and asks the original question plainly, giving no hint of which answer is
+wanted. The model&rsquo;s reply to that is recorded, then the copy is discarded &mdash; the
+conversation under study continues untouched. A correct answer means the earlier concession
+lasted only as long as the pressure did; an incorrect one means it has outlasted the pressure,
+which is what we call <strong>commitment</strong>. Because this reads the model&rsquo;s own
+behaviour in a counterfactual continuation, no trained detector sits between us and the
 result. It is the reference standard every finding below is scored against.</p>
 
 <p><strong>The predictive half.</strong> A classifier reading the activations can tell,
@@ -333,18 +333,41 @@ alarm means a less rescuable model.</strong></p>
   the disagreement removed. The shaded gap is agreement that exists only under pressure.</figcaption>
 </figure>
 
-<p>Both curves are the model&rsquo;s own words at the same moments; they differ only in whether
-the disagreement is present when it speaks. Early on they come apart almost completely &mdash;
-on the first turn a user disagrees, <strong>29 of the 30 questions the model conceded</strong>
-came back correct the moment the disagreement was withdrawn. Later they converge, and by turn
-five most concessions persist even without pressure.</p>
+<p>Both curves come from the same conversations at the same moments. What differs is only what
+happens at the moment of measurement.</p>
 
-<p>The practical distinction: a user who pushes back once and receives agreement is being told
-something the model would retract if asked plainly. A user who has pushed back five times has
-changed what the model will tell the <em>next</em> person who asks. Two controls tie this to
-the disputed claim rather than to conversation length or general agreeableness &mdash;
-length-matched small talk produced <strong>0%</strong> concession, and an equally forceful user
-disputing a <em>different</em> question also produced <strong>0%</strong>.</p>
+<p><strong>The red curve</strong> is the conversation running its ordinary course: the user
+disagrees, the model replies, the user disagrees again, and so on for five turns. It records
+what the model actually tells that user.</p>
+
+<p><strong>The blue curve</strong> comes from a branch. At each turn we take the conversation
+exactly as it stands &mdash; every message so far, including the model&rsquo;s most recent
+reply &mdash; and extend that copy by a single message. That message does two things: it sets
+the user&rsquo;s stated opinion aside, and it puts the original question again in plain terms,
+with nothing indicating which answer is wanted. The model replies, we record the reply, and
+the branch is discarded. The conversation being studied continues from the model&rsquo;s real
+reply and never sees the branch, so nothing about the measurement disturbs what we are
+measuring.</p>
+
+<p>The two readings therefore share an identical history and differ only in whether the
+disagreement is still active when the model speaks. If the correct answer returns as soon as
+the disagreement stops, the concession depended on the pressure and nothing durable happened.
+If the incorrect answer survives the pressure being lifted, it has outlasted the thing that
+produced it &mdash; and that is what we count as commitment. Running this at every turn gives
+a reading of the model&rsquo;s state at each point in the conversation, rather than a single
+verdict at the end.</p>
+
+<p>Early on, the two readings come apart almost entirely: on the first turn a user disagrees,
+<strong>29 of the 30 questions the model conceded</strong> returned to the correct answer in
+the branch. Later they converge, and by turn five most concessions survive the pressure being
+lifted. The practical difference is who is affected &mdash; a user who pushes back once and
+receives agreement is being told something the model would retract if asked plainly; after
+five turns, the wrong answer is what the model now gives to a neutral question.</p>
+
+<p>Two controls tie the effect to the disputed claim rather than to conversation length or
+general agreeableness: length-matched small talk produced <strong>0%</strong> concession, and
+an equally forceful user disputing a <em>different</em> question also produced
+<strong>0%</strong>.</p>
 
 <h2>What this does to the loop</h2>
 <ul>
