@@ -28,6 +28,8 @@ h1,h2 { color:var(--ink); font-family:var(--serif); font-weight:600;
   text-wrap:balance; line-height:1.22; }
 h1 { font-size:2.3rem; margin:0 0 .5rem; letter-spacing:-.015em; }
 h2 { font-size:1.5rem; margin:3.4rem 0 .2rem; }
+h3 { color:var(--ink); font-family:var(--sans); font-size:1.08rem; font-weight:650;
+  margin:2.2rem 0 .3rem; line-height:1.35; }
 p { margin:.85rem 0; }
 a { color:var(--hold); }
 strong { color:var(--ink); font-weight:650; }
@@ -348,6 +350,51 @@ disruption.</p>
 
 <blockquote><p>Force is the lever the standard loop reaches for. Timing is the lever that
 works.</p></blockquote>
+
+<h3>Why this matters more than it first appears: acting early lets you act weakly</h3>
+
+<p>The reason to care about dose is that <strong>strong steering is the dangerous kind</strong>.
+A model does not store one clean feature per direction; concepts are packed together and share
+overlapping directions, so pushing along one of them drags unrelated things with it. Push
+gently and the collateral movement is small. Push hard and you disturb capabilities that have
+nothing to do with sycophancy, and at the extreme you move the internal state outside the range
+the model was ever trained to process, where its output degrades badly. Every published
+steering method carries this risk, and it grows with the strength applied.</p>
+
+<p>Our dose comparison shows the cost curve directly. Halving the strength cuts drift on
+unrelated prompts by <strong>4.6&times;</strong> (0.86 to 0.19), restores accuracy on held-out
+facts to <strong>100%</strong> from 96.7%, and lowers the rate at which a correct answer is
+broken. At the gentle dose, <strong>27% of responses were textually identical</strong> to what
+the model would have said with no intervention at all &mdash; the visible behaviour was
+untouched while the internal state had been moved.</p>
+
+<div class="readout">
+  <div><span class="n good">4.6&times;</span><span class="k">less drift at half strength</span></div>
+  <div><span class="n good">100%</span><span class="k">held-out facts retained</span></div>
+  <div><span class="n">27%</span><span class="k">responses left textually identical</span></div>
+</div>
+
+<p><strong>This is what the predictive measurement buys.</strong> A detector that waits for
+sycophancy to become visible can only act once the model is already conceding &mdash; late,
+where Finding 3 shows a correction must be strong and still mostly fails. A measurement that
+asks instead <em>&ldquo;would this model concede if someone pushed?&rdquo;</em> can fire during
+an ordinary exchange, before any pressure exists. Some conversational states are primed: the
+topic and the framing put the model where a determined user would tip it over, while the
+transcript at that moment looks entirely unremarkable. Reading the text tells you nothing;
+reading the disposition does.</p>
+
+<p>Acting there needs only the faintest nudge, because there is nothing yet to undo &mdash;
+merely a leaning to offset. That closes the loop on safety: <strong>acting proactively is what
+makes gentle steering sufficient, and gentle steering is what makes the intervention
+safe.</strong> The ambition is suppression so light that the model answers exactly as it would
+have, phrase for phrase, while no longer being primed to concede if the conversation turns
+adversarial.</p>
+
+<blockquote class="caveat"><p><strong>Tested and untested.</strong> The dose costs above, the
+timing effect, and the ability to predict conceding before the model answers are all measured
+here. Applying suppression during a genuinely neutral exchange, before any disagreement has
+occurred, is the natural next experiment and one we have not yet run &mdash; every steering
+trial in this work took place inside an already-pressured conversation.</p></blockquote>
 
 <h2><span class="eyebrow">Finding 5</span><br>The alarm points away from the moments it can help</h2>
 
