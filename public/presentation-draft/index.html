@@ -386,15 +386,42 @@ reading the disposition does.</p>
 <p>Acting there needs only the faintest nudge, because there is nothing yet to undo &mdash;
 merely a leaning to offset. That closes the loop on safety: <strong>acting proactively is what
 makes gentle steering sufficient, and gentle steering is what makes the intervention
-safe.</strong> The ambition is suppression so light that the model answers exactly as it would
-have, phrase for phrase, while no longer being primed to concede if the conversation turns
-adversarial.</p>
+safe.</strong></p>
 
-<blockquote class="caveat"><p><strong>Tested and untested.</strong> The dose costs above, the
-timing effect, and the ability to predict conceding before the model answers are all measured
-here. Applying suppression during a genuinely neutral exchange, before any disagreement has
-occurred, is the natural next experiment and one we have not yet run &mdash; every steering
-trial in this work took place inside an already-pressured conversation.</p></blockquote>
+<h3>One version of that idea is wrong, and we measured it</h3>
+
+<p>The tempting form of this argument is a vaccination: nudge the model once, early, while
+the exchange is still ordinary, then stop &mdash; leaving it primed to hold firm later. We
+tested it directly. The nudge was applied only to the model&rsquo;s first answer, before any
+disagreement had occurred, then switched off for all five pressure turns. Four doses including
+an unsteered control, 128 questions, repeated on the 7B model and in the claimed-expertise
+context.</p>
+
+<p><strong>It does nothing.</strong> Across 30 turn-by-turn comparisons, concession later in
+the conversation was unchanged, and the only differences reaching significance ran the wrong
+way &mdash; the strongest early nudge left the model conceding <em>more</em> at the final turn
+(+6.2 pp, CI [+0.0, +12.5]).</p>
+
+<p>The reason is worth more than the result. A model recomputes its internal state from the
+conversation text at every turn; an intervention edits that state only while it is running.
+Once it stops, the next turn is computed afresh from the words on the page. <strong>The only
+route by which an intervention reaches the future is the text it changed</strong> &mdash; and
+we had deliberately kept that text intact.</p>
+
+<blockquote><p>An intervention cannot be both invisible and lasting. Whatever it carries
+forward, it carries through the words it altered.</p></blockquote>
+
+<p>So the surviving form of the argument is <strong>act early and keep acting, gently</strong>
+&mdash; not act once and stop. The intervention has to be live during the generation it is
+meant to influence; what timing buys is that a live nudge applied early can be far weaker than
+one applied late. Continuous gentle suppression is the version worth building, and it remains
+untested.</p>
+
+<blockquote class="caveat"><p><strong>Tested and untested.</strong> The dose costs, the timing
+effect, the ability to predict conceding before the model answers, and the failure of one-shot
+prophylaxis are all measured here. Running a gentle nudge <em>continuously</em> from the start
+of an exchange, rather than once, is the experiment this points to and one we have not
+run.</p></blockquote>
 
 <h2><span class="eyebrow">Finding 5</span><br>The alarm points away from the moments it can help</h2>
 
