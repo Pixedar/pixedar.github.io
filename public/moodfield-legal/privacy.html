@@ -20,7 +20,7 @@
 <body>
 
 <h1>Privacy Policy — MoodField</h1>
-<p class="muted">Last updated: 2026-05-09</p>
+<p class="muted">Last updated: 2026-08-11</p>
 
 <h2>Controller</h2>
 <p><strong>Wiktor Tomasik</strong> (sole proprietor), ul. Poznańska 10, Kraków, Poland.<br/>
@@ -35,7 +35,7 @@ A separate Data Protection Officer is not required under GDPR Art. 37(1) for an 
 <tr><td>Embeddings derived from entries</td><td>high-dimensional vector representations of your text</td><td>Clustering, dimension reduction, flow field</td><td>Same as entries above</td></tr>
 <tr><td>Usage statistics</td><td>daily API call counts, tier history</td><td>Quota enforcement, fraud prevention</td><td>Firestore (Europe)</td></tr>
 <tr><td>Subscription state</td><td>tier, Play purchase token, expiry timestamp</td><td>Granting paid features</td><td>Firestore + Google Play</td></tr>
-<tr><td>Diagnostic logs (opt-in)</td><td>crash stack traces, never entry text</td><td>Debugging</td><td>Firebase Crashlytics</td></tr>
+<tr><td>Processing-failure diagnostics</td><td>processing stage, scrubbed error summary, retry counts, app version, Android API level and device make/model; never entry text, embeddings or credentials</td><td>Reliability and debugging during service operation</td><td>Firestore (Europe multi-region)</td></tr>
 </table>
 <p>We do <strong>not</strong> collect: contacts, location, calendar, photos, microphone audio outside of recordings you explicitly start, or device identifiers beyond what Firebase requires.</p>
 <p>We do <strong>not</strong> sell your data and we do <strong>not</strong> use it for advertising.</p>
@@ -56,7 +56,7 @@ A separate Data Protection Officer is not required under GDPR Art. 37(1) for an 
 <h2>4. Third-party processors</h2>
 <table>
 <tr><th>Processor</th><th>What they receive</th><th>Region</th></tr>
-<tr><td>Google (Firebase Auth, Firestore, Cloud Functions, Crashlytics)</td><td>Account ID, entries when synced, crash logs</td><td>Europe multi-region (eur3)</td></tr>
+<tr><td>Google (Firebase Auth, Firestore and Cloud Functions)</td><td>Account ID, entries when synced, entitlement state and sanitised processing-failure diagnostics</td><td>Europe multi-region (eur3)</td></tr>
 <tr><td>OpenAI</td><td>Entry text submitted for embedding/chat</td><td>United States (under SCC)</td></tr>
 <tr><td>Google AI Studio (Gemini)</td><td>Entry text submitted for embedding</td><td>Google data centres (under SCC where applicable)</td></tr>
 <tr><td>Hugging Face / Scaleway</td><td><em>Development comparison only.</em> Not used in the production app.</td><td>EU</td></tr>
@@ -80,9 +80,9 @@ A separate Data Protection Officer is not required under GDPR Art. 37(1) for an 
 <h2>7. Data retention</h2>
 <ul>
 <li>Mood / journal / dream entries: until you delete them or the account.</li>
-<li>Crash logs (opt-in): 90 days.</li>
+<li>Sanitised processing-failure diagnostics: expire after 30 days and are automatically deleted by Firestore TTL, normally within 24 hours after expiry.</li>
 <li>Subscription / billing records: 6 years (Polish tax-law retention).</li>
-<li>Daily usage counters: rolling 90-day window, then aggregated.</li>
+<li>Usage and quota counters: retained while needed to operate and protect the service, then deleted with the account unless legally required or irreversibly aggregated.</li>
 </ul>
 
 <h2>8. Security</h2>
