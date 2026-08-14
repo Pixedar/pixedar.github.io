@@ -546,12 +546,28 @@ flip. At identifying which of those states a nudge can still rescue it scores
 <strong>0.33</strong>, below the coin flip, exactly as it did on the original models. Rerun again
 on Qwen2.5-14B it scores <strong>0.30</strong>. Four models, two families, the same inversion.</p>
 
-<p><strong>Gentle correction still prevents rather than masks.</strong> On OLMo-2 the light nudge
-applied throughout the conversation reduces what the model is left holding from 16.8% to
-<strong>11.7%</strong>, while what it says out loud does not measurably change. The reduction
-survives correcting for having tested two strengths. The stronger nudge does nothing at all,
-which reproduces the qualifier rather than only the headline: it is the <em>gentle</em>
-continuous correction that works.</p>
+<p><strong>Light correction still prevents rather than masks.</strong> On OLMo-2 the nudge
+applied throughout the conversation reduces what the model is left holding from 17.5% to
+<strong>11.7%</strong> at its best setting, while what it says out loud does not measurably
+change.</p>
+
+<p><strong>The dose has to be tuned, not minimised.</strong> Two strengths cannot separate a real
+dose-response from one lucky measurement, so we ran five. The answer is an inverted U: prevention
+climbs from 2.2 points at the lightest setting to <strong>5.8 points at 0.15</strong> &mdash;
+which stays significant even after correcting for having tested five doses &mdash; then falls
+back to 0.7 by the strongest. Taking the three interior doses against the two extremes,
+<strong>4.9 points of prevention against 1.5</strong>, a difference of +3.4 (interval +1.0 to
++6.1).</p>
+
+<blockquote><p>There is a working middle range. Too light does nothing; too strong does nothing.
+A correction of this kind has to be tuned rather than simply kept small.</p></blockquote>
+
+<p>An earlier version of this page said the effect was specifically that <em>gentler</em> is
+better, on the strength of two doses. The five-dose series shows that is wrong &mdash; the
+lightest setting we tested prevents nothing measurable &mdash; so we have corrected it here
+rather than quietly dropping it. Worth recording that a linear trend test called the five doses
+&ldquo;flat&rdquo;: a straight line cannot fit a peak, and the slope sits near zero precisely
+because the response rises and then falls.</p>
 
 <h2>What this does to the loop</h2>
 <ul>
