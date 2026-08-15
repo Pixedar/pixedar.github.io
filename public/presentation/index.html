@@ -534,7 +534,7 @@ user&rsquo;s answer 30&ndash;40% of the time. They are not less agreeable in wha
 user. They are only less likely to mean it &mdash; which is a different, and in some ways
 stranger, thing to be.</p>
 
-<h3>The two central results survive a change of family</h3>
+<h3>The central results survive a change of family</h3>
 
 <p>The earlier draft rested on one model family. Both load-bearing results have now been rerun on
 OLMo-2, an openly-trained model from a different lab, using its own conversations and its own
@@ -568,6 +568,22 @@ lightest setting we tested prevents nothing measurable &mdash; so we have correc
 rather than quietly dropping it. Worth recording that a linear trend test called the five doses
 &ldquo;flat&rdquo;: a straight line cannot fit a peak, and the slope sits near zero precisely
 because the response rises and then falls.</p>
+
+<p><strong>Timing replicates; the dose trade-off does not, yet.</strong> Finding 4 has two parts,
+and they now stand differently. <em>Acting early beats acting late</em> holds on OLMo-2 as
+plainly as on Qwen: at a matched strength, correcting at the first turn rescues
+<strong>31.8%</strong> of caved answers and correcting at the fifth rescues <strong>zero</strong>
+&mdash; not one of the 22 questions that caved at both points. That makes it a three-model,
+two-family result.</p>
+
+<p>The sharper claim &mdash; that correcting <em>early and weakly</em> beats correcting
+<em>late and strongly</em> &mdash; does not reach significance on OLMo-2 (+4.5 points, interval
++0.0 to +13.6). The reason is visible rather than mysterious: this model&rsquo;s weak setting
+rescues only 4.5% even when applied early, so the early arm has little with which to beat the late
+one, and 22 questions is not many. That is an absence of evidence rather than evidence of absence,
+and the dose series above suggests why &mdash; 0.25 sits past this model&rsquo;s useful range,
+where nothing much works at any timing. Until someone reruns it nearer the working middle,
+&ldquo;early and weak beats late and strong&rdquo; should be quoted as a Qwen result.</p>
 
 <h2>What this does to the loop</h2>
 <ul>
