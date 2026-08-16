@@ -1,0 +1,105 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Sycophancy: what a model says vs what it still holds — data</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root { --ink:#16202b; --body:#3c4a58; --muted:#66757f; --paper:#f6f8fa;
+  --panel:#ecf0f4; --line:#d6dde5; --link:#2f6fb0;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+@media (prefers-color-scheme: dark) {
+  :root { --ink:#e6edf5; --body:#bdc9d6; --muted:#8b9aa8; --paper:#11161c;
+    --panel:#1a222b; --line:#2b3641; --link:#6ea8e0; } }
+body { margin:0; background:var(--paper); color:var(--body);
+  font-family:var(--sans); font-size:16px; line-height:1.62; }
+.wrap { max-width:720px; margin:0 auto; padding:56px 22px 96px; }
+h1 { font-family:var(--serif); color:var(--ink); font-size:1.9rem;
+  line-height:1.24; margin:0 0 .6rem; letter-spacing:-.01em; }
+h2 { font-family:var(--serif); color:var(--ink); font-size:1.25rem;
+  margin:2.6rem 0 .4rem; }
+a { color:var(--link); }
+p { margin:.85rem 0; }
+.lede { font-size:1.08rem; }
+table { width:100%; border-collapse:collapse; margin:1.1rem 0; font-size:.92rem; }
+th,td { text-align:left; padding:7px 9px; border-bottom:1px solid var(--line);
+  vertical-align:top; }
+th { font-family:var(--mono); font-size:.72rem; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--muted); }
+code { font-family:var(--mono); font-size:.88em; background:var(--panel);
+  padding:1px 5px; border-radius:3px; }
+pre { background:var(--panel); border:1px solid var(--line); border-radius:4px;
+  padding:13px 15px; overflow-x:auto; font-family:var(--mono); font-size:.82rem;
+  line-height:1.55; }
+ul { padding-left:19px; }
+li { margin:.3rem 0; }
+.files a { font-family:var(--mono); font-size:.86rem; }
+footer { margin-top:3.4rem; padding-top:1.1rem; border-top:1px solid var(--line);
+  font-size:.85rem; color:var(--muted); }
+</style>
+
+<div class="wrap">
+<h1>Sycophancy: what a model says vs what it still holds</h1>
+
+<p class="lede">Per-question measurement data from a study of sycophancy under
+multi-turn factual pressure. A model answers a question correctly, a user insists
+it is wrong over five turns, and at every turn the conversation is copied, the
+disagreement set aside, and the question asked again plainly &mdash; so that
+agreeing out loud can be separated from actually changing its mind.</p>
+
+<p>Write-up: <a href="../presentation/">The louder the sycophancy alarm, the less a
+correction can do</a>.</p>
+
+<h2>The four measures</h2>
+
+<p>Six models, one row per question. At each pressure turn the same moment is
+measured four ways, so a result cannot rest on a single way of asking.</p>
+
+<table>
+  <tr><th>field</th><th>meaning</th></tr>
+  <tr><td><code>t{N}_said</code></td><td>what the model told the user at turn N</td></tr>
+  <tr><td><code>t{N}_withdraw</code></td><td>its answer when the disagreement is explicitly set aside</td></tr>
+  <tr><td><code>t{N}_natural</code></td><td>its answer after two turns of unrelated small talk, then a plain re-ask</td></tr>
+  <tr><td><code>t{N}_thirdparty</code></td><td>its answer to what a standard reference work says</td></tr>
+  <tr><td><code>t{N}_gap</code></td><td>log-probability of the true answer minus the user&rsquo;s, no generation involved</td></tr>
+  <tr><td><code>t{N}_lp_gold</code>, <code>t{N}_lp_wrong</code></td><td>the two log-probabilities behind that gap</td></tr>
+</table>
+
+<p>Labels are <code>gold</code> (the correct answer), <code>wrong</code> (the
+user&rsquo;s answer), or neither.</p>
+
+<ul class="files">
+  <li><a href="four-measures_qwen2.5-3b.jsonl">four-measures_qwen2.5-3b.jsonl</a></li>
+  <li><a href="four-measures_qwen2.5-7b.jsonl">four-measures_qwen2.5-7b.jsonl</a></li>
+  <li><a href="four-measures_qwen2.5-14b.jsonl">four-measures_qwen2.5-14b.jsonl</a></li>
+  <li><a href="four-measures_qwen2.5-32b.jsonl">four-measures_qwen2.5-32b.jsonl</a></li>
+  <li><a href="four-measures_phi-4-mini.jsonl">four-measures_phi-4-mini.jsonl</a></li>
+  <li><a href="four-measures_olmo-2-7b.jsonl">four-measures_olmo-2-7b.jsonl</a></li>
+</ul>
+
+<h2>Claimed authority</h2>
+
+<p>The same four measures under two levels of claimed user authority, identical in
+wording and turn count except for how much standing the user claims:
+<code>hearsay</code> (&ldquo;I read somewhere that&hellip;&rdquo;) against
+<code>authority</code> (&ldquo;I wrote the standard reference work on
+this&hellip;&rdquo;).</p>
+
+<ul class="files">
+  <li><a href="ladder-four-measures_qwen2.5-3b_hearsay.jsonl">ladder-four-measures_qwen2.5-3b_hearsay.jsonl</a></li>
+  <li><a href="ladder-four-measures_qwen2.5-3b_authority.jsonl">ladder-four-measures_qwen2.5-3b_authority.jsonl</a></li>
+</ul>
+
+<h2>Reading it</h2>
+
+<pre>import json
+rows = [json.loads(l) for l in open("four-measures_qwen2.5-32b.jsonl")]
+
+said = sum(r["t5_said"] == "wrong" for r in rows) / len(rows)
+held = sum(r["t5_withdraw"] != "gold" for r in rows) / len(rows)
+print(f"said the user's answer {said:.1%}, still held it {held:.1%}")</pre>
+
+<p>More of the raw data will be published here shortly.</p>
+
+<footer>CC BY 4.0 &middot; <a href="../presentation/">back to the write-up</a></footer>
+</div>
