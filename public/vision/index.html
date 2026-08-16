@@ -1,0 +1,262 @@
+<title>From one measured quantity to a learned controller</title>
+<style>
+:root {
+  --ink:#16202b; --body:#3c4a58; --muted:#66757f;
+  --paper:#f6f8fa; --panel:#eef2f6; --line:#d6dde5;
+  --now:#c0392b; --goal:#2f6fb0; --robot:#6b7b8c; --accent:#2e8b57;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --ink:#e6edf5; --body:#bdc9d6; --muted:#8b9aa8;
+    --paper:#11161c; --panel:#1a222b; --line:#2b3641;
+    --now:#e0705f; --goal:#6ea8e0; --robot:#8b9aa8; --accent:#5cb98a; }
+}
+:root[data-theme="dark"] { --ink:#e6edf5; --body:#bdc9d6; --muted:#8b9aa8;
+  --paper:#11161c; --panel:#1a222b; --line:#2b3641;
+  --now:#e0705f; --goal:#6ea8e0; --robot:#8b9aa8; --accent:#5cb98a; }
+:root[data-theme="light"] { --ink:#16202b; --body:#3c4a58; --muted:#66757f;
+  --paper:#f6f8fa; --panel:#eef2f6; --line:#d6dde5;
+  --now:#c0392b; --goal:#2f6fb0; --robot:#6b7b8c; --accent:#2e8b57; }
+
+body { margin:0; background:var(--paper); color:var(--body);
+  font-family:var(--sans); font-size:16.5px; line-height:1.6; }
+.wrap { max-width:1000px; margin:0 auto; padding:0 24px 90px; }
+h1,h2 { color:var(--ink); font-family:var(--serif); font-weight:600;
+  text-wrap:balance; line-height:1.2; }
+h1 { font-size:2.15rem; margin:0 0 .5rem; letter-spacing:-.015em; }
+h2 { font-size:1.4rem; margin:3rem 0 .4rem; }
+p { margin:.8rem 0; max-width:74ch; }
+strong { color:var(--ink); font-weight:650; }
+header { padding:58px 0 24px; border-bottom:1px solid var(--line); }
+.lede { font-size:1.12rem; margin:.9rem 0 0; max-width:74ch; }
+.eyebrow { font-family:var(--mono); font-size:.72rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted); }
+figure { margin:1.6rem 0 .6rem; }
+figcaption { font-family:var(--mono); font-size:.76rem; color:var(--muted);
+  margin-top:.5rem; }
+svg { width:100%; height:auto; display:block; }
+.box { border:1px solid var(--line); border-radius:4px; background:var(--panel);
+  padding:16px 20px; margin:1.4rem 0; }
+.box.now { border-left:3px solid var(--now); }
+.box.goal { border-left:3px solid var(--goal); }
+.tag { font-family:var(--mono); font-size:.68rem; letter-spacing:.1em;
+  text-transform:uppercase; padding:2px 7px; border-radius:2px; color:#fff; }
+.tag.now { background:var(--now); } .tag.goal { background:var(--goal); }
+ul { padding-left:1.15rem; max-width:74ch; } li { margin:.4rem 0; }
+.two { display:grid; grid-template-columns:1fr; gap:16px; margin:1.4rem 0; }
+@media (min-width:820px){ .two { grid-template-columns:1fr 1fr; } }
+.st { font-family:var(--mono); font-size:.7rem; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--muted); }
+footer { margin-top:3.5rem; padding-top:1.2rem; border-top:1px solid var(--line);
+  font-family:var(--mono); font-size:.76rem; color:var(--muted); }
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">Project framing</span>
+  <h1>One measured quantity today. A learned controller for many, later.</h1>
+  <p class="lede">The sycophancy work is a single narrow slice, deliberately chosen because it
+  can be measured exactly. The goal it serves is a controller that learns the relations between
+  a model&rsquo;s internal degrees of freedom and its conversational situation, and acts on
+  itself to stay safe &mdash; the way a robot&rsquo;s world model learns the laws of motion and
+  acts on its own body.</p>
+</header>
+
+<h2>The analogy that defines the target</h2>
+<p>A robot that plans has a <strong>world model</strong>: a learned account of how its state
+evolves under its own actions. Nobody hand-writes the physics. The model is learned from
+experience, it covers many degrees of freedom at once, it is <strong>action-conditioned</strong>
+&mdash; it answers <em>&ldquo;what happens if I do this?&rdquo;</em> &mdash; and it is used
+<strong>before</strong> acting, not after a collision.</p>
+
+<figure>
+<svg viewBox="0 0 940 320" role="img" aria-label="Two parallel pipelines. Above: a robot senses its physical state, a world model of the laws of motion predicts the consequence of a candidate action, and the robot acts on its arm. Below: a language model's internal state and conversation context feed a world model of internal relations, which predicts the consequence of a candidate steering action, and the model acts on itself.">
+  <defs>
+    <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+  <text x="0" y="16" font-family="var(--mono)" font-size="11.5" letter-spacing="1.6"
+        fill="var(--muted)">ROBOTICS &mdash; THE ESTABLISHED CASE</text>
+  <g font-family="var(--sans)" font-size="13.5">
+    <rect x="0" y="30" width="188" height="76" rx="4" fill="var(--panel)" stroke="var(--robot)"/>
+    <text x="16" y="55" fill="var(--ink)" font-weight="650">Physical state</text>
+    <text x="16" y="75" fill="var(--body)" font-size="12">joint angles, velocity,</text>
+    <text x="16" y="92" fill="var(--body)" font-size="12">contact, load</text>
+
+    <rect x="236" y="30" width="216" height="76" rx="4" fill="var(--panel)" stroke="var(--robot)"/>
+    <text x="252" y="55" fill="var(--ink)" font-weight="650">World model</text>
+    <text x="252" y="75" fill="var(--body)" font-size="12">laws of motion,</text>
+    <text x="252" y="92" fill="var(--body)" font-size="12">learned not written</text>
+
+    <rect x="500" y="30" width="216" height="76" rx="4" fill="var(--panel)" stroke="var(--robot)"/>
+    <text x="516" y="55" fill="var(--ink)" font-weight="650">Predict consequence</text>
+    <text x="516" y="75" fill="var(--body)" font-size="12">&ldquo;if I move like this,</text>
+    <text x="516" y="92" fill="var(--body)" font-size="12">where do I end up?&rdquo;</text>
+
+    <rect x="764" y="30" width="176" height="76" rx="4" fill="var(--panel)" stroke="var(--robot)"/>
+    <text x="780" y="55" fill="var(--ink)" font-weight="650">Act on the arm</text>
+    <text x="780" y="75" fill="var(--body)" font-size="12">motor commands</text>
+  </g>
+  <line x1="192" y1="68" x2="230" y2="68" stroke="var(--muted)" marker-end="url(#ar)"/>
+  <line x1="456" y1="68" x2="494" y2="68" stroke="var(--muted)" marker-end="url(#ar)"/>
+  <line x1="720" y1="68" x2="758" y2="68" stroke="var(--muted)" marker-end="url(#ar)"/>
+
+  <text x="0" y="176" font-family="var(--mono)" font-size="11.5" letter-spacing="1.6"
+        fill="var(--goal)">SELF-REGULATION &mdash; THE SAME SHAPE, TURNED INWARD</text>
+  <g font-family="var(--sans)" font-size="13.5">
+    <rect x="0" y="190" width="188" height="94" rx="4" fill="var(--panel)" stroke="var(--goal)"/>
+    <text x="16" y="215" fill="var(--ink)" font-weight="650">Internal state</text>
+    <text x="16" y="235" fill="var(--body)" font-size="12">many coordinates, plus</text>
+    <text x="16" y="252" fill="var(--body)" font-size="12">the conversational</text>
+    <text x="16" y="269" fill="var(--body)" font-size="12">situation it sits in</text>
+
+    <rect x="236" y="190" width="216" height="94" rx="4" fill="var(--panel)" stroke="var(--goal)"/>
+    <text x="252" y="215" fill="var(--ink)" font-weight="650">World model</text>
+    <text x="252" y="235" fill="var(--body)" font-size="12">relations between those</text>
+    <text x="252" y="252" fill="var(--body)" font-size="12">degrees of freedom,</text>
+    <text x="252" y="269" fill="var(--body)" font-size="12">learned not written</text>
+
+    <rect x="500" y="190" width="216" height="94" rx="4" fill="var(--panel)" stroke="var(--goal)"/>
+    <text x="516" y="215" fill="var(--ink)" font-weight="650">Predict consequence</text>
+    <text x="516" y="235" fill="var(--body)" font-size="12">&ldquo;if I steer like this,</text>
+    <text x="516" y="252" fill="var(--body)" font-size="12">what happens &mdash; and</text>
+    <text x="516" y="269" fill="var(--body)" font-size="12">what breaks?&rdquo;</text>
+
+    <rect x="764" y="190" width="176" height="94" rx="4" fill="var(--panel)" stroke="var(--goal)"/>
+    <text x="780" y="215" fill="var(--ink)" font-weight="650">Act on itself</text>
+    <text x="780" y="235" fill="var(--body)" font-size="12">adjust its own</text>
+    <text x="780" y="252" fill="var(--body)" font-size="12">internal state, gently,</text>
+    <text x="780" y="269" fill="var(--body)" font-size="12">while it is still cheap</text>
+  </g>
+  <line x1="192" y1="237" x2="230" y2="237" stroke="var(--muted)" marker-end="url(#ar)"/>
+  <line x1="456" y1="237" x2="494" y2="237" stroke="var(--muted)" marker-end="url(#ar)"/>
+  <line x1="720" y1="237" x2="758" y2="237" stroke="var(--muted)" marker-end="url(#ar)"/>
+  <path d="M852,284 L852,304 L94,304 L94,288" fill="none" stroke="var(--goal)"
+        stroke-dasharray="4 3" marker-end="url(#ar)"/>
+  <text x="380" y="318" font-family="var(--mono)" font-size="10.5"
+        fill="var(--muted)">the action changes the state it will next read</text>
+</svg>
+<figcaption>The robot acts on its arm; the controller acts on the model itself. Everything
+else about the shape is the same.</figcaption>
+</figure>
+
+<h2>Where the current project sits</h2>
+<p>A model&rsquo;s internal state has many degrees of freedom that matter for safety. This
+project takes <strong>one</strong>, defines it precisely enough to measure without ambiguity,
+and studies it end to end.</p>
+
+<figure>
+<svg viewBox="0 0 940 300" role="img" aria-label="A fan of eight axes representing safety-relevant degrees of freedom such as deference to the user, certainty, ownership of a claim, constraint-following, emotional register, refusal tendency, and framing. One axis, commitment to the user's answer, is highlighted in red and labelled as the one this project measures and controls. The remaining axes are greyed and labelled as unmeasured.">
+  <g font-family="var(--sans)" font-size="12.5">
+    <text x="0" y="16" font-family="var(--mono)" font-size="11.5" letter-spacing="1.6"
+          fill="var(--muted)">SAFETY-RELEVANT DEGREES OF FREEDOM</text>
+    <circle cx="180" cy="170" r="5" fill="var(--ink)"/>
+    <line x1="180" y1="170" x2="470" y2="170" stroke="var(--now)" stroke-width="2.6"/>
+    <circle cx="470" cy="170" r="4.5" fill="var(--now)"/>
+    <text x="482" y="167" fill="var(--now)" font-weight="650">commitment to the user&rsquo;s answer</text>
+    <text x="482" y="185" fill="var(--muted)" font-size="11.5">measured exactly &middot; controlled &middot; this project</text>
+
+    <line x1="180" y1="170" x2="430" y2="88" stroke="var(--line)" stroke-width="1.6"/>
+    <text x="440" y="86" fill="var(--muted)">certainty in a claim</text>
+    <line x1="180" y1="170" x2="400" y2="42" stroke="var(--line)" stroke-width="1.6"/>
+    <text x="410" y="40" fill="var(--muted)">ownership of a claim</text>
+    <line x1="180" y1="170" x2="430" y2="252" stroke="var(--line)" stroke-width="1.6"/>
+    <text x="440" y="256" fill="var(--muted)">following a stated constraint</text>
+    <line x1="180" y1="170" x2="400" y2="296" stroke="var(--line)" stroke-width="1.6"/>
+    <text x="410" y="298" fill="var(--muted)">emotional register</text>
+    <line x1="180" y1="170" x2="60" y2="88" stroke="var(--line)" stroke-width="1.6"/>
+    <text x="0" y="80" fill="var(--muted)">refusal</text>
+    <line x1="180" y1="170" x2="60" y2="252" stroke="var(--line)" stroke-width="1.6"/>
+    <text x="0" y="266" fill="var(--muted)">framing shift</text>
+    <line x1="180" y1="170" x2="120" y2="40" stroke="var(--line)" stroke-width="1.6"/>
+    <text x="88" y="30" fill="var(--muted)">&hellip; and others</text>
+  </g>
+</svg>
+<figcaption>One axis studied properly. The others are equally real and currently unmeasured.</figcaption>
+</figure>
+
+<h2>Two ways to grow this, and why only one of them scales</h2>
+
+<div class="two">
+  <div class="box now">
+    <span class="tag now">the tempting path</span>
+    <p style="margin-top:.7rem"><strong>Add more hand-defined quantities and more hand-written rules.</strong>
+    Pick the next behaviour, define a probe for it, find its steering direction, write a policy
+    for when to fire.</p>
+    <p class="st">why it stalls</p>
+    <ul>
+      <li>Every new behaviour costs a full research cycle.</li>
+      <li>The rules encode findings that turn out to be conditional &mdash; correction is hardest under claimed expertise, prevention works at one model size and merely masks at another.</li>
+      <li>Nothing transfers: a rule fitted to sycophancy says nothing about the next hazard.</li>
+      <li>Degrees of freedom interact, and a pile of independent rules cannot represent an interaction.</li>
+    </ul>
+  </div>
+
+  <div class="box goal">
+    <span class="tag goal">the target</span>
+    <p style="margin-top:.7rem"><strong>Learn the relations instead of specifying them.</strong>
+    A JEPA-style world model trained on the model&rsquo;s own internal coordinates and the
+    situation it is in, predicting how those coordinates move under a candidate action.</p>
+    <p class="st">what it gives</p>
+    <ul>
+      <li><strong>Many degrees of freedom at once</strong>, including their couplings, rather than one axis at a time.</li>
+      <li><strong>Action-conditioned:</strong> it answers what a specific intervention would do, not merely what state we are in.</li>
+      <li><strong>Proactive:</strong> consulted before acting, so the action can be small.</li>
+      <li>The findings become <em>training signal</em> rather than hard-coded rules.</li>
+    </ul>
+  </div>
+</div>
+
+<p>The distinction matters more than it sounds. Findings like <em>&ldquo;claimed expertise is
+the hardest situation to correct&rdquo;</em> or <em>&ldquo;this dose prevents at 3B and masks at
+7B&rdquo;</em> are exactly the relations such a model should learn from data. Writing them into
+a policy by hand freezes them, and they are already known to be conditional.</p>
+
+<h2>What the narrow project contributes to the general one</h2>
+<figure>
+<svg viewBox="0 0 940 168" role="img" aria-label="Four contributions flow from the narrow project into the general controller: a measurement standard based on counterfactual withdrawal, labelled outcome data pairing state and action with what happened, a set of validated controls that catch artefacts, and known structure such as the fact that timing matters more than force.">
+  <g font-family="var(--sans)" font-size="12.5">
+    <rect x="0" y="26" width="212" height="86" rx="4" fill="var(--panel)" stroke="var(--line)"/>
+    <text x="14" y="50" fill="var(--ink)" font-weight="650">A measurement standard</text>
+    <text x="14" y="70" fill="var(--body)" font-size="11.5">lift the pressure and re-ask &mdash;</text>
+    <text x="14" y="87" fill="var(--body)" font-size="11.5">ground truth that no probe</text>
+    <text x="14" y="104" fill="var(--body)" font-size="11.5">can fake</text>
+
+    <rect x="242" y="26" width="212" height="86" rx="4" fill="var(--panel)" stroke="var(--line)"/>
+    <text x="256" y="50" fill="var(--ink)" font-weight="650">Labelled experience</text>
+    <text x="256" y="70" fill="var(--body)" font-size="11.5">tens of thousands of</text>
+    <text x="256" y="87" fill="var(--body)" font-size="11.5">(state, action, outcome)</text>
+    <text x="256" y="104" fill="var(--body)" font-size="11.5">triples to train on</text>
+
+    <rect x="484" y="26" width="212" height="86" rx="4" fill="var(--panel)" stroke="var(--line)"/>
+    <text x="498" y="50" fill="var(--ink)" font-weight="650">Controls that bite</text>
+    <text x="498" y="70" fill="var(--body)" font-size="11.5">five headline effects of mine</text>
+    <text x="498" y="87" fill="var(--body)" font-size="11.5">died to them; the general</text>
+    <text x="498" y="104" fill="var(--body)" font-size="11.5">case will need them more</text>
+
+    <rect x="726" y="26" width="214" height="86" rx="4" fill="var(--panel)" stroke="var(--line)"/>
+    <text x="740" y="50" fill="var(--ink)" font-weight="650">Known structure</text>
+    <text x="740" y="70" fill="var(--body)" font-size="11.5">timing beats force; the</text>
+    <text x="740" y="87" fill="var(--body)" font-size="11.5">alarm runs opposite to</text>
+    <text x="740" y="104" fill="var(--body)" font-size="11.5">treatability</text>
+
+    <text x="0" y="146" font-family="var(--mono)" font-size="11" fill="var(--muted)">
+      these are the ingredients a learned controller needs &mdash; the narrow study is how you get them honestly
+    </text>
+  </g>
+</svg>
+</figure>
+
+<div class="box goal">
+  <p style="margin:0"><strong>The one-sentence version.</strong> Today I measure one precisely
+  defined internal quantity and suppress it by rule; what I am building is a world model that
+  learns how a model&rsquo;s internal degrees of freedom relate to its situation and move under
+  its own actions, so the system can steer itself early and gently instead of following rules
+  I wrote in advance.</p>
+</div>
+
+<footer>Framing for discussion &middot; the narrow result is the foundation, not the destination</footer>
+</div>
