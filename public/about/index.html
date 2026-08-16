@@ -1,0 +1,273 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>About — Wiktor Tomasik</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="I work where disciplines collide: turning abstract questions about inner states into prototypes you can look at and test.">
+<style>
+:root{
+  --ink:#16202b; --body:#3c4a58; --muted:#66757f;
+  --paper:#f6f8fa; --panel:#ecf0f4; --line:#d6dde5; --card:#ffffff;
+  --accent:#2f6fb0; --accent2:#2e8b57; --warm:#96631f; --plum:#7b4b8a;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --ink:#e6edf5; --body:#bdc9d6; --muted:#8b9aa8;
+    --paper:#11161c; --panel:#1a222b; --line:#2b3641; --card:#161e26;
+    --accent:#6ea8e0; --accent2:#5cb98a; --warm:#d3a45c; --plum:#b78ac4; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--body);
+  font-family:var(--sans);font-size:17px;line-height:1.65;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:0 22px 110px}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid transparent;
+  transition:border-color .15s}
+a:hover{border-bottom-color:currentColor}
+h1,h2,h3{color:var(--ink);font-family:var(--serif);font-weight:600;
+  line-height:1.22;text-wrap:balance}
+h1{font-size:2.5rem;margin:0 0 .5rem;letter-spacing:-.018em}
+h2{font-size:1.55rem;margin:3.6rem 0 .9rem;display:flex;align-items:center;gap:11px}
+h3{font-family:var(--sans);font-size:1.06rem;font-weight:650;margin:0 0 .35rem;
+  line-height:1.35}
+p{margin:.9rem 0}
+strong{color:var(--ink);font-weight:640}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--muted)}
+
+header{padding:76px 0 30px;border-bottom:1px solid var(--line)}
+.lede{font-size:1.19rem;color:var(--body);margin:1.1rem 0 0;max-width:60ch}
+
+svg.i{width:1.05em;height:1.05em;flex:none;stroke:currentColor;fill:none;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+h2 svg.i{width:1.15rem;height:1.15rem;color:var(--accent)}
+
+/* numbered distinctives */
+.points{display:grid;gap:14px;margin:1.6rem 0 0}
+.pt{display:grid;grid-template-columns:44px 1fr;gap:16px;align-items:start;
+  background:var(--card);border:1px solid var(--line);border-radius:9px;
+  padding:18px 20px}
+.pt .num{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+  background:var(--panel);color:var(--accent);font-family:var(--mono);
+  font-size:.86rem;font-weight:700}
+.pt p{margin:.3rem 0 0;font-size:.97rem}
+
+/* the chain of projects */
+.chain{position:relative;margin:1.8rem 0 0;padding-left:30px}
+.chain:before{content:"";position:absolute;left:9px;top:8px;bottom:8px;width:2px;
+  background:linear-gradient(180deg,var(--accent),var(--accent2),var(--plum))}
+.step{position:relative;margin:0 0 22px}
+.step:before{content:"";position:absolute;left:-27px;top:7px;width:11px;height:11px;
+  border-radius:50%;background:var(--card);border:2.5px solid var(--accent)}
+.step:nth-child(2):before{border-color:var(--accent2)}
+.step:nth-child(3):before{border-color:var(--warm)}
+.step:nth-child(4):before{border-color:var(--plum)}
+.step p{margin:.25rem 0 0;font-size:.97rem}
+
+/* project cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));
+  gap:13px;margin:1.5rem 0 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:9px;
+  padding:16px 17px;display:block;color:inherit;border-bottom:1px solid var(--line);
+  transition:transform .13s,box-shadow .13s,border-color .13s}
+.card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(20,40,70,.09);
+  border-color:var(--accent);border-bottom-color:var(--accent)}
+.card .top{display:flex;align-items:center;gap:9px;color:var(--accent);
+  margin-bottom:7px}
+.card .top svg.i{width:1.1rem;height:1.1rem}
+.card .nm{font-weight:650;color:var(--ink);font-size:.97rem}
+.card .ds{font-size:.87rem;color:var(--muted);line-height:1.5}
+
+/* open questions */
+.q{background:var(--panel);border-left:3px solid var(--accent);border-radius:0 7px 7px 0;
+  padding:15px 18px;margin:13px 0}
+.q h3{margin-bottom:.3rem}
+.q p{margin:0;font-size:.95rem}
+
+blockquote{margin:1.6rem 0;padding:14px 20px;border-left:3px solid var(--warm);
+  background:var(--panel);border-radius:0 7px 7px 0}
+blockquote p{margin:0;font-size:.97rem}
+
+.links{display:flex;flex-wrap:wrap;gap:9px;margin:1.4rem 0 0}
+.chip{display:inline-flex;align-items:center;gap:7px;background:var(--card);
+  border:1px solid var(--line);border-radius:999px;padding:7px 14px;
+  font-size:.88rem;color:var(--body);border-bottom:1px solid var(--line)}
+.chip:hover{border-color:var(--accent);color:var(--accent);
+  border-bottom-color:var(--accent)}
+.chip svg.i{width:1rem;height:1rem}
+
+footer{margin-top:4rem;padding-top:1.3rem;border-top:1px solid var(--line);
+  font-size:.86rem;color:var(--muted)}
+@media (max-width:560px){ h1{font-size:2rem} .pt{grid-template-columns:36px 1fr} }
+</style>
+
+<svg style="display:none">
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></symbol>
+  <symbol id="i-bridge" viewBox="0 0 24 24"><path d="M3 17V9M21 17V9M3 13c4-5 14-5 18 0M7 17v-3M12 17v-4M17 17v-3"/></symbol>
+  <symbol id="i-flow" viewBox="0 0 24 24"><path d="M3 8c3-3 6 3 9 0s6-3 9 0M3 16c3-3 6 3 9 0s6-3 9 0"/></symbol>
+  <symbol id="i-brain" viewBox="0 0 24 24"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-1 5.8V15a3 3 0 0 0 4 2.8V20M15 4a3 3 0 0 1 3 3 3 3 0 0 1 1 5.8V15a3 3 0 0 1-4 2.8V20M12 4v16"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path d="M9 19c-4 1.4-4-2-6-2.5M15 21v-3.6a3 3 0 0 0-.9-2.4c2.9-.3 6-1.4 6-6.4a4.7 4.7 0 0 0-1.3-3.2 4.3 4.3 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.6 11.6 0 0 0-6.2 0C6.7 1.9 5.7 2.2 5.7 2.2a4.3 4.3 0 0 0-.1 3.2A4.7 4.7 0 0 0 4.3 8.6c0 5 3.1 6.1 6 6.4a3 3 0 0 0-.9 2.3V21"/></symbol>
+  <symbol id="i-page" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="M10.5 9.5v5l4.5-2.5z"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+  <symbol id="i-in" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7.5 10.5V17M7.5 7.5v.01M11.5 17v-3.6a2.4 2.4 0 0 1 4.8 0V17"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.4 7.2L4 21l1.8-5.6A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="i-tools" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0 5.3 5.3L21 21H3l1-9.4a4 4 0 0 0 5.3-5.3L12 3z"/></symbol>
+</svg>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">About</span>
+  <h1>I build the thing so I can see the shape of it</h1>
+  <p class="lede">I work especially well at different levels of abstraction, or where
+  disciplines collide. Many useful ideas come from carrying a concept between fields that
+  normally do not speak to each other, and most of what I make is an attempt to do that
+  in something you can look at and poke.</p>
+</header>
+
+<h2><svg class="i"><use href="#i-spark"/></svg>What might be distinctive</h2>
+
+<div class="points">
+  <div class="pt"><div class="num">1</div>
+    <div><h3>I turn abstract inner states into mathematics</h3>
+    <p>I like the levels of abstraction where fields collide. That is where the transferable
+    ideas tend to be, because a concept that is ordinary in one field is often unfamiliar
+    and useful in another.</p></div></div>
+
+  <div class="pt"><div class="num">2</div>
+    <div><h3>I am an engineer and a researcher at once</h3>
+    <p>I start from abstract research questions and turn them into prototypes, working on the
+    bridge between theory and implementation.</p></div></div>
+
+  <div class="pt"><div class="num">3</div>
+    <div><h3>I use pictures to carry the argument</h3>
+    <p>Visual communication, technical storytelling and commercial R&amp;D, aimed at the gap
+    between scientific research and intuitive understanding. In science you have to build an
+    intuitive mental model of abstract things just to work out where you stand and where to
+    move next, and I try to build that intuition for interpretability by making prototypes.</p></div></div>
+</div>
+
+<h2><svg class="i"><use href="#i-flow"/></svg>How one project became the next</h2>
+
+<div class="chain">
+  <div class="step">
+    <h3><a href="https://pixedar.github.io/">Emotion Attractor</a></h3>
+    <p>I wanted to turn subjective data, emotions, into objective mathematics and geometry.
+    Thinking in terms of flows and currents turned it into a flow model I could play with,
+    which showed me the shape of a behavioural pattern rather than a description of it.</p>
+  </div>
+  <div class="step">
+    <h3><a href="https://github.com/Pixedar/TraceScope">TraceScope, and the idea of semantic flow</a></h3>
+    <p>The flow model generalised: meaning has currents too. That became a way of watching
+    how representational content moves rather than where it sits.</p>
+  </div>
+  <div class="step">
+    <h3><a href="https://pixedar.github.io/flow-steering/">Flow steering</a> and
+        <a href="https://pixedar.github.io/hidden-state-safety/">hidden state safety</a></h3>
+    <p>Semantic flow applied directly to language model safety. The hidden state work borrows
+    from robotics and from affective neuromodulatory control in neuroscience, which is the
+    clearest example of the cross domain habit doing real work.</p>
+  </div>
+  <div class="step">
+    <h3><a href="https://github.com/Pixedar/MindVisualizer">Brain information flow, then MindVisualizer</a></h3>
+    <p>It began as a <a href="https://zenodo.org/records/18200415">preprint</a>. Then I rendered
+    the data properly. Then low dimensional manifolds and semantic flow turned it into a tool
+    for seeing how the brain integrates information into a stable low dimensional shape.</p>
+  </div>
+</div>
+
+<p><strong>How this transfers further.</strong> The flow model from emotion generalises into how
+meaning tends to move, and that can be used to steer language models. The low dimensional
+manifold from brain signals relates to the geometry of the semantic space a language model
+learns. Both moves show up in my safety proposals.</p>
+
+<blockquote><p>Some of these, Flow Steering and my Medium writing especially, still need more
+validation, and I am unsure whether they would survive proper scientific review in their present
+form. They are here because they show how I connect concepts across fields, which is the part I
+would want someone to judge.</p></blockquote>
+
+<h2><svg class="i"><use href="#i-brain"/></svg>Where my mind currently is</h2>
+
+<div class="q">
+  <h3>Hidden states, affect and control</h3>
+  <p>Hidden states may carry latent signals that never appear in the text. Can those be used as
+  control variables, the way affect is used in the brain, or is the neuroscience analogy
+  misleading and unlikely to scale?</p>
+</div>
+<div class="q">
+  <h3>Understanding, theory of mind, information binding</h3>
+  <p>Where does the difference between pattern learning and understanding show up in social
+  reasoning? Does it live as learned moral and interactional patterns, or as binding geometry:
+  whose claim it is, what grounds it, whether the model represents another perspective or takes
+  it on as its own, and which actions become unavailable because of that structure.</p>
+</div>
+<div class="q">
+  <h3>Feedback, dynamics and generation</h3>
+  <p>In feedback driven systems, complexity emerges near the edge between stability and chaos.
+  How does that relate to compressing information into internal representations and unfolding it
+  again during generation?</p>
+</div>
+
+<h2><svg class="i"><use href="#i-tools"/></svg>Projects</h2>
+
+<div class="grid">
+  <a class="card" href="https://pixedar.github.io/">
+    <div class="top"><svg class="i"><use href="#i-link"/></svg></div>
+    <div class="nm">Portfolio &amp; Emotion Attractor</div>
+    <div class="ds">The shape of behavioural patterns, made playable.</div></a>
+
+  <a class="card" href="https://github.com/Pixedar/TraceScope">
+    <div class="top"><svg class="i"><use href="#i-github"/></svg></div>
+    <div class="nm">TraceScope</div>
+    <div class="ds">Semantic flow: watching how meaning moves.</div></a>
+
+  <a class="card" href="https://pixedar.github.io/flow-steering/">
+    <div class="top"><svg class="i"><use href="#i-flow"/></svg></div>
+    <div class="nm">Flow steering</div>
+    <div class="ds">Semantic flow turned toward model safety.</div></a>
+
+  <a class="card" href="https://pixedar.github.io/hidden-state-safety/">
+    <div class="top"><svg class="i"><use href="#i-bridge"/></svg></div>
+    <div class="nm">Hidden state safety</div>
+    <div class="ds">Robotics and neuromodulatory control, applied to hidden states.</div></a>
+
+  <a class="card" href="https://github.com/Pixedar/MindVisualizer">
+    <div class="top"><svg class="i"><use href="#i-brain"/></svg></div>
+    <div class="nm">MindVisualizer</div>
+    <div class="ds">Information flow through the whole brain, on a low dimensional manifold.</div></a>
+
+  <a class="card" href="https://zenodo.org/records/18200415">
+    <div class="top"><svg class="i"><use href="#i-page"/></svg></div>
+    <div class="nm">Preprint</div>
+    <div class="ds">Where the brain information flow work started.</div></a>
+</div>
+
+<h2><svg class="i"><use href="#i-bridge"/></svg>Background</h2>
+
+<p>Commercial AI across computer vision, embedded AI, language model prototypes, startup R&amp;D
+and enterprise systems. I recently finished the <a href="https://bluedot.org/">BlueDot Impact</a>
+technical AI safety course, which is where the flow steering and hidden state safety proposals
+were developed.</p>
+
+<p>I use code and models to turn philosophical, cross disciplinary ideas about feedback loops
+and incomplete self models into systems I can build, observe and test, so I can watch how the
+recurrence behaves and where the complexity comes from. The first page of my CV sets out how all
+of these relate to one another.</p>
+
+<h2><svg class="i"><use href="#i-link"/></svg>Elsewhere</h2>
+
+<div class="links">
+  <a class="chip" href="https://pixedar.github.io/"><svg class="i"><use href="#i-link"/></svg>Portfolio</a>
+  <a class="chip" href="https://github.com/Pixedar"><svg class="i"><use href="#i-github"/></svg>GitHub</a>
+  <a class="chip" href="https://www.youtube.com/@pixedar"><svg class="i"><use href="#i-play"/></svg>YouTube</a>
+  <a class="chip" href="https://www.linkedin.com/posts/pixedar_my-research-paper-preprint-httpslnkdin-ugcPost-7402347856201768961-r88M"><svg class="i"><use href="#i-in"/></svg>LinkedIn</a>
+  <a class="chip" href="https://medium.com/@pixedar"><svg class="i"><use href="#i-page"/></svg>Medium</a>
+  <a class="chip" href="https://www.reddit.com/user/Pixedar/"><svg class="i"><use href="#i-chat"/></svg>Reddit</a>
+</div>
+
+<footer>Wiktor Tomasik &middot; <a href="../presentation/">sycophancy write up</a> &middot;
+<a href="../vision/">where this is going</a></footer>
+
+</div>
