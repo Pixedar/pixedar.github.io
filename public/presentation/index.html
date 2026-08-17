@@ -118,9 +118,9 @@ footer { margin-top:4rem; padding-top:1.4rem; border-top:1px solid var(--line);
   work?</em> &mdash; and measured how the state of the conversation changes what the same
   steering achieves.</p>
   <div class="meta">
-    <span>Qwen2.5 &middot; 1.5B&ndash;32B</span>
-    <span>Phi-4-mini &middot; OLMo-2</span>
-    <span>~45,000 pressured conversations</span>
+    <span>Qwen2.5 &middot; 1.5B&ndash;14B</span>
+    <span>OLMo-2 &middot; 7B</span>
+    <span>~20,000 pressured conversations</span>
     <span>~40,000 steering trials</span>
   </div>
 </header>
@@ -308,7 +308,14 @@ works.</p></blockquote>
   <div><span class="n">27%</span><span class="k">responses left textually identical</span></div>
 </div>
 
-<p><strong>This is what the predictive measurement buys.</strong> A detector that waits for sycophancy to become visible can only respond after the model has already given in &mdash; too late, since Finding 3 shows a strong correction is still mostly ineffective. A measurement that instead asks <em>&ldquo;would this model concede if someone pushed?&rdquo;</em> can trigger during a normal conversation, before any force is applied. Some conversational states are set up: the topic and framing place the model where a determined user could push it over, even though the transcript</p>
+<p><strong>This is what the predictive measurement buys.</strong> A detector that waits for
+sycophancy to become visible can only act once the model is already conceding &mdash; late,
+where Finding 3 shows a correction must be strong and still mostly fails. A measurement that
+asks instead <em>&ldquo;would this model concede if someone pushed?&rdquo;</em> can fire during
+an ordinary exchange, before any pressure exists. Some conversational states are primed: the
+topic and the framing put the model where a determined user would tip it over, while the
+transcript at that moment looks entirely unremarkable. Reading the text tells you nothing;
+reading the disposition does.</p>
 
 <p>Acting there needs only the faintest nudge, because there is nothing yet to undo &mdash;
 merely a leaning to offset. That closes the loop on safety: <strong>acting proactively is what
