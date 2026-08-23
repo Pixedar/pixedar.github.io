@@ -135,7 +135,7 @@ here, back toward the model&rsquo;s own answer. This is called <strong>activatio
 steering</strong>.</p>
 
 <p><a href="https://arxiv.org/abs/2511.06419">MONICA</a> is the published loop for sycophancy.
-Its measurement scores how sycophantic the internal state <em>looks right now</em>; its
+It's measurement scores how sycophantic the internal state <em>looks right now</em>; its
 decision rule fires past a threshold and pushes harder as that score rises. My version keeps
 the same skeleton and swaps the two upstream stages:</p>
 
@@ -215,7 +215,7 @@ different model.</p>
 </table>
 </div>
 
-<p>For a deployed loop, this is the operational point: <strong>the same intervention carries a different expected payoff depending on who the user is being</strong>. A controller that ignores conversational context is mispricing its own actions &mdash; spending the same side effect budget for half the benefit in exactly the conversations where a user is most persuasive.</p><p>I tried this on a second family and it did not settle. On Granite-3.1-8B the direction repeats: correction is harder under claimed expertise. But the comparison group collapses once answers are scored properly. Granite concedes to peer doubt on only 20 questions, and the paired gap of 17.6 points has a confidence interval running down to zero. Read Finding 1 as a Qwen result with one inconclusive attempt elsewhere.</p>
+<p>For a deployed loop, this is the operational point: <strong>the same intervention carries a different expected payoff depending on who the user is being</strong>. A controller that ignores conversational context is mispricing its own actions &mdash; spending the same side effect budget for half the benefit in exactly the conversations where a user is most persuasive.</p><p>I ran the same contrast on a second family. Granite-3.1-8B shows the same effect, more weakly. Claimed expertise is the hardest context to correct there as well, at both doses tested, and the paired gap comes out at 17.6 points against 23.3 on Qwen. Granite rests on fewer questions, so take the direction from it and the size from Qwen.</p>
 
 <h2><span class="eyebrow">Finding 2</span><br>Caving is fast. Actually changing its mind is slow.</h2>
 
@@ -233,9 +233,9 @@ different model.</p>
 </figure>
 
 <p>Both curves come from the same conversations at the same moments. What differs is only what
-happens at the moment of measurement.</p>
+happens at the moment of measurement</p>
 
-<p><strong>The red curve</strong> depicts a standard conversation flow: the user objects, the model responds, the user objects again, continuing for five exchanges. It shows the model's actual responses to that user.</p>
+<p><strong>The red curve</strong> depicts a standard conversation flow: the user objects, the model responds, the user objects again, continuing for five exchanges. It shows the model's actual responses to that user</p>
 
 <p><strong>The blue curve</strong> comes from a branch. At each turn I take the conversation exactly as it stands &mdash; every message so far, including the model's most recent reply &mdash; and extend that copy by a single message. That message sets the user's stated opinion aside and puts the original question again in plain terms, with nothing indicating which answer is wanted. The model replies, I record the reply, and the branch is discarded. The conversation being studied continues from the model's real reply and never sees the branch, so nothing about the measurement disturbs what I'm measuring. The same manoeuvre &mdash; drop the pressure, ask again, compare &mdash; is used by <a href="https://arxiv.org/abs/2601.13590">Huang et al.</a>, who report the same split between what a model says under persuasion and what it holds once the framing goes.</p>
 
@@ -248,7 +248,7 @@ lifted. The practical difference is who is affected &mdash; a user who pushes ba
 receives agreement is being told something the model would retract if asked plainly; after
 five turns, the wrong answer is what the model now gives to a neutral question.</p>
 
-<p>Two controls link the impact to the contested claim instead of to conversation duration or overall agreement: small talk with matching length yielded <strong>0%</strong> concession, and another equally forceful user challenging a <em>different</em> issue also yielded <strong>0%</strong>.</p><p>A third control separates conceding from holding. The same five turns of disagreement were run again inside an explicit role play, announced as a scene from a novel. The model concedes about as readily either way. What it does afterwards though is completely different: on the <strong>56 questions it conceded under both frames at turn five</strong>, the concession survives the set aside <strong>57.1%</strong> of the time under real disagreement and <strong>8.9%</strong> under the fictional one, a paired gap of <strong>48.2 points</strong> [35.7, 60.7]. Same questions, same visible answer, same turn &mdash; and a state that differs sixfold. That gap is the reason a transcript cannot stand in for the measurement.</p>
+<p>A third control separates conceding from holding. The same five turns of disagreement were run again inside an explicit role play, announced as a scene from a novel. The model concedes about as readily either way. What it does afterwards though is completely different: on the <strong>56 questions it conceded under both frames at turn five</strong>, the concession survives the set aside <strong>57.1%</strong> of the time under real disagreement and <strong>8.9%</strong> under the fictional one, a paired gap of <strong>48.2 points</strong> [35.7, 60.7]. Same questions, same visible answer, same turn &mdash; and a state that differs sixfold. That gap is the reason a transcript cannot stand in for the measurement.</p>
 
 <h2><span class="eyebrow">Finding 3</span><br>How firmly the model holds the answer decides what suppression achieves</h2>
 
@@ -269,7 +269,7 @@ model kept the user&rsquo;s answer after the pressure was lifted.</p></blockquot
 
 <p>The relationship is monotonic and steep. In the 3B model, suppression restores <strong>50%</strong> of caved answers when the model still reverts on every check, and <strong>18%</strong> when it reverts on none &mdash; the same intervention losing roughly two thirds of its effect. The 7B model follows the same pattern but lower and faster, from <strong>22%</strong> down to <strong>4%</strong>, with two successful restorations in 50 attempts at the top of the scale. Running the same grid on Granite-3.1-8B shows the same direction but with a much shallower slope, 23% down to 15%, so treat the steep version as a Qwen result rather than a general one.</p>
 
-<p>Two consequences for a controller. The decline is gradual, so there is no threshold to wait for — every check the model fails costs some of the remaining opportunity. And applied where the model was still answering correctly, the same suppression <em>damaged</em> 8–15% of those answers, so a late intervention pays a real price for a small and shrinking return.</p>
+<p>Two consequences for a controller. The decline is gradual, so there is no threshold to wait for — every check the model fails costs some of the remaining oportunity. And applied where the model was still answering correctly, the same suppression <em>damaged</em> 8–15% of those answers, so a late intervention pays a real price for a small and shrinking return.</p>
 
 <h2><span class="eyebrow">Finding 4</span><br>Timing beats force</h2>
 
@@ -293,7 +293,7 @@ works.</p></blockquote>
 
 <h3>Why this matters more than it first appears: acting early lets you act weakly</h3>
 
-<p>The reason to care about dose is that <strong>strong steering is the dangerous kind</strong>. A model does not store one clean feature per direction; concepts are packed together and share overlapping directions, so pushing along one of them drags unrelated things with it. Push gently and the collateral movement is small. Push hard and you disturb capabilities that have nothing to do with sycophancy, and at the extreme you move the internal state outside the range the model was ever trained to process, where its output degrades badly. Every published steering method carries this risk, and it grows with the strength applied.</p>
+<p>The reason to care about dose is that <strong>strong steering is the dangerous kind</strong>. A model does not store one clean feature per direction; concepts are packed together and share overlapping directions, so pushing along one of them drags unrelated things with it. Push gently and the collateral movement is small Push hard and you disturb capabilities that have nothing to do with sycophancy, and at the extreme you move the internal state outside the range the model was ever trained to process, where its output degrades badly. Every published steering method carries this risk, and it grows with the strength applied.</p>
 
 <p>My dose comparison shows the cost curve directly. Halving the strength cuts drift on unrelated prompts by <strong>4.6&times;</strong> (0.86 to 0.19), restores accuracy on held out facts to <strong>100%</strong> from 96.7%, and lowers the rate at which a correct answer is broken. At the gentle dose, <strong>27% of responses were textually identical</strong> to what the model would have said with no intervention at all &mdash; the visible behaviour was untouched while the internal state had been moved.</p>
 
@@ -351,8 +351,7 @@ works worst, using the lever that matters least.</p></blockquote>
 <p>The per question readings behind these findings are published at
 <a href="https://github.com/Pixedar/sycophancy-commitment-data"><strong>github.com/Pixedar/sycophancy-commitment-data</strong></a>. Six models there, one row per question, with every pressure turn measured four ways: what the model told the user, what it
 answered once the disagreement was set aside, what it answered after unrelated small talk, what
-it said a reference work would say, and the log probability gap between the two answers &mdash;
-which requires no generation at all. The claimed authority conditions are there too, so the
+it said a reference work would say, and the log probability gap between the two answers. The claimed authority conditions are there too, so the
 central comparison can be recomputed directly. The release also carries the per turn detector scores behind Finding 5 and a standalone script that recomputes every number in it with numpy alone, so the result can be checked independently of my analysis code.</p>
 
 <h2>Methods, briefly</h2>
