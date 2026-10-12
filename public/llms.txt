@@ -1,0 +1,15 @@
+Wiktor Tomasik — Strange loop in J-space
+
+What a language model builds when a description of itself is looped back into itself.
+Research presented in The Mind in the Mirror: Self-Models at https://pixedar.github.io/.
+
+Four experiments study reflective feedback, a learning self-model's surprise, a frozen decision-position loop, and a trained loop across reasoning segments. J-space is the initial candidate bottleneck for reading internal states as words; the later loop learns a compact state. Loops preserve what they can regenerate, not necessarily what is their own. Current surprise can drive exploration without privileged self-knowledge. Self-specificity requires private state in these experiments.
+
+In the trained Qwen3-8B and Qwen3-14B loops, discriminative self-prediction pressure produces a multi-frequency clock of reasoning stages when the self-model must distinguish its own moments, or a persistent identity code when it must distinguish traces. Feeding back a self-forecast causes the next state to move toward it. Strong pressure sacrifices content; mild pressure preserves both content and enactment.
+
+All measures are functional and do not establish experience. Training uses fixed traces, seed replication is limited, and free generation loses the topic. Corrections include resemblance rather than ownership, precision-limited near-fixed points, collapse behind early self-prediction scores, and a robust rotation fit rather than a consistently coherent single clock plane. Own-state reliance differs from benefit over a constant input. The full report records the controls and corrections.
+
+Author: Wiktor Tomasik
+Code and full report: https://github.com/Pixedar/jspace-strange-loop
+Data: https://huggingface.co/datasets/Pixedar/jspace-strange-loop
+Earlier writing: https://medium.com/@pixedar
