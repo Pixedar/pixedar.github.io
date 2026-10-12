@@ -273,8 +273,9 @@ export function ProjectDetailSelfAwareness() {
             recomputed from the input and the last write, the compact self-state adds no predictive information.
             The trained loop carries state between reasoning segments. Asked simply to be predictable, it can collapse
             and hide information from its own self-model’s metric. Asked to distinguish its own moments, it instead
-            develops a multi-frequency rotation: a word clock following recall, hedged exploration, assertion and
-            conclusion. Asked to distinguish itself from other traces, it develops a persistent identity code.
+            develops a multi-frequency rotation: a word clock that, in most loops, follows recall, hedged exploration,
+            assertion and conclusion (under the strongest pressure at 8B it cycles through unrelated topics instead).
+            Asked to distinguish itself from other traces, it develops a persistent identity code.
           </p>
         </div>
 
