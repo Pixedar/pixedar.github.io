@@ -43,6 +43,14 @@ const projects = [
     media: "/abstract-generative-art-wallpaper.png",
     mediaType: "image" as const,
   },
+  {
+    id: 5,
+    title: "Strange loop in J-space",
+    shortDescription: "Self-models, enacted forecasts, and a state that steers what a language model reads",
+    description: "Three systems inside frozen Qwen models: a word-level loop that turns inward, a 32-number self-state that becomes a time code and enacts its own forecast, and a learned state that steers what the model reads. Release 3.0 explores what matters, how state edits redirect reading, and when the system learns to read again.",
+    media: "https://github.com/Pixedar/jspace-strange-loop/raw/main/figures/selection_loop.png",
+    mediaType: "image" as const,
+  },
 ]
 
 export default function PortfolioPage() {
