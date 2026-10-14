@@ -128,7 +128,7 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
         {/* Bottom Section - Content */}
         <div className="relative bg-[#F2EFE9] px-8 py-12 md:px-16 md:py-16">
           <div className="max-w-4xl mx-auto">
-            {(isEmotionAttractor || isBrainInformationFlow || isSelfAwareness || isGenerativeWallpaper || project.id === 5) ? (
+            {(isEmotionAttractor || isBrainInformationFlow || isSelfAwareness || isGenerativeWallpaper) ? (
               <>
                 {/* Project Title */}
                 <h1 className="text-5xl md:text-7xl font-bold mb-8 text-balance" style={{ color: "#1a1a1a" }}>
@@ -139,24 +139,6 @@ export function ProjectModal({ project, onClose }: ProjectModalProps) {
                 {isBrainInformationFlow ? <ProjectDetailBrainInformationFlow /> : null}
                 {isSelfAwareness ? <ProjectDetailSelfAwareness /> : null}
                 {isGenerativeWallpaper ? <ProjectDetailGenerativeWallpaper /> : null}
-                {project.id === 5 ? (
-                  <div className="space-y-6 text-lg md:text-xl leading-relaxed" style={{ color: "#4a4a4a" }}>
-                    <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>Research · 2026 · Release 3.0</p>
-                    <p>What happens inside a language model when a compact description of its own state is fed back into it? I explore three systems inside frozen Qwen models.</p>
-                    <p>A loop that writes the model’s word-level reading of itself back into it turns inward: it keeps how the model speaks and loses what it was asked about. A trained 32-number self-state, pushed to be predictable to its own self-model, becomes a rotating time code through the stages of a thought. A fed-back self-forecast is enacted — the model makes its prediction of itself come true.</p>
-                    <p>Newest: a learned state that decides what the model reads comes to represent which item matters and steers the reading through that representation. Editing it redirects the reading, through the reading alone, and it learns to read again when its own read failed. When the model reads everything as plain text instead, the state learns to switch on the model’s own attention to what the text names, but not to carry the target itself.</p>
-                    <p className="text-base">These are functional findings about what states carry, predict and cause; they do not measure experience. The newest experiments use a purpose-built task and small models. The open-access results show what did not emerge within the training tested, not what cannot.</p>
-                    <figure>
-                      <img src="https://github.com/Pixedar/jspace-strange-loop/raw/main/figures/selection_loop.png" alt="The selection loop: a compact state steers what a frozen language model reads" className="w-full h-auto rounded-lg" loading="lazy" />
-                      <figcaption className="text-sm mt-2">A state that decides what the model reads — restricted and open access.</figcaption>
-                    </figure>
-                    <div className="flex flex-wrap gap-6 pt-2">
-                      <a href="https://github.com/Pixedar/jspace-strange-loop" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Code · Release 3.0</a>
-                      <a href="https://github.com/Pixedar/jspace-strange-loop/blob/main/REPORT.md" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Full report</a>
-                      <a href="https://huggingface.co/datasets/Pixedar/jspace-strange-loop" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Data</a>
-                    </div>
-                  </div>
-                ) : null}
               </>
             ) : (
               <>
