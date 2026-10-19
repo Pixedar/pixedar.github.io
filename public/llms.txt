@@ -1,15 +1,17 @@
 Wiktor Tomasik — Strange loop in J-space
 
-What a language model builds when a description of itself is looped back into itself.
-Research presented in The Mind in the Mirror: Self-Models at https://pixedar.github.io/.
+Current research, 19 October 2026, in The Mind in the Mirror: Self-Models at https://pixedar.github.io/.
 
-Four experiments study reflective feedback, a learning self-model's surprise, a frozen decision-position loop, and a trained loop across reasoning segments. J-space is the initial candidate bottleneck for reading internal states as words; the later loop learns a compact state. Loops preserve what they can regenerate, not necessarily what is their own. Current surprise can drive exploration without privileged self-knowledge. Self-specificity requires private state in these experiments.
+A learned reader around a frozen language model forms a 32-number picture and an 8-number control state. A centered-field discrimination game removes the shortcut of identifying a copy by its destination. From organized starts, some runs develop state-dependent movement, mainly through the state changing the reader's query. A shared spotlight gives the reader consequences for the model's predictions, with only weak measured return through the model into the loop.
 
-In the trained Qwen3-8B and Qwen3-14B loops, discriminative self-prediction pressure produces a multi-frequency rotary clock when the self-model must distinguish its own moments (read in words, it follows the stages of reasoning in most loops; under the strongest pressure at 8B it cycles through unrelated topics), or a persistent identity code when it must distinguish traces. Feeding back a self-forecast causes the next state to move toward it. Strong pressure sacrifices content; mild pressure preserves both content and enactment.
+The best developmental run has normalized state dependence 0.65, compared with 0.002 for a recorded-other-description control. This is a ratio of squared variations, not a probability or fraction of steps. Picture-field correlation +0.81 measures pattern agreement; unscaled vector predictions remain poorly calibrated. Cutting the reader path reduces large movements from 26.6% to 1.2% of steps in that run. Five own-spotlight self-describing runs change 11–16% of top next-token predictions. Loss changes are small and mixed, and the non-self-describing control also changes predictions.
 
-All measures are functional and do not establish experience. Training uses fixed traces, seed replication is limited, and free generation loses the topic. Corrections include resemblance rather than ownership, precision-limited near-fixed points, collapse behind early self-prediction scores, and a robust rotation fit rather than a consistently coherent single clock plane. Own-state reliance differs from benefit over a constant input. The full report records the controls and corrections.
+Three later developmental starts reached the regime, following two of five sustained initial small-model runs; these are small, related samples. Copies can converge on shared text. No stable personality or representation of the consequences of attention is established. Native multimodal and behavior follow-ups are exploratory, with explicit controls and limitations. None of these measurements establishes subjective experience.
+
+Earlier distinct branches retain frozen-loop persona drift and invented-past behavior, a rotating time code in a chunked reasoning loop, fed-back forecasts, and a state that selects evidence. The history distinguishes these mechanisms and includes negative causal-map results.
 
 Author: Wiktor Tomasik
-Code and full report: https://github.com/Pixedar/jspace-strange-loop
+Code and report: https://github.com/Pixedar/jspace-strange-loop
+History: https://github.com/Pixedar/jspace-strange-loop/blob/main/HISTORY.md
+Interactive: https://huggingface.co/spaces/Pixedar/strange-loop-in-j-space
 Data: https://huggingface.co/datasets/Pixedar/jspace-strange-loop
-Earlier writing: https://medium.com/@pixedar

@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import StrangeLoopStudy from "./StrangeLoopStudy"
 import { useEffect, useMemo, useState } from "react"
 import { ExternalLink, Loader2 } from "lucide-react"
 
@@ -216,71 +217,7 @@ export function ProjectDetailSelfAwareness() {
       </div>
 
       
-      <section className="mt-12 space-y-6" aria-labelledby="strange-loop-title">
-        <div className="space-y-3">
-          <h2 id="strange-loop-title" className="text-2xl md:text-3xl font-semibold" style={{ color: "#1a1a1a" }}>
-            Strange loop in J-space
-          </h2>
-          <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#6a6a6a" }}>Release 3.0 · 2026</p>
-          <p className="text-xl md:text-2xl leading-relaxed text-pretty" style={{ color: "#1a1a1a" }}>
-            What happens inside a language model when a compact description of its own state is fed back into it?
-          </p>
-          <p className="text-lg leading-relaxed text-pretty" style={{ color: "#4a4a4a" }}>
-            I built three systems inside frozen Qwen models, starting with J-space: a way of reading internal states as combinations of word directions. The later loops learn a compact 32-number state, first to carry the model’s own thinking and then to decide what it reads.
-          </p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2" aria-label="Three ways of closing the loop">
-          {[
-            { title: "Frozen J-space loop", steps: ["Read a prompt", "Describe the internal state in words", "Write the description back and read again"], note: "Nothing is trained; the loop keeps what it can regenerate." },
-            { title: "Trained self-describing loop", steps: ["A segment of the model’s own thinking", "Read 32 numbers and forecast the next state", "Write state and forecast into the next segment"], note: "Train the small parts around the model; keep the language model frozen." },
-            { title: "A state that steers reading", steps: ["Read a stream of short updates", "Keep a compact state of what matters", "Use the state to steer the next read"], note: "Compare choosing which update enters with reading everything as plain text." },
-          ].map((loop) => (
-            <div key={loop.title} className="rounded-2xl p-5 flex flex-col" style={{ border: "2px solid rgba(0,0,0,0.85)", backgroundColor: "rgba(255,255,255,0.35)" }}>
-              <h3 className="text-lg font-semibold mb-4" style={{ color: "#1a1a1a" }}>{loop.title}</h3>
-              <ol className="space-y-2 flex-1" style={{ color: "#1a1a1a" }}>
-                {loop.steps.map((step, index) => (
-                  <li key={step} className="text-sm text-center">
-                    {index > 0 ? <span className="block mb-2 opacity-60" aria-hidden="true">↓</span> : null}
-                    <span className="block rounded-lg px-3 py-2" style={{ backgroundColor: "rgba(0,0,0,0.05)" }}>{step}</span>
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-3 text-sm leading-relaxed" style={{ color: "#4a4a4a" }}><span aria-hidden="true">↺ </span>{loop.note}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="space-y-4 text-lg leading-relaxed text-pretty" style={{ color: "#4a4a4a" }}>
-          <p><strong style={{ color: "#1a1a1a" }}>The frozen loop turns inward.</strong> Writing the model’s word-level reading of itself back into it keeps how the model speaks and loses what it was asked about. Discourse, stance and a casual voice survive while names, places and the evidence of the prompt fade.</p>
-          <p><strong style={{ color: "#1a1a1a" }}>A self-state becomes a time code.</strong> Pushed to be predictable to its own self-model by distinguishing its moments, the trained 32-number state rotates through the stages of a thought — recalling, hedging, asserting, concluding. Under the strongest pressure at 8B it cycles through unrelated topics instead. When the self-forecast is fed back, it is enacted: the model makes its prediction of itself come true. Mild pressure preserves both enactment and content at 8B and 14B.</p>
-          <p><strong style={{ color: "#1a1a1a" }}>Newest: the state comes to represent what matters and steers the reading through it.</strong> Given control over which update the model takes in, the state learns which item matters. Editing that representation redirects the reading, through the reading alone: the same edit given only to the answering step does nothing. After the edit the loop keeps following the new item by itself. It also learns to read again when its own read failed.</p>
-          <p><strong style={{ color: "#1a1a1a" }}>Reading everything changes what the state learns.</strong> When the model sees all the updates as plain text, the state learns to switch on the model’s own attention to what the text names, but not to carry the target itself. Once the text no longer names the item, the state does not take over that role. The channel matters: direct control of reading lets the state learn what matters; writing it into the text stream teaches it to switch selection on.</p>
-        </div>
-
-        <figure className="rounded-2xl overflow-hidden" style={{ border: "2px solid rgba(0,0,0,0.85)", boxShadow: "0 10px 24px rgba(0,0,0,0.18)", backgroundColor: "rgba(255,255,255,0.35)" }}>
-          <a href="https://github.com/Pixedar/jspace-strange-loop/raw/main/figures/selection_loop.png" target="_blank" rel="noreferrer" className="block" aria-label="Open the selection-loop figure at full size in a new tab">
-            <img src="https://github.com/Pixedar/jspace-strange-loop/raw/main/figures/selection_loop.png" alt="The selection loop: a compact state steers what a frozen language model reads, with restricted or open access to the updates" className="w-full h-auto" loading="lazy" />
-          </a>
-          <figcaption className="p-4 md:p-5 text-sm leading-relaxed" style={{ color: "#4a4a4a" }}>The third system compares a state that chooses which update enters with a state written into the model while it reads everything as plain text.</figcaption>
-        </figure>
-
-        <div className="rounded-xl p-5 space-y-3" style={{ backgroundColor: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.12)", color: "#4a4a4a" }}>
-          <h3 className="text-lg font-semibold" style={{ color: "#1a1a1a" }}>Limits</h3>
-          <p className="text-base leading-relaxed">These are functional measures of what states carry, predict and cause; nothing here measures experience. The trained loop learns on fixed recordings of the model’s thinking, and free generation still loses the topic. The time code depends on what the self-model must distinguish; enactment may reflect learning to copy the forecast channel. The newest experiments use a purpose-built task and small models (0.5B to 3B). Restricted access makes selection necessary by design, and the open-access runs had limited training, so they show what did not emerge in that time, not what cannot.</p>
-        </div>
-
-        <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm font-semibold" style={{ color: "#1a1a1a" }}>
-          {[
-            { label: "Code · Release 3.0", href: "https://github.com/Pixedar/jspace-strange-loop" },
-            { label: "Full report", href: "https://github.com/Pixedar/jspace-strange-loop/blob/main/REPORT.md" },
-            { label: "Research data", href: "https://huggingface.co/datasets/Pixedar/jspace-strange-loop" },
-            { label: "Earlier writing", href: "https://medium.com/@pixedar" },
-          ].map((link) => (
-            <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 underline underline-offset-4 opacity-80 hover:opacity-100">{link.label}<ExternalLink className="w-4 h-4" aria-hidden="true" /></a>
-          ))}
-        </div>
-      </section>
+      <StrangeLoopStudy />
 
     </div>
   )
