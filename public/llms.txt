@@ -1,14 +1,16 @@
 Wiktor Tomasik — Strange loop in J-space
 
-Current research, 19 October 2026, in The Mind in the Mirror: Self-Models at https://pixedar.github.io/.
+Research in The Mind in the Mirror: Self-Models at https://pixedar.github.io/.
 
-A learned reader around a frozen language model forms a 32-number picture and an 8-number control state. A centered-field discrimination game removes the shortcut of identifying a copy by its destination. From organized starts, some runs develop state-dependent movement, mainly through the state changing the reader's query. A shared spotlight gives the reader consequences for the model's predictions, with only weak measured return through the model into the loop.
+A small trainable reader summarizes a frozen language model's internal activity. The numerical summary sets an eight-dimensional control state, which changes the next reading. Training asks the summary to distinguish the loop's possible updates after subtracting their common destination. This centered-field objective removes the shortcut of identifying a copy by one destination.
 
-The best developmental run has normalized state dependence 0.65, compared with 0.002 for a recorded-other-description control. This is a ratio of squared variations, not a probability or fraction of steps. Picture-field correlation +0.81 measures pattern agreement; unscaled vector predictions remain poorly calibrated. Cutting the reader path reduces large movements from 26.6% to 1.2% of steps in that run. Five own-spotlight self-describing runs change 11–16% of top next-token predictions. Loss changes are small and mixed, and the non-self-describing control also changes predictions.
+In an initial small-model comparison, 2 of 5 self-description runs sustained substantial state dependence without persistent two-state oscillation. Three additional runs from previously trained interfaces reached the criterion during training. Samples are small and share starting interfaces. Controls describing another run's recordings remain close to a common destination. The interactive comparison displays all 12 starting-state responses at 60 text positions and four copies using distances in the full eight-dimensional space.
 
-Three later developmental starts reached the regime, following two of five sustained initial small-model runs; these are small, related samples. Copies can converge on shared text. No stable personality or representation of the consequences of attention is established. Native multimodal and behavior follow-ups are exploratory, with explicit controls and limitations. None of these measurements establishes subjective experience.
+In the strongest developmental run, holding the reader's state input fixed reduces large steps from 26.6% to 1.2%; holding the route into the language model fixed leaves 26.4%. Applying the reader's attention inside the model changes its highest-probability next token at 11–16% of positions across five self-description runs. Prediction-loss changes are mixed, and the control also changes predictions. Feedback through model processing contributes little to the measured state dependence.
 
-Earlier distinct branches retain frozen-loop persona drift and invented-past behavior, a rotating time code in a chunked reasoning loop, fed-back forecasts, and a state that selects evidence. The history distinguishes these mechanisms and includes negative causal-map results.
+The strongest run's normalized dependence score is 0.65 versus 0.002 for the control. It is a ratio of squared variations, not a causal percentage. Predicted and measured patterns correlate at +0.81, but predictions have large scale errors. Copies can converge on shared text. Stable personality, a representation of the effects of attention, and subjective experience are not established.
+
+Separate experiments study word-based J-space feedback, casual-persona drift, invented conversational history, a rotating time code across reasoning segments, controlled evidence selection, and text/image/audio inputs. Their mechanisms and limits are documented separately.
 
 Author: Wiktor Tomasik
 Code and report: https://github.com/Pixedar/jspace-strange-loop
