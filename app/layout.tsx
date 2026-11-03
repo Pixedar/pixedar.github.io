@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   description:
     "I build generative systems and interpretable ML tools — turning emotion, language, and brain dynamics into geometry you can explore.",
   metadataBase: new URL("https://pixedar.github.io"), // change if different
+  other: { "tdm-reservation": "1", "tdm-policy": "https://pixedar.github.io/projects/self-awareness/attention-reader/reuse-policy.html", "author-agent-instructions": "https://pixedar.github.io/AGENTS.md" },
 
   openGraph: {
     title: "Wiktor Tomasik — AI Research & Generative Systems",

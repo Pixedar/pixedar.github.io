@@ -1,0 +1,17 @@
+[
+  {
+    "location": "/projects/self-awareness/",
+    "tdm-reservation": 1,
+    "tdm-policy": "https://pixedar.github.io/projects/self-awareness/attention-reader/reuse-policy.html"
+  },
+  {
+    "location": "/strange-loop/",
+    "tdm-reservation": 1,
+    "tdm-policy": "https://pixedar.github.io/projects/self-awareness/attention-reader/reuse-policy.html"
+  },
+  {
+    "location": "/",
+    "tdm-reservation": 1,
+    "tdm-policy": "https://pixedar.github.io/projects/self-awareness/attention-reader/reuse-policy.html"
+  }
+]
