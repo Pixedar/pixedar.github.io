@@ -28,9 +28,9 @@ const projects = [
   {
     id: 3,
     title: "The Mind in the Mirror: Self-Models",
-    shortDescription: "Recursive Self-Models and Emergent Inner Worlds",
+    shortDescription: "Learned attention, self-modeling and language behavior",
     description:
-      "A 3-part experimental research series (published on Medium) exploring self-referential neural networks and internal world formation. Using reversed autoencoders, sensitivity maps, and internal reinforcement learning, I combine reconstruction objectives with exploration/divergence pressures—creating feedback loops that produce incomplete self-models and evolving internal “worlds.” The work bridges rigorous ML dynamics with visual, generative exploration, and is accompanied by a longer research manuscript currently under peer review.",
+      "A research study of how a learned model of selection participates in a reader’s own processing, and how its influence changes information inside a frozen language model. The current account integrates the architecture and meaning experiments through 3 November 2026.",
     media: "/images/75-20-281-29.png",
     mediaType: "image" as const,
   },

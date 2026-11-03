@@ -91,12 +91,16 @@ export function ProjectDetailSelfAwareness() {
     <div className="mt-2">
       {/* Intro */}
       <p className="text-xl md:text-2xl leading-relaxed text-pretty mb-10" style={{ color: "#4a4a4a" }}>
-        A 3-part experimental research series (published on Medium) exploring self-referential neural networks and internal world formation. Using reversed autoencoders, sensitivity maps, and internal reinforcement learning, I combine reconstruction objectives with exploration/divergence pressures—creating feedback loops that produce incomplete self-models and evolving internal “worlds.” The work bridges rigorous ML dynamics with visual, generative exploration, and is accompanied by a longer research manuscript currently under peer review.
+        This project studies learned models of a system’s own processing. The current study below explains the tested reader, its feedback routes, and what changes in the language model. Earlier articles document the broader research history and use different architectures.
       </p>
+
+
+
+      <StrangeLoopStudy />
 
       <div className="flex items-end justify-between gap-4 mb-6">
         <h2 className="text-2xl md:text-3xl font-semibold" style={{ color: "#1a1a1a" }}>
-          Medium series
+          Earlier research articles
         </h2>
         <a
           href="https://medium.com/@pixedar"
@@ -217,7 +221,7 @@ export function ProjectDetailSelfAwareness() {
       </div>
 
       
-      <StrangeLoopStudy />
+
 
     </div>
   )
