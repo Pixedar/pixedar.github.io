@@ -28,9 +28,9 @@ const projects = [
   {
     id: 3,
     title: "The Mind in the Mirror: Self-Models",
-    shortDescription: "Learned attention, self-modeling and language behavior",
+    shortDescription: "A self-model of attention connected to Qwen3-8B",
     description:
-      "A research study of how a learned model of selection participates in a reader’s own processing, and how its influence changes information inside a frozen language model. The current account integrates the architecture and meaning experiments through 3 November 2026.",
+      "Can a system learn how it selects information and use that knowledge to change its next selection? A reader attached to Qwen3-8B predicts what its own attention will emphasize. The study tests what that prediction changes and how the reader’s feedback affects the language model.",
     media: "/images/75-20-281-29.png",
     mediaType: "image" as const,
   },

@@ -91,7 +91,7 @@ export function ProjectDetailSelfAwareness() {
     <div className="mt-2">
       {/* Intro */}
       <p className="text-xl md:text-2xl leading-relaxed text-pretty mb-10" style={{ color: "#4a4a4a" }}>
-        This project studies learned models of a system’s own processing. The current study below explains the tested reader, its feedback routes, and what changes in the language model. Earlier articles document the broader research history and use different architectures.
+        The research is inspired by a question about self-understanding. Can a system learn how its own processing works and use that knowledge to guide it? This study tests one part of that idea with a reader that predicts what its own attention will emphasize and uses the prediction the next time it reads Qwen’s internal activity.
       </p>
 
 
