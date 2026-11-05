@@ -263,7 +263,7 @@ export function ProjectDetailSelfAwareness() {
           What happens when Qwen reads an instrument’s account of what was happening inside it? In a seven-part
           writing task, it reused about 37% of the preceding readout words when they came as a plain list and 0.9%
           when they were marked as its own workspace. Explore the attention intervention, the forecast–choice split
-          and the reconstruction of the “strangers” trajectory.
+          the hidden reversal that 14B followed with its forecast in view, and the reconstruction of the “strangers” trajectory.
         </p>
         <div className="flex flex-wrap gap-x-5 gap-y-2 text-neutral-900">
           <a className="underline underline-offset-4 font-semibold" href="/projects/self-awareness/internal-mirror/">Read the illustrated study</a>
