@@ -89,18 +89,9 @@ export function ProjectDetailSelfAwareness() {
 
   return (
     <div className="mt-2">
-      {/* Intro */}
-      <p className="text-xl md:text-2xl leading-relaxed text-pretty mb-10" style={{ color: "#4a4a4a" }}>
-        The research is inspired by a question about self-understanding. Can a system learn how its own processing works and use that knowledge to guide it? This study tests one part of that idea with a reader that predicts what its own attention will emphasize and uses the prediction the next time it reads Qwen’s internal activity.
-      </p>
-
-
-
-      <StrangeLoopStudy />
-
       <div className="flex items-end justify-between gap-4 mb-6">
         <h2 className="text-2xl md:text-3xl font-semibold" style={{ color: "#1a1a1a" }}>
-          Earlier research articles
+          The original Medium series
         </h2>
         <a
           href="https://medium.com/@pixedar"
@@ -220,9 +211,66 @@ export function ProjectDetailSelfAwareness() {
         })}
       </div>
 
-      
+      <section className="my-12 space-y-5" aria-labelledby="self-model-paths">
+        <h2 id="self-model-paths" className="text-2xl md:text-3xl font-semibold text-neutral-900">
+          Two ways to bring the idea into a language model
+        </h2>
+        <p className="text-lg leading-relaxed text-neutral-700">
+          Can a model use information about how it works to change what it does? I tested two ways of bringing that
+          question into Qwen. One puts the prediction into a small reader’s attention rule. The other lets Qwen
+          interpret a description of its activity and act on it.
+        </p>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-neutral-400 p-5">
+            <p className="text-sm font-medium text-neutral-600"><time dateTime="2026-11-03">3 November 2026</time></p>
+            <h3 className="mt-2 text-xl font-semibold text-neutral-900">A small reader beside Qwen</h3>
+            <p className="mt-2 text-neutral-700">
+              The reader predicts what its own next selection will emphasize. Copies developed lasting ways of
+              looking even when their compact pictures mostly reflected the same text.
+            </p>
+            <a className="mt-3 inline-block underline underline-offset-4 text-neutral-900" href="#external-attention-reader">
+              Explore the external reader below
+            </a>
+          </div>
+          <div className="rounded-2xl border border-neutral-400 p-5">
+            <p className="text-sm font-medium text-neutral-600">Experiments begun <time dateTime="2026-11-04">4–5 November 2026</time></p>
+            <h3 className="mt-2 text-xl font-semibold text-neutral-900">Qwen reads its own activity</h3>
+            <p className="mt-2 text-neutral-700">
+              An instrument translates activity into words. The “own workspace” label changed what made it into the
+              prose. Qwen learned to predict that effect yet kept choosing the opposite until its conclusion was
+              shown at the choice. In one run it read “strangers” and made the word part of a self-description.
+            </p>
+            <a className="mt-3 inline-block underline underline-offset-4 text-neutral-900" href="#internal-mirror">
+              See the Internal Mirror results below
+            </a>
+          </div>
+        </div>
+        <p className="text-neutral-700">
+          A habit of looking, an account of what you do, and the use of that account can come apart.
+          The external reader makes the first relationship visible. Internal Mirror makes the gap between reporting
+          and acting visible.
+        </p>
+      </section>
 
+      <section id="external-attention-reader" aria-label="External attention reader">
+        <StrangeLoopStudy />
+      </section>
 
+      <section id="internal-mirror" className="mt-10 space-y-4 border-t border-neutral-400 pt-8">
+        <p className="text-sm font-medium text-neutral-600">Qwen3 · experiments begun <time dateTime="2026-11-04">4–5 November 2026</time></p>
+        <h2 className="text-2xl md:text-3xl font-semibold text-neutral-900">J-space Internal Mirror</h2>
+        <p className="text-lg leading-relaxed text-neutral-700">
+          What happens when Qwen reads an instrument’s account of what was happening inside it? In a seven-part
+          writing task, it reused about 37% of the preceding readout words when they came as a plain list and 0.9%
+          when they were marked as its own workspace. Explore the attention intervention, the forecast–choice split
+          and the reconstruction of the “strangers” trajectory.
+        </p>
+        <div className="flex flex-wrap gap-x-5 gap-y-2 text-neutral-900">
+          <a className="underline underline-offset-4 font-semibold" href="/projects/self-awareness/internal-mirror/">Read the illustrated study</a>
+          <a className="underline underline-offset-4" href="https://github.com/Pixedar/jspace-internal-mirror">Source and evidence</a>
+          <a className="underline underline-offset-4" href="https://huggingface.co/datasets/Pixedar/jspace-internal-mirror-evidence">Dataset</a>
+        </div>
+      </section>
     </div>
   )
 }
