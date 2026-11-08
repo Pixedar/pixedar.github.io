@@ -28,9 +28,9 @@ const projects = [
   {
     id: 3,
     title: "The Mind in the Mirror: Self-Models",
-    shortDescription: "A self-model of attention connected to Qwen3-8B",
+    shortDescription: "Strange Loops in Qwen and the original J-space attention reader",
     description:
-      "Can a system learn how it selects information and use that knowledge to change its next selection? A reader attached to Qwen3-8B predicts what its own attention will emphasize. The study tests what that prediction changes and how the reader’s feedback affects the language model.",
+      "What happens when Qwen can act on a measurement of its own activity? The study follows the word “strangers” from a readout to Qwen’s next intervention, then compares that route with an external reader that puts its forecast directly into its attention rule.",
     media: "/images/75-20-281-29.png",
     mediaType: "image" as const,
   },
