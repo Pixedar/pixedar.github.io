@@ -259,6 +259,13 @@ export function ProjectDetailSelfAwareness() {
       <section id="internal-mirror" className="mt-10 space-y-4 border-t border-neutral-400 pt-8">
         <p className="text-sm font-medium text-neutral-600">Qwen3 · experiments begun <time dateTime="2026-11-04">4–5 November 2026</time></p>
         <h2 className="text-2xl md:text-3xl font-semibold text-neutral-900">J-space Internal Mirror</h2>
+        <p className="text-neutral-700">
+          <time dateTime="2026-11-08">8 November 2026</time> · A trained reader could name an active state
+          with the prompt unchanged. A report could move the model’s next choice even when it gave a poor
+          account of how Qwen had rated the state. <a className="underline underline-offset-4" href="/projects/self-awareness/internal-mirror/november-8.html">
+            Read the new experiments
+          </a>
+        </p>
         <p className="text-lg leading-relaxed text-neutral-700">
           What happens when Qwen reads an instrument’s account of what was happening inside it? In a seven-part
           writing task, it reused about 37% of the preceding readout words when they came as a plain list and 0.9%

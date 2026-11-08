@@ -1,0 +1,7 @@
+header h1{max-width:15ch;font-size:clamp(2.7rem,7vw,5.4rem);line-height:1.02}
+.edition{max-width:49rem;padding-top:1.6rem}
+.edition>p:first-child{font-size:.92rem;color:var(--muted)}
+.edition h2{font-size:clamp(1.65rem,4.2vw,2.6rem);margin-top:2rem;padding-top:1.15rem;border-top:1px solid var(--rule)}
+.edition img{display:block;max-width:100%;height:auto;margin:1.4rem 0 .65rem;background:#fff;border-radius:.55rem;border:1px solid var(--rule)}
+.edition p:has(> em:only-child){font-size:.95rem;color:var(--muted)}
+.edition a{overflow-wrap:anywhere}
