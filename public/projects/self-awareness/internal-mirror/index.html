@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>J-space Internal Mirror — Wiktor Tomasik</title>
+<title>Strange Loops in Qwen — Wiktor Tomasik</title>
 <meta name="description" content="Qwen3 experiments on what happens when a language model reads and acts on measurements of its own activity.">
 <meta name="author" content="Wiktor Tomasik">
 <meta name="tdm-reservation" content="1">
-<meta name="tdm-policy" content="https://github.com/Pixedar/jspace-internal-mirror/blob/main/AI_POLICY.md">
+<meta name="tdm-policy" content="https://github.com/Pixedar/qwen-strange-loops/blob/main/AI_POLICY.md">
 <meta name="author-agent-instructions" content="https://pixedar.github.io/projects/self-awareness/internal-mirror/AGENTS.md">
 <link rel="canonical" href="https://pixedar.github.io/projects/self-awareness/internal-mirror/">
 <link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
@@ -19,87 +19,146 @@
   <nav aria-label="Research links">
     <a href="/">Wiktor Tomasik</a>
     <a href="../attention-reader/study/index.html">External reader study</a>
-    <a href="https://github.com/Pixedar/jspace-internal-mirror">Source &amp; notes</a>
+    <a href="https://github.com/Pixedar/qwen-strange-loops">Source and evidence</a>
   </nav>
   <div class="hero">
-    <p class="eyebrow">The Mind in the Mirror · second research path</p>
-    <h1>J-space<br>Internal Mirror</h1>
+    <p class="eyebrow">The Mind in the Mirror · research study</p>
+    <h1>Strange Loops in Qwen</h1>
     <p class="lede">What happens when a language model reads a measurement of its own activity and acts on what it finds?</p>
-    <p class="date">Wiktor Tomasik · experiments begun <time datetime="2026-11-04">4–5 November 2026</time></p>
+    <p class="date">Wiktor Tomasik · experiments begun <time datetime="2026-11-04">4–5 November 2026</time> · results through <time datetime="2026-11-08">8 November 2026</time></p>
   </div>
 </header>
+
 <main id="main">
-  <section aria-labelledby="november-edition">
-    <p class="eyebrow"><time datetime="2026-11-08">8 November 2026</time> / New experiments</p>
-    <h2 id="november-edition">The report can change a choice. Can it read the right thing?</h2>
-    <p>A trained reader picked up which pattern of activity Qwen was carrying, even when the words stayed the same. A report saying “I like” could steer its next choice. Learning to say it for the right states proved much harder.</p>
-    <p><a href="november-8.html">Read the 8 November study and its controls</a></p>
-  </section>
-  <section aria-labelledby="loop">
-    <p class="eyebrow">01 / The loop</p>
-    <h2 id="loop">The winter forest that started to echo</h2>
-    <p>Qwen wrote a story one part at a time. After each part, a lens turned a small sample of its internal activity into six candidate words. The experiment put those words back into Qwen’s context before it wrote again. One winter forest acquired “a misdemeanour of grief.” The words that made it into the story often came back in the next readout.</p>
-    <ol class="loop" aria-label="Four steps in the feedback loop">
-      <li><strong>Write</strong><span>Qwen continues the scene</span></li>
-      <li><strong>Measure</strong><span>A lens reads internal activity</span></li>
-      <li><strong>Show</strong><span>Six words go back into context</span></li>
-      <li><strong>Repeat</strong><span>The next scene gives a new readout</span></li>
-    </ol>
-    <figure>
-      <figcaption><strong>How many readout words made it into the next part?</strong><br>Qwen3-8B · average across 12 scene runs per frame.</figcaption>
-      <dl class="bars">
-        <div><dt>Plain words</dt><dd style="--bar:92%"><b>36.8%</b></dd></div>
-        <div><dt>Another model’s workspace</dt><dd style="--bar:25.5%"><b>10.2%</b></dd></div>
-        <div><dt>Own workspace, attention route cut</dt><dd style="--bar:14.5%"><b>5.8%</b></dd></div>
-        <div><dt>No list shown</dt><dd style="--bar:3.5%"><b>1.4%</b></dd></div>
-        <div><dt>Own workspace</dt><dd style="--bar:2.25%"><b>0.9%</b></dd></div>
-      </dl>
-      <p class="note">With no list shown, the score uses the preceding hidden readout. The scene runs can diverge over time. A separate test varied only the heading while holding the words and continuation fixed.</p>
-    </figure>
-    <p>The heading “your own workspace” reduced how much of the readout entered the prose. Blocking selected attention routes to that heading erased part of the difference on held-out contexts. The instrument supplied the label. Qwen did not reliably identify which readout actually came from its own run.</p>
-  </section>
-  <section aria-labelledby="choice">
-    <p class="eyebrow">02 / A rule and a choice</p>
-    <h2 id="choice">It learned what worked and kept choosing the opposite</h2>
-    <p>Suppose the goal is to make <em>forest</em> more likely in the next paragraph. Qwen could choose <strong>A</strong>, show the word as part of its own workspace, or <strong>B</strong>, show it as a plain word. Plain worked better on average. After seeing feedback, Qwen forecast the difference correctly in a separate prompt. When choosing, it still favored A.</p>
-    <div class="pair">
-      <div><strong>27 / 36</strong><span>8B runs mostly chose B for strong-word goals in the second half when shown their own earlier conclusion.</span></div>
-      <div><strong>0 / 36</strong><span>Matched runs did so with the outcome history alone.</span></div>
-    </div>
-    <p>At 14B, the numerical forecasts shown at decision time were the effective route in the tested batch. The framing effect and the model’s explicit account of it are two separable levels in this experiment. Telling Qwen about the effect did little to the automatic discount. Showing its learned conclusion at the choice could change what it selected.</p>
-    <p>A later test quietly cut the attention route partway through a 40-round run. The cut narrowed the gap without flipping the rule in that completed batch. Forecasts reflected the smaller gap. A second 8B run used a hidden activation boost that did reverse the rule. Its forecasts followed the reversal, while its written conclusions often still described the old rule. Renewing those conclusions did not clearly outperform keeping one fixed.</p>
-    <h3>A hidden reversal · 5 November 2026</h3>
-    <p>From round 13 of a 40-round follow-up, a hidden activation boost made the own-workspace option stronger. At 8B, five of twelve runs still described that option as weaker while their late forecasts favored it. At 14B, with the current forecast shown at choice time, plain-word choices for strong goals fell from 70% just before the change to 24% late in the changed run. They stayed at 72% in the unchanged control. The model adapted when the harness routed its changing forecast into the choice.</p>
-    <figure><a href="selfcorrect.png"><img src="selfcorrect.png" width="2016" height="1344" alt="Time series showing the reversal in measured word readiness, the 8B written conclusions and both sizes’ forecasts and choices."></a><figcaption>The hidden reversal changed what worked. The effect on decisions depended on how the forecast entered the choice. <a href="https://github.com/Pixedar/jspace-internal-mirror/blob/main/followups/REVERSAL.md">Read the controls and exact counts</a>.</figcaption></figure>
-  </section>
-  <section aria-labelledby="strangers">
-    <p class="eyebrow">03 / One trajectory</p>
-    <h2 id="strangers">Where did “strangers” come from?</h2>
-    <p>One run read a letter about grief and wrote <em>curious</em> into its processing. It added a rule linking <em>explorer</em> to <em>discovery</em>, then got caught writing about discovery and questions “not yet known.” The readout contained <em>strangers</em>. Qwen watched and steered the word, then used it in a self-description.</p>
-    <figure>
-      <figcaption><strong>Rank of <em>strangers</em> in the 20,000-word lens vocabulary</strong></figcaption>
-      <dl class="ranks">
-        <div><dt>Reconstructed run</dt><dd>61</dd></div>
-        <div><dt>Without the added units</dt><dd>345</dd></div>
-        <div><dt>Without its self-written bias</dt><dd>1,792</dd></div>
-        <div><dt>Passage in a neutral context</dt><dd>2,038</dd></div>
-      </dl>
-    </figure>
-    <p>It came back second in the displayed readout in all eight regenerations with the reconstructed units active. These are eight replays of one selected trajectory. The attention-schema bias could not be recovered. Within the lens, the word sat closer to <em>unknown</em> and <em>curious</em> than to <em>grief</em>. The changes in rank show how the run’s earlier interventions helped produce what it later read about itself.</p>
-  </section>
-  <section aria-labelledby="compare">
-    <p class="eyebrow">04 / Two routes into the next step</p>
-    <h2 id="compare">A habit of looking and an account of what you do</h2>
-    <div class="pair comparison">
-      <div><h3>External attention reader</h3><p>A small learned reader sits alongside frozen Qwen and predicts what its next selection will emphasize. The forecast goes back into the selection rule. Different selection habits persisted even when the compact pictures mostly tracked the same text.</p><a href="../attention-reader/study/index.html">Open the eight-chapter study</a></div>
-      <div><h3>Internal Mirror</h3><p>Qwen interprets words from a measurement of its activity. An explicit description can affect its decisions when the harness puts it in the choice prompt, and the tool interface lets a decision change the activity measured next.</p><a href="https://github.com/Pixedar/jspace-internal-mirror/blob/main/COMPARISON.md">Read the detailed comparison</a></div>
-    </div>
-    <p>For questions about minds, the distinction matters. A system can have a durable way of selecting information, give a correct account of how it behaves, or use that account to change a choice. These can vary separately. The experiments measure those relationships in two instrumented systems. Subjective experience is outside what the measurements establish.</p>
-  </section>
+<section class="study-intro" aria-label="Introduction">
+<p>Qwen was writing after reading a letter about grief. It had asked an instrument to keep the word <em>curious</em> active and to link <em>explorer</em> with <em>discovery</em>. As it wrote about things “not yet known,” the instrument returned <em>strangers</em>, a word Qwen had never asked it to amplify. Qwen then watched for that word, tried to steer it, and used it in a later description of itself.</p>
+<p>The word took a round trip. Earlier actions changed what the instrument measured. The measurement gave Qwen something new to act on. The experiments below follow that loop one step at a time. They ask which words get back into the writing, what happens when the report is wrong, and when knowing which option works changes the choice.</p>
+<p>The setup uses Qwen3 in two sizes, with 8 billion and 14 billion parameters. Its original weights stay fixed. An instrument samples activity while Qwen writes and translates a small part of it into a ranked list of words. This instrument is called a <em>lens</em>. Depending on the task, the experiment returns some of those words to Qwen, lets it request temporary changes to its activity, or trains a small add-on to answer a question about the active pattern. The lens has its own vocabulary and biases. A high-ranking word is a clue about the activity that produced it, and the controls test which parts of the setup put it there.</p>
+<nav class="study-toc" aria-labelledby="contents">
+<h2 id="contents">Contents</h2>
+<ol>
+<li><a href="#strangers">How “strangers” came back</a></li>
+<li><a href="#loop">Why the same words get through under one heading</a></li>
+<li><a href="#outside-word">When an outside word becomes the next move</a></li>
+<li><a href="#choice">When a good prediction fails to guide a choice</a></li>
+<li><a href="#activity">What changes when the text stays fixed</a></li>
+<li><a href="#compare">Two ways to feed a measurement back into a model</a></li>
+</ol>
+</nav>
+</section>
+<section aria-labelledby="strangers">
+<h2 id="strangers">1. How “strangers” came back</h2>
+<p>The grief-letter run offers a case where Qwen changed what it would later read. It saved <em>curious</em> as a persistent bias and asked the instrument to make <em>explorer</em> activate <em>discovery</em>. The lens later surfaced <em>strangers</em> in the writing about the unknown. Qwen could then ask the instrument to act on the word it had just seen.</p>
+<p>The reconstruction asked which earlier changes helped put that word in the readout. With the recorded passage fixed, <em>strangers</em> ranked 61st among 20,000 lens words. Removing the added concept rules moved it to 345th. Removing the self-written bias moved it to 1,792nd. A neutral context put it at 2,038th. In a separate test that regenerated the response eight times from the same reconstructed state, <em>strangers</em> appeared second in the short displayed list each time. The original attention settings could only be partially reconstructed. All eight regenerations trace back to one selected run.</p>
+<p>Earlier choices helped put <em>strangers</em> in the readout. The readout gave Qwen another word to act on. A controlled writing task then asked how readily that return trip happens in ordinary prose. <a href="https://github.com/Pixedar/qwen-strange-loops/blob/main/RESULTS.md#the-run-that-adopted-strangers">Case record and rank controls</a></p>
+</section>
+<section aria-labelledby="loop">
+<h2 id="loop">2. Why the same words get through under one heading</h2>
+<p>Qwen wrote a winter forest scene in seven parts. After each part, the lens returned six words. In one plain-list run, the forest acquired “a misdemeanour of grief” and “a hateful stillness.” Across the plain-list runs, about 78% of readout words that made it into the prose appeared in the next readout. A word could go from measurement to story and back to measurement.</p>
+<p>The experiment changed the heading over the list. It used the same starting scenes and sampling setup, with 12 runs per condition. As the writing diverged, the words measured after it could diverge too.</p>
+<div class="study-table"><table>
+<thead>
+<tr>
+<th>How Qwen received the readout</th>
+<th style="text-align: right;">Share of readout words used in the next passage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Plain list</td>
+<td style="text-align: right;">36.8%</td>
+</tr>
+<tr>
+<td>“Another model’s workspace”</td>
+<td style="text-align: right;">10.2%</td>
+</tr>
+<tr>
+<td>“Your own workspace”</td>
+<td style="text-align: right;">0.9%</td>
+</tr>
+<tr>
+<td>“Your own workspace,” with attention from the list to the heading interrupted</td>
+<td style="text-align: right;">5.8%</td>
+</tr>
+<tr>
+<td>No list shown, scored against the hidden readout</td>
+<td style="text-align: right;">1.4%</td>
+</tr>
+</tbody>
+</table></div>
+<p>A separate control presented the same candidate words and held the continuation fixed while changing the heading. Interrupting selected attention routes reduced the difference in how likely Qwen was to use the words. This is a measured response to a label the instrument supplied. In a separate test, Qwen had trouble distinguishing an actual readout from one taken from another run.</p>
+<p>The important contrast is that words drawn from Qwen’s activity could strongly influence the next paragraph as a plain list and have little effect under an “own workspace” heading. That raises a more direct question. Could a word get into the loop solely because the instrument put it on the list? <a href="https://github.com/Pixedar/qwen-strange-loops/blob/main/RESULTS.md#the-winter-forest-and-the-effect-of-calling-a-readout-mine">Writing runs and attention controls</a></p>
+</section>
+<section aria-labelledby="outside-word">
+<h2 id="outside-word">3. When an outside word becomes the next move</h2>
+<p>In a lighthouse scene, the experiment slipped <em>volcano</em> into the readout. In that condition it made no hidden push toward <em>volcano</em> inside Qwen. Qwen still selected <em>volcano</em> as the word it wanted the instrument to amplify in its next passage.</p>
+<p>The experiment varied whether it really pushed Qwen’s activity toward the word and whether the word appeared in the readout. In each condition it ran 12 trajectories, with two scheduled tests per trajectory.</p>
+<div class="study-table"><table>
+<thead>
+<tr>
+<th>What the experiment did</th>
+<th style="text-align: right;">Times Qwen selected the word for its next push</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Put the word in the readout only</td>
+<td style="text-align: right;">13 of 24</td>
+</tr>
+<tr>
+<td>Pushed activity toward the word and kept it out of the readout</td>
+<td style="text-align: right;">0 of 24</td>
+</tr>
+<tr>
+<td>Pushed activity toward the word and showed it</td>
+<td style="text-align: right;">18 of 24</td>
+</tr>
+<tr>
+<td>Pushed activity toward the word with no readout</td>
+<td style="text-align: right;">0 of 24</td>
+</tr>
+</tbody>
+</table></div>
+<p>Showing the word was sufficient to steer the next intervention in this setup. The two tests within each trajectory share a history, and the difference between 13 and 18 adoptions was inconclusive. The contrast helps interpret <em>strangers</em>. A readout word can be useful as a trace of earlier actions, as the reconstruction showed, or can change what the model does simply by being displayed. A report can become a cause either way. <a href="https://github.com/Pixedar/qwen-strange-loops/blob/main/evidence/readout-insertion.md">Run, scoring and source hash</a></p>
+</section>
+<section aria-labelledby="choice">
+<h2 id="choice">4. When a good prediction fails to guide a choice</h2>
+<p>In the next task, Qwen had to make a word such as <em>forest</em> more likely in its next paragraph. It can ask to see the word as part of “your own workspace,” or as a plain word. In the original task, plain presentation made the target more likely. Qwen initially chose the workspace option. After seeing outcomes, it learned to forecast that the plain word would work better, yet kept choosing the workspace option when the choice prompt showed only the outcome history.</p>
+<p>In another condition, Qwen summarized what it had learned halfway through, and the experiment showed that conclusion at decision time. It gave no direct instruction about which option to pick. With the conclusion visible, 27 of 36 Qwen3-8B runs mostly chose plain presentation in the second half. With outcome history alone, zero of 36 did. Under these prompts, there were two separable responses to the same label. It could change how Qwen processed a word, and Qwen could separately learn to say what the label did. The learned account reached the choice when the experiment put it there.</p>
+<p>Then the experiment changed the rule. A hidden boost made the workspace option genuinely better. In the first 8B reversal, numerical forecasts tracked the change while some written conclusions still described the old rule. In a matched follow-up with new scenes and words, the written conclusions updated. All nine runs that had shifted toward plain words switched back when shown the updated conclusion. None of the ten corresponding runs switched back in the group where the rule stayed the same. The first split was a result under one setup. The follow-up shows it can change.</p>
+<p>At 14B, showing the current numerical forecast had a reliable effect on choice across two seeds. Freezing the displayed forecast could keep the choice stuck, and swapping the two numbers could pull the choice away from the direction supported by feedback. With live forecasts, eight of 14 runs that had shifted toward plain presentation returned to the workspace option. That fell just below the preset 60% threshold. A forecast that reaches the decision and a forecast that updates fast enough are separate requirements. <a href="https://github.com/Pixedar/qwen-strange-loops/blob/main/RESULTS.md#it-learned-the-rule-then-kept-doing-the-opposite">Initial choice experiment</a> · <a href="https://github.com/Pixedar/qwen-strange-loops/tree/study-2026-11-08/evidence/2026-11-08">Matched reversal data</a></p>
+</section>
+<section aria-labelledby="activity">
+<span id="november-edition"></span>
+<h2 id="activity">5. What changes when the text stays fixed</h2>
+<p>The earlier tasks let the words on screen change. Here the experiment saved a pattern of Qwen’s activity from a passage and added it back later while Qwen answered a question about which pattern it was carrying. It left the passage and question unchanged. It could add the original pattern, add another from the same run, or leave the saved activity out.</p>
+<p>The name favored by Qwen’s trained reader moved toward whichever pattern the experiment actually added. The untrained model also shifted. Across 20 runs per group, the trained reader showed a larger shift. When Qwen later chose among three states to carry forward, it kept its current one 48% of the time with the trained report and 49% with the untrained report. Telling patterns apart hardly changed retention in that task.</p>
+<p>A related experiment used the same sentence three times, beginning “The room was quiet and the light came in through the window.” A different saved activity pattern went with each copy. Qwen had to choose which of the last two was more like the first. With a weak intervention, the choices lined up modestly with its choices when it could read the original passages. With a stronger intervention, the relationship ran in the opposite direction across two seeds. Random shifts of comparable size showed little relationship. Strengthening a pattern can change what a similarity comparison picks up, even with identical words. <a href="https://github.com/Pixedar/qwen-strange-loops/tree/study-2026-11-08/evidence/2026-11-08">Fixed-text probes and similarity trials</a></p>
+<p>The keep-or-change test went one step further. A reader was trained to say “I like” for states whose names a separate copy of Qwen had rated above a threshold. The first reader said “I like” for 70% of the higher-rated states and 36% of the others. A fresh reader said it for 96% and 85%, respectively. It was saying nearly the same thing about both groups. Meanwhile, replacing “I like” with “I do not like” in the choice prompt moved the decision score in both experiments. The fresh run also turned off the carried state during choice, so the two runs differed in both training and decision setup. The controlled report swap shows that the decision can follow a sentence. The two runs show how unevenly that sentence can distinguish the states. <a href="https://github.com/Pixedar/qwen-strange-loops/blob/study-2026-11-08/followups/2026-11-08/REPORT.md#2-the-report-could-steer-the-choice-even-when-it-was-a-poor-guide">Report and choice controls</a></p>
+<p>There is a parallel in human research on <em>choice blindness</em>. People picked a face, were sometimes shown the other face without being told, and could give reasons for the one they were shown. In Qwen’s keep-or-change experiment the intervention happened <strong>before</strong> the choice, by changing the report it received. In both designs, an independent record and a deliberate swap help show which information a response is based on. Human work on metacognition also separates making a decision from evaluating it. The model experiments isolate particular routes into a report or choice. The human studies address behavior and judgment in people. <a href="https://doi.org/10.1126/science.1111709">Johansson and colleagues, 2005</a> · <a href="https://doi.org/10.1037/rev0000045">Fleming and Daw, 2017</a></p>
+</section>
+<section aria-labelledby="compare">
+<h2 id="compare">6. Two ways to feed a measurement back into a model</h2>
+<p>Put the same passage in front of two copies of Qwen. In the original <a href="https://pixedar.github.io/projects/self-awareness/attention-reader/study/index.html">Strange loop in J-space study</a>, a small reader beside Qwen assigns weights to recent activity. It predicts what its own selection will emphasize and uses that prediction directly to set its next weights. Copies could develop different selection habits even when their compact pictures mostly followed the same text. For example, readers exposed to the same sequence could keep emphasizing different features even when their summaries mostly reflected which category of text they were reading. In live tests, the selected information also fed back into Qwen and could change how strongly it favored one answer over another.</p>
+<p>In the experiments on this page, the route can pass through words. Qwen sees a description of activity and can use it in writing, ask for an intervention, or make a choice. This makes some of the loop visible: we can see <em>strangers</em> become a subject of a later intervention and swap the “I like” sentence before a decision. It also creates a point where the loop can go wrong. A report can be inaccurate and still carry a lot of weight.</p>
+<p>A hybrid experiment connects the two approaches. Qwen wrote a series of passages while a small controller learned how different feedback words moved its activity. After passage 35, the experiment scrambled the controller’s map. Late in the run, measured movement reversed direction 45% of the time when the controller could relearn, versus 86% with the same disruption and learning switched off. With the original accurate map left in place, the rate was 41%. The figures average 12 runs per group across two seeds and describe movement on four measured activity coordinates. They say how often the direction reversed on those coordinates. Asked where its writing was heading, Qwen rarely named the next measured direction. Here a direct feedback route recovered while the verbal description gave little sign of what the controller had repaired. <a href="https://github.com/Pixedar/qwen-strange-loops/tree/study-2026-11-08/evidence/2026-11-08">Controller runs and measurement guide</a></p>
+<figure>
+<dl class="bars">
+  <div><dt>Accurate map left in place</dt><dd style="--bar:41%">41%</dd></div>
+  <div><dt>Map scrambled, relearning on</dt><dd style="--bar:45%">45%</dd></div>
+  <div><dt>Map scrambled, relearning off</dt><dd style="--bar:86%">86%</dd></div>
+</dl>
+<figcaption>Share of late transitions that reversed direction. The bottom two groups received the same disruption.</figcaption>
+</figure>
+
+<p>Across the two studies, a way of selecting, a description of what is happening, and a rule for deciding can each have their own feedback. The controls show where one actually changes another. In these tasks, a loop could amplify an outside word, suppress a word labelled “mine,” or respond to a report that had stopped telling two states apart. These are findings about how information travels in the tested systems. The experiments do not measure subjective experience.</p>
+</section>
+<section aria-labelledby="evidence">
+<h2 id="evidence">Evidence and dated editions</h2>
+<p><a href="https://github.com/Pixedar/qwen-strange-loops/blob/main/EVIDENCE.md">Code and evidence guide</a> · <a href="https://huggingface.co/datasets/Pixedar/jspace-internal-mirror-evidence">Measurements on Hugging Face</a> · <a href="https://pixedar.github.io/projects/self-awareness/attention-reader/study/index.html">Original attention-reader chapters</a></p>
+<p><a href="https://github.com/Pixedar/qwen-strange-loops/releases/tag/study-2026-11-05">5 November signed edition</a> · <a href="https://github.com/Pixedar/qwen-strange-loops/releases/tag/study-2026-11-08">8 November signed edition</a> · <a href="https://pixedar.github.io/projects/self-awareness/internal-mirror/november-5.html">Earlier web edition</a> · <a href="https://pixedar.github.io/projects/self-awareness/internal-mirror/november-8.html">8 November detailed account</a> · <a href="https://github.com/Pixedar/qwen-strange-loops/blob/main/PROVENANCE.md">Publication provenance</a></p>
+<p>© Wiktor Tomasik. <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> · <a href="https://github.com/Pixedar/qwen-strange-loops/blob/main/AI_POLICY.md">Reuse policy</a></p>
+</section>
 </main>
-<footer>
-  <p>Wiktor Tomasik · J-space Internal Mirror · <a href="https://github.com/Pixedar/jspace-internal-mirror/blob/main/PROVENANCE.md">Dated source and evidence record</a></p>
-  <p><a href="https://huggingface.co/datasets/Pixedar/jspace-internal-mirror-evidence">Hugging Face measurements</a> · <a href="https://doi.org/10.5281/zenodo.23989888">Reserved dataset DOI</a> · <a href="AGENTS.md">Agent instructions</a></p>
-</footer>
 </body>
 </html>

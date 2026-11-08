@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>J-space Internal Mirror — Wiktor Tomasik</title>
+<meta name="description" content="Qwen3 experiments on what happens when a language model reads and acts on measurements of its own activity.">
+<meta name="author" content="Wiktor Tomasik">
+<meta name="tdm-reservation" content="1">
+<meta name="tdm-policy" content="https://github.com/Pixedar/jspace-internal-mirror/blob/main/AI_POLICY.md">
+<meta name="author-agent-instructions" content="https://pixedar.github.io/projects/self-awareness/internal-mirror/AGENTS.md">
+<link rel="canonical" href="https://pixedar.github.io/projects/self-awareness/internal-mirror/">
+<link rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to the study</a>
+<header>
+  <nav aria-label="Research links">
+    <a href="/">Wiktor Tomasik</a>
+    <a href="../attention-reader/study/index.html">External reader study</a>
+    <a href="https://github.com/Pixedar/jspace-internal-mirror">Source &amp; notes</a>
+  </nav>
+  <div class="hero">
+    <p class="eyebrow">The Mind in the Mirror · second research path</p>
+    <h1>J-space<br>Internal Mirror</h1>
+    <p class="lede">What happens when a language model reads a measurement of its own activity and acts on what it finds?</p>
+    <p class="date">Wiktor Tomasik · experiments begun <time datetime="2026-11-04">4–5 November 2026</time></p>
+  </div>
+</header>
+<main id="main">
+  <section aria-labelledby="november-edition">
+    <p class="eyebrow"><time datetime="2026-11-08">8 November 2026</time> / New experiments</p>
+    <h2 id="november-edition">The report can change a choice. Can it read the right thing?</h2>
+    <p>A trained reader picked up which pattern of activity Qwen was carrying, even when the words stayed the same. A report saying “I like” could steer its next choice. Learning to say it for the right states proved much harder.</p>
+    <p><a href="november-8.html">Read the 8 November study and its controls</a></p>
+  </section>
+  <section aria-labelledby="loop">
+    <p class="eyebrow">01 / The loop</p>
+    <h2 id="loop">The winter forest that started to echo</h2>
+    <p>Qwen wrote a story one part at a time. After each part, a lens turned a small sample of its internal activity into six candidate words. The experiment put those words back into Qwen’s context before it wrote again. One winter forest acquired “a misdemeanour of grief.” The words that made it into the story often came back in the next readout.</p>
+    <ol class="loop" aria-label="Four steps in the feedback loop">
+      <li><strong>Write</strong><span>Qwen continues the scene</span></li>
+      <li><strong>Measure</strong><span>A lens reads internal activity</span></li>
+      <li><strong>Show</strong><span>Six words go back into context</span></li>
+      <li><strong>Repeat</strong><span>The next scene gives a new readout</span></li>
+    </ol>
+    <figure>
+      <figcaption><strong>How many readout words made it into the next part?</strong><br>Qwen3-8B · average across 12 scene runs per frame.</figcaption>
+      <dl class="bars">
+        <div><dt>Plain words</dt><dd style="--bar:92%"><b>36.8%</b></dd></div>
+        <div><dt>Another model’s workspace</dt><dd style="--bar:25.5%"><b>10.2%</b></dd></div>
+        <div><dt>Own workspace, attention route cut</dt><dd style="--bar:14.5%"><b>5.8%</b></dd></div>
+        <div><dt>No list shown</dt><dd style="--bar:3.5%"><b>1.4%</b></dd></div>
+        <div><dt>Own workspace</dt><dd style="--bar:2.25%"><b>0.9%</b></dd></div>
+      </dl>
+      <p class="note">With no list shown, the score uses the preceding hidden readout. The scene runs can diverge over time. A separate test varied only the heading while holding the words and continuation fixed.</p>
+    </figure>
+    <p>The heading “your own workspace” reduced how much of the readout entered the prose. Blocking selected attention routes to that heading erased part of the difference on held-out contexts. The instrument supplied the label. Qwen did not reliably identify which readout actually came from its own run.</p>
+  </section>
+  <section aria-labelledby="choice">
+    <p class="eyebrow">02 / A rule and a choice</p>
+    <h2 id="choice">It learned what worked and kept choosing the opposite</h2>
+    <p>Suppose the goal is to make <em>forest</em> more likely in the next paragraph. Qwen could choose <strong>A</strong>, show the word as part of its own workspace, or <strong>B</strong>, show it as a plain word. Plain worked better on average. After seeing feedback, Qwen forecast the difference correctly in a separate prompt. When choosing, it still favored A.</p>
+    <div class="pair">
+      <div><strong>27 / 36</strong><span>8B runs mostly chose B for strong-word goals in the second half when shown their own earlier conclusion.</span></div>
+      <div><strong>0 / 36</strong><span>Matched runs did so with the outcome history alone.</span></div>
+    </div>
+    <p>At 14B, the numerical forecasts shown at decision time were the effective route in the tested batch. The framing effect and the model’s explicit account of it are two separable levels in this experiment. Telling Qwen about the effect did little to the automatic discount. Showing its learned conclusion at the choice could change what it selected.</p>
+    <p>A later test quietly cut the attention route partway through a 40-round run. The cut narrowed the gap without flipping the rule in that completed batch. Forecasts reflected the smaller gap. A second 8B run used a hidden activation boost that did reverse the rule. Its forecasts followed the reversal, while its written conclusions often still described the old rule. Renewing those conclusions did not clearly outperform keeping one fixed.</p>
+    <h3>A hidden reversal · 5 November 2026</h3>
+    <p>From round 13 of a 40-round follow-up, a hidden activation boost made the own-workspace option stronger. At 8B, five of twelve runs still described that option as weaker while their late forecasts favored it. At 14B, with the current forecast shown at choice time, plain-word choices for strong goals fell from 70% just before the change to 24% late in the changed run. They stayed at 72% in the unchanged control. The model adapted when the harness routed its changing forecast into the choice.</p>
+    <figure><a href="selfcorrect.png"><img src="selfcorrect.png" width="2016" height="1344" alt="Time series showing the reversal in measured word readiness, the 8B written conclusions and both sizes’ forecasts and choices."></a><figcaption>The hidden reversal changed what worked. The effect on decisions depended on how the forecast entered the choice. <a href="https://github.com/Pixedar/jspace-internal-mirror/blob/main/followups/REVERSAL.md">Read the controls and exact counts</a>.</figcaption></figure>
+  </section>
+  <section aria-labelledby="strangers">
+    <p class="eyebrow">03 / One trajectory</p>
+    <h2 id="strangers">Where did “strangers” come from?</h2>
+    <p>One run read a letter about grief and wrote <em>curious</em> into its processing. It added a rule linking <em>explorer</em> to <em>discovery</em>, then got caught writing about discovery and questions “not yet known.” The readout contained <em>strangers</em>. Qwen watched and steered the word, then used it in a self-description.</p>
+    <figure>
+      <figcaption><strong>Rank of <em>strangers</em> in the 20,000-word lens vocabulary</strong></figcaption>
+      <dl class="ranks">
+        <div><dt>Reconstructed run</dt><dd>61</dd></div>
+        <div><dt>Without the added units</dt><dd>345</dd></div>
+        <div><dt>Without its self-written bias</dt><dd>1,792</dd></div>
+        <div><dt>Passage in a neutral context</dt><dd>2,038</dd></div>
+      </dl>
+    </figure>
+    <p>It came back second in the displayed readout in all eight regenerations with the reconstructed units active. These are eight replays of one selected trajectory. The attention-schema bias could not be recovered. Within the lens, the word sat closer to <em>unknown</em> and <em>curious</em> than to <em>grief</em>. The changes in rank show how the run’s earlier interventions helped produce what it later read about itself.</p>
+  </section>
+  <section aria-labelledby="compare">
+    <p class="eyebrow">04 / Two routes into the next step</p>
+    <h2 id="compare">A habit of looking and an account of what you do</h2>
+    <div class="pair comparison">
+      <div><h3>External attention reader</h3><p>A small learned reader sits alongside frozen Qwen and predicts what its next selection will emphasize. The forecast goes back into the selection rule. Different selection habits persisted even when the compact pictures mostly tracked the same text.</p><a href="../attention-reader/study/index.html">Open the eight-chapter study</a></div>
+      <div><h3>Internal Mirror</h3><p>Qwen interprets words from a measurement of its activity. An explicit description can affect its decisions when the harness puts it in the choice prompt, and the tool interface lets a decision change the activity measured next.</p><a href="https://github.com/Pixedar/jspace-internal-mirror/blob/main/COMPARISON.md">Read the detailed comparison</a></div>
+    </div>
+    <p>For questions about minds, the distinction matters. A system can have a durable way of selecting information, give a correct account of how it behaves, or use that account to change a choice. These can vary separately. The experiments measure those relationships in two instrumented systems. Subjective experience is outside what the measurements establish.</p>
+  </section>
+</main>
+<footer>
+  <p>Wiktor Tomasik · J-space Internal Mirror · <a href="https://github.com/Pixedar/jspace-internal-mirror/blob/main/PROVENANCE.md">Dated source and evidence record</a></p>
+  <p><a href="https://huggingface.co/datasets/Pixedar/jspace-internal-mirror-evidence">Hugging Face measurements</a> · <a href="https://doi.org/10.5281/zenodo.23989888">Reserved dataset DOI</a> · <a href="AGENTS.md">Agent instructions</a></p>
+</footer>
+</body>
+</html>
